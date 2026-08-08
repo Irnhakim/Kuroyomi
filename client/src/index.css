@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700;800&family=Outfit:wght@400;600;800&family=Noto+Sans+JP:wght@400;700;900&display=swap');
 
 /* ============================================================
-   KUROYOMI NEO-BRUTALIST & PLAYFUL RETRO DESIGN SYSTEM
+   KUROYOMI CARTOONIST & MANGA PAPER DESIGN SYSTEM
    ============================================================ */
 
 :root {
@@ -12,21 +12,21 @@
   --sidebar-width: 260px;
   --sidebar-collapsed-width: 72px;
 
-  --transition-fast: 100ms cubic-bezier(0.16, 1, 0.3, 1);
-  --transition-normal: 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-fast: 120ms cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-normal: 240ms cubic-bezier(0.16, 1, 0.3, 1);
 
-  /* Playful Retro Sizing */
+  /* Cartoonist Sizing */
   --border-thick: 3px;
   --border-medium: 2px;
   
   --radius-none: 0px;
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
   --radius-full: 9999px;
 
-  /* Custom Spacing System */
+  /* Spacing */
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;
@@ -40,83 +40,79 @@
 }
 
 /* ============================================================
-   DARK THEME (Default / Kuroyomi Mode)
+   DARK MODE (Manga Dark Ink Theme)
    ============================================================ */
 .theme-dark, :root:not(.theme-light) {
-  --color-bg-base: #12131C;
-  --color-bg-surface: #1B1C2A;
-  --color-bg-elevated: #24263B;
-  --color-bg-overlay: #2E304D;
-  --color-bg-card: #1D1E2F;
+  /* Warm dark paper colors */
+  --color-bg-base: #1b1b22;       /* Charcoal Ink Paper */
+  --color-bg-surface: #22222b;    /* Darker Slate Paper */
+  --color-bg-elevated: #2b2b36;
+  --color-bg-overlay: #343442;
+  --color-bg-card: #252530;       /* Card Paper */
 
-  /* Retro High-Contrast Accents */
-  --color-primary: #a78bfa;       /* Neo Violet */
-  --color-primary-dark: #7c3aed;
-  --color-accent: #22d3ee;        /* Retro Cyan */
-  --color-accent-light: #67e8f9;
-  --color-yellow: #facc15;        /* Funky Yellow */
-  --color-pink: #f472b6;          /* Pop Pink */
+  /* Muted Retro Accents (Comic Tone) */
+  --color-primary: #a78bfa;       /* Dusty Lavender */
+  --color-primary-dark: #8b5cf6;
+  --color-accent: #3fc1c9;        /* Pastel Teal */
+  --color-accent-light: #52deeb;
+  --color-yellow: #f5c453;        /* Soft Mustard Gold */
+  --color-pink: #f08a9b;          /* Soft Coral Pink */
   
   /* Text */
-  --color-text-primary: #F3F4F6;
-  --color-text-secondary: #9CA3AF;
-  --color-text-muted: #6B7280;
+  --color-text-primary: #e4e4e7;
+  --color-text-secondary: #a1a1aa;
+  --color-text-muted: #71717a;
   
-  /* Borders & Brutalist Shadows */
-  --color-border-raw: #000000;
-  --color-border: #000000;
-  --shadow-brutal: 4px 4px 0px #000000;
-  --shadow-brutal-hover: 7px 7px 0px #000000;
-  --shadow-brutal-sm: 2px 2px 0px #000000;
-  --shadow-brutal-lg: 8px 8px 0px #000000;
-
-  /* Accent Glows */
-  --shadow-primary-brutal: 4px 4px 0px var(--color-primary-dark);
+  /* Cartoonist Borders & Thick Solid Offset Shadows */
+  --color-border-raw: #0e0e12;
+  --color-border: #0e0e12;
+  --shadow-brutal: 5px 5px 0px #0e0e12;
+  --shadow-brutal-hover: 8px 8px 0px #0e0e12;
+  --shadow-brutal-sm: 3px 3px 0px #0e0e12;
+  --shadow-brutal-lg: 10px 10px 0px #0e0e12;
   
   /* Status */
-  --color-success: #34D399;
-  --color-warning: #FBBF24;
-  --color-error: #F87171;
+  --color-success: #6ee7b7;
+  --color-warning: #fcd34d;
+  --color-error: #fca5a5;
 }
 
 /* ============================================================
-   LIGHT THEME (Retro Pop Mode)
+   LIGHT MODE (Classic Manga Comic Book Warm Paper)
    ============================================================ */
 .theme-light {
-  --color-bg-base: #FFFDF9;       /* Retro Warm Cream */
-  --color-bg-surface: #FFF9ED;
-  --color-bg-elevated: #FFEFCF;
-  --color-bg-overlay: #FFDF9F;
-  --color-bg-card: #FFFFFF;
+  /* Soft warm paper stock colors (Newsprint / Comic book texture feel) */
+  --color-bg-base: #faf4eb;       /* Off-White Recycled Paper */
+  --color-bg-surface: #f3eae0;    /* Warm Pulp Paper */
+  --color-bg-elevated: #e9decb;   /* Slightly Older Paper */
+  --color-bg-overlay: #decfa8;
+  --color-bg-card: #fdfaf2;       /* Bright Sketch Paper */
 
-  /* Retro High-Contrast Accents */
-  --color-primary: #8B5CF6;       /* Vibrant Purple */
-  --color-primary-dark: #6D28D9;
-  --color-accent: #0891B2;        /* Classic Cyan */
-  --color-accent-light: #06B6D4;
-  --color-yellow: #EAB308;        /* Honey Yellow */
-  --color-pink: #EC4899;          /* Bubblegum Pink */
+  /* Muted Retro Accents (Soft Comic Tones) */
+  --color-primary: #7c5ced;       /* Soft Purple Ink */
+  --color-primary-dark: #6343cc;
+  --color-accent: #2e9b9b;        /* Muted Teal Ink */
+  --color-accent-light: #48b8b8;
+  --color-yellow: #e2a829;        /* Soft Mustard Yellow */
+  --color-pink: #d8697b;          /* Comic Coral Red */
   
   /* Text */
-  --color-text-primary: #1F2937;
-  --color-text-secondary: #4B5563;
-  --color-text-muted: #9CA3AF;
+  --color-text-primary: #282725;   /* Dark Charcoal Ink (Not pure black) */
+  --color-text-secondary: #575551;
+  --color-text-muted: #8b8882;
   
-  /* Borders & Brutalist Shadows */
-  --color-border-raw: #1F2937;
-  --color-border: #1F2937;
-  --shadow-brutal: 4px 4px 0px #1F2937;
-  --shadow-brutal-hover: 7px 7px 0px #1F2937;
-  --shadow-brutal-sm: 2px 2px 0px #1F2937;
-  --shadow-brutal-lg: 8px 8px 0px #1F2937;
-
-  /* Accent Glows */
-  --shadow-primary-brutal: 4px 4px 0px #1F2937;
+  /* Cartoonist Borders & Solid Shadows */
+  --color-border-raw: #2c2825;
+  --color-border: #2c2825;
+  --shadow-brutal: 5px 5px 0px #2c2825;
+  --shadow-brutal-hover: 8px 8px 0px #2c2825;
+  --shadow-brutal-sm: 3px 3px 0px #2c2825;
+  --shadow-brutal-lg: 10px 10px 0px #2c2825;
   
   /* Status */
-  --color-success: #10B981;
-  --color-warning: #F59E0B;
-  --color-error: #EF4444;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
 }
 
 /* ============================================================
@@ -149,11 +145,11 @@ body {
 }
 
 /* ============================================================
-   SCROLLBAR (Brutalist style)
+   SCROLLBAR (Cartoonist style)
    ============================================================ */
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
 }
 
 ::-webkit-scrollbar-track {
@@ -165,6 +161,7 @@ body {
   background: var(--color-yellow);
   border: var(--border-medium) solid var(--color-border);
   border-radius: var(--radius-sm);
+  box-shadow: inset -2px -2px 0px rgba(0,0,0,0.15);
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -176,10 +173,11 @@ body {
    ============================================================ */
 h1, h2, h3, h4, h5, h6 {
   font-weight: 800;
-  line-height: 1.2;
+  line-height: 1.1;
   color: var(--color-text-primary);
   letter-spacing: -0.02em;
   margin-bottom: 0.5em;
+  text-transform: uppercase;
 }
 
 h1 { font-size: 2.25rem; }
@@ -202,7 +200,7 @@ a:hover {
 }
 
 /* ============================================================
-   BRUTALIST CARDS & CONTAINERS
+   CARTOONIST CARDS & CONTAINERS
    ============================================================ */
 .card {
   background: var(--color-bg-card);
@@ -255,7 +253,7 @@ a:hover {
 }
 
 /* ============================================================
-   SIDEBAR (Neo-Brutalist Edition)
+   SIDEBAR (Cartoonist / Comic Panel Edition)
    ============================================================ */
 .sidebar {
   position: fixed;
@@ -397,7 +395,7 @@ a:hover {
 }
 
 /* ============================================================
-   BUTTONS (Retro-Brutalist Edition)
+   BUTTONS (Cartoon Comic Book Style)
    ============================================================ */
 .btn {
   display: inline-flex;
@@ -466,12 +464,23 @@ a:hover {
   box-shadow: var(--shadow-brutal-sm);
 }
 
+.btn-sm {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.8rem;
+}
+
+.btn-icon {
+  padding: var(--space-2);
+  width: 40px;
+  height: 40px;
+}
+
 /* ============================================================
    INPUTS
    ============================================================ */
 .input {
   width: 100%;
-  padding: 0.6rem 1rem;
+  padding: 0.65rem 1rem;
   background: var(--color-bg-card);
   border: var(--border-thick) solid var(--color-border);
   border-radius: var(--radius-md);
@@ -487,6 +496,26 @@ a:hover {
   transform: translate(-2px, -2px);
   box-shadow: var(--shadow-brutal-sm);
   background: var(--color-bg-surface);
+}
+
+/* Search input specific classes */
+.search-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.search-input-icon {
+  position: absolute;
+  left: 1rem;
+  color: var(--color-text-secondary);
+  pointer-events: none;
+  z-index: 10;
+}
+
+.search-input {
+  padding-left: 2.75rem !important;
 }
 
 /* ============================================================

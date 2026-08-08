@@ -13,10 +13,10 @@ export default function ExtensionsPage() {
   const { data: available, isLoading: loadingAvailable } = trpc.extension.available.useQuery(undefined, {
     enabled: tab === 'available',
   })
-  const installMut = trpc.extension.install.useMutation({ onSuccess: () => utils.extension.installed.invalidate() })
-  const uninstallMut = trpc.extension.uninstall.useMutation({ onSuccess: () => utils.extension.installed.invalidate() })
-  const updateMut = trpc.extension.update.useMutation({ onSuccess: () => utils.extension.installed.invalidate() })
-  const checkUpdates = trpc.extension.checkUpdates.useMutation({ onSuccess: () => utils.extension.installed.invalidate() })
+  const installMut = trpc.extension.install.useMutation({ onSuccess: () => { utils.extension.installed.invalidate(); utils.extension.available.invalidate() } })
+  const uninstallMut = trpc.extension.uninstall.useMutation({ onSuccess: () => { utils.extension.installed.invalidate(); utils.extension.available.invalidate() } })
+  const updateMut = trpc.extension.update.useMutation({ onSuccess: () => { utils.extension.installed.invalidate(); utils.extension.available.invalidate() } })
+  const checkUpdates = trpc.extension.checkUpdates.useMutation({ onSuccess: () => { utils.extension.installed.invalidate(); utils.extension.available.invalidate() } })
 
   const installedPkgs = new Set(installed?.map((e) => e.pkgName))
 

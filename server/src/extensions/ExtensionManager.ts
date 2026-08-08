@@ -34,20 +34,29 @@ export class ExtensionManager {
   }
 
   async getAvailableExtensions(): Promise<ExtensionInfo[]> {
-    if (this.availableExtensions.length === 0) {
-      await this.fetchExtensionRepo();
-    }
+    await this.fetchExtensionRepo();
     return this.availableExtensions;
   }
 
   private async fetchExtensionRepo() {
     try {
       const configUrl = await prisma.serverConfig.findUnique({ where: { key: 'extensionRepoUrl' } });
-      const repoUrl = configUrl?.value || REPO_URL;
+      let repoUrl = configUrl?.value || REPO_URL;
+
+      // Auto-replace .pb or raw index to .min.json format
+      if (repoUrl.endsWith('index.pb')) {
+        repoUrl = repoUrl.replace('index.pb', 'index.min.json');
+      } else if (repoUrl.endsWith('/raw/repo/')) {
+        repoUrl = repoUrl + 'index.min.json';
+      }
+
       const response = await axios.get(repoUrl, { timeout: 10000 });
       const data = response.data;
 
-      // Parse keiyoushi index format
+      // Extract base URL of the repository (directory containing index.min.json)
+      const baseRepoUrl = repoUrl.substring(0, repoUrl.lastIndexOf('/'));
+
+      // Parse keiyoushi / suwayomi index format
       if (Array.isArray(data)) {
         this.availableExtensions = data.map((ext: any) => ({
           pkgName: ext.pkg || ext.pkgName,
@@ -57,7 +66,7 @@ export class ExtensionManager {
           versionCode: ext.code || 1,
           iconUrl: ext.iconUrl || `https://raw.githubusercontent.com/keiyoushi/extensions/main/icon/${ext.pkg}.png`,
           apkName: ext.apk,
-          repoUrl: ext.repoUrl,
+          repoUrl: ext.repoUrl || baseRepoUrl,
           isNsfw: ext.nsfw || false,
           sources: ext.sources || [],
         }));
@@ -115,10 +124,17 @@ export class ExtensionManager {
 
       if (!extInfo.apkName) throw new Error('No download URL available for this extension');
 
-      // For now, we download the JS bundle (future: convert APK)
-      const jsUrl = extInfo.repoUrl
-        ? `${extInfo.repoUrl}/${extInfo.apkName}`
-        : `https://github.com/keiyoushi/extensions-source/releases/latest/download/${extInfo.apkName}`;
+      // Resolve the download URL: Suwayomi stores APKs inside the 'apk/' subdirectory.
+      let jsUrl = '';
+      if (extInfo.repoUrl) {
+        if (extInfo.repoUrl.includes('suwayomi') && !extInfo.repoUrl.endsWith('/apk')) {
+          jsUrl = `${extInfo.repoUrl}/apk/${extInfo.apkName}`;
+        } else {
+          jsUrl = `${extInfo.repoUrl}/${extInfo.apkName}`;
+        }
+      } else {
+        jsUrl = `https://github.com/keiyoushi/extensions-source/releases/latest/download/${extInfo.apkName}`;
+      }
 
       const destPath = path.join(EXTENSIONS_DIR, `${pkgName}.apk`);
       const response = await axios.get(jsUrl, { responseType: 'arraybuffer', timeout: 60000 });
