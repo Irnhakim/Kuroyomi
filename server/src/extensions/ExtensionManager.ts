@@ -64,42 +64,61 @@ export class ExtensionManager {
         }
       }
 
-      const response = await axios.get(repoUrl, { timeout: 30000 });
+      // Try fetching with a generous timeout (index.json can be >1MB)
+      const response = await axios.get(repoUrl, { timeout: 60000 });
       const data = response.data;
 
-      // Extract base URL of the repository (directory containing index file)
-      const baseRepoUrl = repoUrl.substring(0, repoUrl.lastIndexOf('/'));
+      // Cache the index locally for offline/retry use
+      const cachePath = path.join(EXTENSIONS_DIR, '_index_cache.json');
+      fs.writeFileSync(cachePath, JSON.stringify(data));
 
-      // Parse keiyoushi / suwayomi index formats
-      if (data && typeof data === 'object') {
-        let rawList: any[] = [];
-        if (Array.isArray(data)) {
-          rawList = data;
-        } else if (data.extensionList && Array.isArray(data.extensionList.extensions)) {
-          rawList = data.extensionList.extensions;
-        }
-
-        this.availableExtensions = rawList.map((ext: any) => {
-          const pkgName = ext.pkg || ext.pkgName || ext.packageName;
-          const apkName = ext.apk || (ext.resources?.apkUrl ? ext.resources.apkUrl.substring(ext.resources.apkUrl.lastIndexOf('/') + 1) : '');
-          const isNsfw = ext.nsfw === 1 || ext.nsfw === true || ext.contentWarning === 'CONTENT_WARNING_NSFW';
-
-          return {
-            pkgName,
-            name: ext.name,
-            lang: ext.lang || (ext.sources && ext.sources[0]?.language) || 'all',
-            versionName: ext.version || ext.versionName || '1.0',
-            versionCode: parseInt(ext.code || ext.versionCode || '1', 10) || 1,
-            iconUrl: ext.iconUrl || ext.resources?.iconUrl || `https://raw.githubusercontent.com/keiyoushi/extensions/main/icon/${pkgName}.png`,
-            apkName,
-            repoUrl: ext.repoUrl || baseRepoUrl,
-            isNsfw,
-            sources: ext.sources || [],
-          };
-        });
-      }
+      this.parseExtensionIndex(data, repoUrl);
     } catch (err) {
-      console.error('[Extensions] Failed to fetch extension repo:', err);
+      console.error('[Extensions] Failed to fetch extension repo:', (err as any)?.message || err);
+      
+      // Try loading from cache
+      const cachePath = path.join(EXTENSIONS_DIR, '_index_cache.json');
+      if (fs.existsSync(cachePath)) {
+        try {
+          const cached = JSON.parse(fs.readFileSync(cachePath, 'utf8'));
+          this.parseExtensionIndex(cached, '');
+          console.log('[Extensions] Loaded extension list from local cache');
+        } catch (cacheErr) {
+          console.error('[Extensions] Failed to load cached index:', cacheErr);
+        }
+      }
+    }
+  }
+
+  private parseExtensionIndex(data: any, repoUrl: string) {
+    const baseRepoUrl = repoUrl ? repoUrl.substring(0, repoUrl.lastIndexOf('/')) : 'https://raw.githubusercontent.com/keiyoushi/extensions/repo';
+
+    if (data && typeof data === 'object') {
+      let rawList: any[] = [];
+      if (Array.isArray(data)) {
+        rawList = data;
+      } else if (data.extensionList && Array.isArray(data.extensionList.extensions)) {
+        rawList = data.extensionList.extensions;
+      }
+
+      this.availableExtensions = rawList.map((ext: any) => {
+        const pkgName = ext.pkg || ext.pkgName || ext.packageName;
+        const apkName = ext.apk || (ext.resources?.apkUrl ? ext.resources.apkUrl.substring(ext.resources.apkUrl.lastIndexOf('/') + 1) : '');
+        const isNsfw = ext.nsfw === 1 || ext.nsfw === true || ext.contentWarning === 'CONTENT_WARNING_NSFW';
+
+        return {
+          pkgName,
+          name: ext.name,
+          lang: ext.lang || (ext.sources && ext.sources[0]?.language) || 'all',
+          versionName: ext.version || ext.versionName || '1.0',
+          versionCode: parseInt(ext.code || ext.versionCode || '1', 10) || 1,
+          iconUrl: ext.iconUrl || ext.resources?.iconUrl || `https://raw.githubusercontent.com/keiyoushi/extensions/main/icon/${pkgName}.png`,
+          apkName,
+          repoUrl: ext.repoUrl || baseRepoUrl,
+          isNsfw,
+          sources: ext.sources || [],
+        };
+      });
     }
   }
 
@@ -257,14 +276,15 @@ export class ExtensionManager {
     const apkPath = path.join(EXTENSIONS_DIR, `${pkgName}.apk`);
     if (fs.existsSync(apkPath)) fs.unlinkSync(apkPath);
 
-    // Remove sources from memory and DB
-    const sources = Array.from(this.loadedSources.entries())
-      .filter(([, s]) => (s as any)._pkgName === pkgName)
-      .map(([id]) => id);
+    // Remove sources from DB by pkgName
+    await prisma.source.deleteMany({ where: { pkgName } });
 
-    for (const id of sources) {
+    // Remove from loaded memory
+    const sourceIds = Array.from(this.loadedSources.entries())
+      .filter(([, s]) => (s as any).pkgName === pkgName || (s as any)._pkgName === pkgName)
+      .map(([id]) => id);
+    for (const id of sourceIds) {
       this.loadedSources.delete(id);
-      await prisma.source.deleteMany({ where: { id, pkgName } });
     }
 
     return { success: true };
