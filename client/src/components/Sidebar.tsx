@@ -41,7 +41,12 @@ export default function Sidebar({ collapsed, mobileOpen, onToggle }: SidebarProp
     <aside className={`sidebar${collapsed ? ' collapsed' : ''}${mobileOpen ? ' mobile-open' : ''}`}>
       {/* Logo */}
       <div className="sidebar-header">
-        <div className="sidebar-logo">黒</div>
+        <img 
+          src="/logo.png" 
+          alt="Kuroyomi" 
+          className="sidebar-logo" 
+          style={{ objectFit: 'contain', background: 'transparent', boxShadow: 'none' }} 
+        />
         <span className="sidebar-title">Kuroyomi</span>
       </div>
 
