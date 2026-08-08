@@ -68,6 +68,8 @@ export interface ExtensionInfo {
     id: string;
     name: string;
     lang: string;
+    language?: string;
     baseUrl: string;
+    homeUrl?: string;
   }>;
 }

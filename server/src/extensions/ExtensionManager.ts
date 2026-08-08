@@ -43,33 +43,60 @@ export class ExtensionManager {
       const configUrl = await prisma.serverConfig.findUnique({ where: { key: 'extensionRepoUrl' } });
       let repoUrl = configUrl?.value || REPO_URL;
 
-      // Auto-replace .pb or raw index to .min.json format
-      if (repoUrl.endsWith('index.pb')) {
-        repoUrl = repoUrl.replace('index.pb', 'index.min.json');
-      } else if (repoUrl.endsWith('/raw/repo/')) {
-        repoUrl = repoUrl + 'index.min.json';
+      // Handle keiyoushi direct page scraping / URL redirection
+      if (repoUrl.includes('keiyoushi.github.io/extensions')) {
+        repoUrl = 'https://raw.githubusercontent.com/keiyoushi/extensions/repo/index.json';
       }
 
-      const response = await axios.get(repoUrl, { timeout: 10000 });
+      // Auto-replace .pb, .min.json or raw index to index.json for Keiyoushi
+      if (repoUrl.includes('keiyoushi')) {
+        if (repoUrl.endsWith('index.pb') || repoUrl.endsWith('index.min.json')) {
+          repoUrl = repoUrl.replace(/index\.(pb|min\.json)$/, 'index.json');
+        } else if (repoUrl.endsWith('/raw/repo/')) {
+          repoUrl = repoUrl + 'index.json';
+        }
+      } else {
+        // Fallback for other repositories (Suwayomi, etc.)
+        if (repoUrl.endsWith('index.pb')) {
+          repoUrl = repoUrl.replace('index.pb', 'index.min.json');
+        } else if (repoUrl.endsWith('/raw/repo/')) {
+          repoUrl = repoUrl + 'index.min.json';
+        }
+      }
+
+      const response = await axios.get(repoUrl, { timeout: 30000 });
       const data = response.data;
 
-      // Extract base URL of the repository (directory containing index.min.json)
+      // Extract base URL of the repository (directory containing index file)
       const baseRepoUrl = repoUrl.substring(0, repoUrl.lastIndexOf('/'));
 
-      // Parse keiyoushi / suwayomi index format
-      if (Array.isArray(data)) {
-        this.availableExtensions = data.map((ext: any) => ({
-          pkgName: ext.pkg || ext.pkgName,
-          name: ext.name,
-          lang: ext.lang,
-          versionName: ext.version || '1.0',
-          versionCode: ext.code || 1,
-          iconUrl: ext.iconUrl || `https://raw.githubusercontent.com/keiyoushi/extensions/main/icon/${ext.pkg}.png`,
-          apkName: ext.apk,
-          repoUrl: ext.repoUrl || baseRepoUrl,
-          isNsfw: ext.nsfw || false,
-          sources: ext.sources || [],
-        }));
+      // Parse keiyoushi / suwayomi index formats
+      if (data && typeof data === 'object') {
+        let rawList: any[] = [];
+        if (Array.isArray(data)) {
+          rawList = data;
+        } else if (data.extensionList && Array.isArray(data.extensionList.extensions)) {
+          rawList = data.extensionList.extensions;
+        }
+
+        this.availableExtensions = rawList.map((ext: any) => {
+          const pkgName = ext.pkg || ext.pkgName || ext.packageName;
+          const apkName = ext.apk || (ext.resources?.apkUrl ? ext.resources.apkUrl.substring(ext.resources.apkUrl.lastIndexOf('/') + 1) : '');
+          const isNsfw = ext.nsfw === 1 || ext.nsfw === true || ext.contentWarning === 'CONTENT_WARNING_NSFW';
+
+          return {
+            pkgName,
+            name: ext.name,
+            lang: ext.lang || (ext.sources && ext.sources[0]?.language) || 'all',
+            versionName: ext.version || ext.versionName || '1.0',
+            versionCode: parseInt(ext.code || ext.versionCode || '1', 10) || 1,
+            iconUrl: ext.iconUrl || ext.resources?.iconUrl || `https://raw.githubusercontent.com/keiyoushi/extensions/main/icon/${pkgName}.png`,
+            apkName,
+            repoUrl: ext.repoUrl || baseRepoUrl,
+            isNsfw,
+            sources: ext.sources || [],
+          };
+        });
       }
     } catch (err) {
       console.error('[Extensions] Failed to fetch extension repo:', err);
@@ -84,21 +111,32 @@ export class ExtensionManager {
       if (fs.existsSync(jsPath)) {
         await this.loadExtensionFromFile(jsPath, ext.pkgName);
       }
+      // Sources registered from metadata are already in the DB
     }
   }
 
   private async loadExtensionFromFile(jsPath: string, pkgName: string) {
     try {
-      // Dynamic require for CommonJS modules
-      // Extensions are pre-packaged JS modules that export MangaSource instances
-      delete require.cache[require.resolve(jsPath)];
-      const module = require(jsPath);
+      // Read file content and transpile ESM to CJS if needed
+      let fileContent = fs.readFileSync(jsPath, 'utf8');
+      
+      // Convert ESM export default to module.exports if needed
+      if (fileContent.includes('export default') && !fileContent.includes('module.exports')) {
+        fileContent = fileContent.replace(/export\s+default\s+/g, 'module.exports = ');
+        fs.writeFileSync(jsPath, fileContent);
+      }
 
-      const sources: MangaSource[] = Array.isArray(module.default)
-        ? module.default
-        : module.default
-        ? [module.default]
-        : Object.values(module).filter((v: any) => v && typeof v.getPopularManga === 'function') as MangaSource[];
+      // Dynamic require for CommonJS modules
+      delete require.cache[require.resolve(jsPath)];
+      const mod = require(jsPath);
+
+      const sources: MangaSource[] = Array.isArray(mod)
+        ? mod
+        : mod.default
+        ? (Array.isArray(mod.default) ? mod.default : [mod.default])
+        : typeof mod === 'object' && mod.getPopularManga
+        ? [mod]
+        : Object.values(mod).filter((v: any) => v && typeof v.getPopularManga === 'function') as MangaSource[];
 
       for (const source of sources) {
         this.loadedSources.set(source.id, source);
@@ -113,6 +151,20 @@ export class ExtensionManager {
       console.log(`[Extensions] Loaded ${sources.length} source(s) from ${pkgName}`);
     } catch (err) {
       console.error(`[Extensions] Failed to load ${pkgName}:`, err);
+      
+      // Fallback: register source from extension metadata (index.json data)
+      const extInfo = this.availableExtensions.find(e => e.pkgName === pkgName);
+      if (extInfo && extInfo.sources && extInfo.sources.length > 0) {
+        for (const src of extInfo.sources) {
+          const sourceId = src.id || `${pkgName}-source`;
+          await prisma.source.upsert({
+            where: { id: sourceId },
+            update: { name: src.name || extInfo.name, lang: src.lang || src.language || extInfo.lang, iconUrl: extInfo.iconUrl, pkgName, baseUrl: src.baseUrl || src.homeUrl || '' },
+            create: { id: sourceId, name: src.name || extInfo.name, lang: src.lang || src.language || extInfo.lang, iconUrl: extInfo.iconUrl, pkgName, baseUrl: src.baseUrl || src.homeUrl || '' },
+          });
+          console.log(`[Extensions] Registered source "${src.name || extInfo.name}" from metadata for ${pkgName}`);
+        }
+      }
     }
   }
 
@@ -124,10 +176,10 @@ export class ExtensionManager {
 
       if (!extInfo.apkName) throw new Error('No download URL available for this extension');
 
-      // Resolve the download URL: Suwayomi stores APKs inside the 'apk/' subdirectory.
+      // Resolve the download URL: Keiyoushi and Suwayomi store APKs inside the 'apk/' subdirectory.
       let jsUrl = '';
       if (extInfo.repoUrl) {
-        if (extInfo.repoUrl.includes('suwayomi') && !extInfo.repoUrl.endsWith('/apk')) {
+        if ((extInfo.repoUrl.includes('suwayomi') || extInfo.repoUrl.includes('keiyoushi')) && !extInfo.repoUrl.endsWith('/apk')) {
           jsUrl = `${extInfo.repoUrl}/apk/${extInfo.apkName}`;
         } else {
           jsUrl = `${extInfo.repoUrl}/${extInfo.apkName}`;
@@ -139,6 +191,21 @@ export class ExtensionManager {
       const destPath = path.join(EXTENSIONS_DIR, `${pkgName}.apk`);
       const response = await axios.get(jsUrl, { responseType: 'arraybuffer', timeout: 60000 });
       fs.writeFileSync(destPath, Buffer.from(response.data));
+
+      // Register sources from extension metadata (index.json).
+      // Tachiyomi/Keiyoushi APKs contain compiled Android/Kotlin code, not JavaScript.
+      // We register the source info so it appears in Browse Sources.
+      if (extInfo.sources && extInfo.sources.length > 0) {
+        for (const src of extInfo.sources) {
+          const sourceId = src.id || `${pkgName}-source`;
+          await prisma.source.upsert({
+            where: { id: sourceId },
+            update: { name: src.name || extInfo.name, lang: src.lang || src.language || extInfo.lang, iconUrl: extInfo.iconUrl, pkgName, baseUrl: src.baseUrl || src.homeUrl || '' },
+            create: { id: sourceId, name: src.name || extInfo.name, lang: src.lang || src.language || extInfo.lang, iconUrl: extInfo.iconUrl, pkgName, baseUrl: src.baseUrl || src.homeUrl || '' },
+          });
+          console.log(`[Extensions] Registered source "${src.name || extInfo.name}" for ${pkgName}`);
+        }
+      }
 
       // Register in DB
       await prisma.extension.upsert({
