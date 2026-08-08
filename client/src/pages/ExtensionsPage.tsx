@@ -26,7 +26,7 @@ export default function ExtensionsPage() {
     return matchSearch && matchLang
   })
 
-  const langs = ['all', ...new Set(available?.map((e) => e.lang) || [])]
+  const langs = ['all', ...new Set(available?.map((e) => e.lang).filter((l) => l !== 'all') || [])]
 
   return (
     <div className="animate-fadeIn">
