@@ -184,7 +184,7 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({ onMangaSelect }) => {
                   backgroundColor: '#eee'
                 }}>
                   <img
-                    src={api.getMangaThumbnailUrl(manga.id)}
+                    src={api.getMangaThumbnailUrl(manga)}
                     alt={manga.title}
                     style={{
                       position: 'absolute',

@@ -22,6 +22,19 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
   const [hasNextPage, setHasNextPage] = useState(false);
   const [catalogLoading, setCatalogLoading] = useState(false);
 
+  // Extension search and filtering states
+  const [extSearchQuery, setExtSearchQuery] = useState('');
+  const [selectedLang, setSelectedLang] = useState('all');
+
+  const filteredExtensions = extensions.filter(ext => {
+    const matchesSearch = ext.name.toLowerCase().includes(extSearchQuery.toLowerCase()) || 
+                          ext.pkgName.toLowerCase().includes(extSearchQuery.toLowerCase());
+    const matchesLang = selectedLang === 'all' || ext.lang === selectedLang;
+    return matchesSearch && matchesLang;
+  });
+
+  const languages = ['all', ...Array.from(new Set(extensions.map(e => e.lang))).sort()];
+
   const loadInitialData = async () => {
     setLoading(true);
     try {
@@ -234,7 +247,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
                       backgroundColor: '#eee'
                     }}>
                       <img
-                        src={api.getMangaThumbnailUrl(manga.id)}
+                        src={api.getMangaThumbnailUrl(manga)}
                         alt={manga.title}
                         style={{
                           position: 'absolute',
@@ -391,8 +404,80 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
         </div>
       ) : (
         /* EXTENSIONS VIEW */
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          {extensions.map((ext) => (
+        <div>
+          {/* Extension Search and Language Filters */}
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1rem',
+            backgroundColor: 'var(--bg-card)',
+            border: '3px solid var(--border-color)',
+            boxShadow: '4px 4px 0px var(--border-color)',
+            borderRadius: '12px',
+            padding: '1.25rem',
+            marginBottom: '2rem'
+          }}>
+            {/* Search Input */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              background: 'var(--bg-color)',
+              border: '2px solid var(--border-color)',
+              borderRadius: '6px',
+              padding: '0.5rem 0.75rem',
+              width: '100%',
+              boxSizing: 'border-box'
+            }}>
+              <Search size={18} style={{ marginRight: '0.5rem', color: 'var(--muted-text)' }} />
+              <input
+                type="text"
+                placeholder="Search extensions (e.g. mangadex)..."
+                value={extSearchQuery}
+                onChange={(e) => setExtSearchQuery(e.target.value)}
+                style={{
+                  border: 'none',
+                  background: 'transparent',
+                  color: 'var(--text-color)',
+                  outline: 'none',
+                  fontWeight: 700,
+                  fontSize: '0.95rem',
+                  width: '100%',
+                  fontFamily: 'inherit'
+                }}
+              />
+            </div>
+
+            {/* Language filter pills */}
+            <div style={{
+              display: 'flex',
+              gap: '0.5rem',
+              overflowX: 'auto',
+              paddingBottom: '0.5rem',
+              whiteSpace: 'nowrap'
+            }}>
+              {languages.map(lang => (
+                <button
+                  key={lang}
+                  className="comic-btn"
+                  style={{
+                    padding: '0.3rem 0.8rem',
+                    fontSize: '0.8rem',
+                    backgroundColor: selectedLang === lang ? 'var(--retro-pink)' : 'var(--bg-color)',
+                    color: selectedLang === lang ? '#fff' : 'var(--text-color)',
+                    transform: 'none',
+                    boxShadow: selectedLang === lang ? '2px 2px 0px var(--border-color)' : 'none',
+                    border: '2px solid var(--border-color)'
+                  }}
+                  onClick={() => setSelectedLang(lang)}
+                >
+                  {lang.toUpperCase()}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            {filteredExtensions.map((ext) => (
             <div
               key={ext.pkgName}
               className="comic-box"
@@ -468,6 +553,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
               </div>
             </div>
           ))}
+          </div>
         </div>
       )}
     </div>

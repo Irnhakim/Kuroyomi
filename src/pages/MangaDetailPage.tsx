@@ -64,13 +64,13 @@ export const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
     }
   };
 
-  const toggleChapterRead = async (e: React.MouseEvent, chapterIndex: number, currentRead: boolean) => {
+  const toggleChapterRead = async (e: React.MouseEvent, chapterId: number, currentRead: boolean) => {
     e.stopPropagation(); // prevent opening the reader when clicking the eye button
     try {
-      await api.markChapterRead(mangaId, chapterIndex, !currentRead);
+      await api.markChapterRead(chapterId, !currentRead);
       // Update local state
-      setChapters(prev => prev.map((ch, idx) => {
-        if (idx === chapterIndex) {
+      setChapters(prev => prev.map((ch) => {
+        if (ch.id === chapterId) {
           return { ...ch, read: !currentRead };
         }
         return ch;
@@ -136,7 +136,7 @@ export const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
             backgroundColor: '#eee'
           }}>
             <img
-              src={api.getMangaThumbnailUrl(manga.id)}
+              src={api.getMangaThumbnailUrl(manga)}
               alt={manga.title}
               style={{
                 position: 'absolute',
@@ -236,10 +236,10 @@ export const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
             overflowY: 'auto',
             paddingRight: '0.5rem'
           }}>
-            {chapters.map((chapter, index) => (
+            {chapters.map((chapter) => (
               <div
                 key={chapter.id}
-                onClick={() => onChapterSelect(manga.id, index)}
+                onClick={() => onChapterSelect(manga.id, chapter.id)}
                 style={{
                   display: 'flex',
                   justifyContent: 'space-between',
@@ -280,7 +280,7 @@ export const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                     </span>
                   )}
                   <button
-                    onClick={(e) => toggleChapterRead(e, index, chapter.read)}
+                    onClick={(e) => toggleChapterRead(e, chapter.id, chapter.read)}
                     style={{
                       background: 'none',
                       border: 'none',

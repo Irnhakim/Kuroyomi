@@ -4,34 +4,47 @@ import { ArrowLeft, ChevronLeft, ChevronRight, LayoutList, BookOpen } from 'luci
 
 interface ReaderPageProps {
   mangaId: number;
-  chapterIndex: number;
+  chapterId: number;
   onBack: () => void;
-  onChapterChange: (index: number) => void;
-  totalChapters: number;
+  onChapterChange: (id: number) => void;
 }
 
 export const ReaderPage: React.FC<ReaderPageProps> = ({
   mangaId,
-  chapterIndex,
+  chapterId,
   onBack,
-  onChapterChange,
-  totalChapters
+  onChapterChange
 }) => {
   const [chapterInfo, setChapterInfo] = useState<any>(null);
+  const [pages, setPages] = useState<string[]>([]);
+  const [chapters, setChapters] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
   const [readingMode, setReadingMode] = useState<'single' | 'webtoon'>('single');
   const [hudVisible, setHudVisible] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const loadChapter = async () => {
+  const loadChapterAndPages = async () => {
     setLoading(true);
     try {
-      const info = await api.getChapterDetails(mangaId, chapterIndex);
+      const [info, pagesList, chaptersList, configs] = await Promise.all([
+        api.getChapterDetails(chapterId),
+        api.getPages(chapterId),
+        api.getMangaChapters(mangaId),
+        api.getSettings()
+      ]);
       setChapterInfo(info);
-      // Restore progress if lastPageRead exists
+      setPages(pagesList);
+      setChapters(chaptersList);
+      
+      if (configs.readerMode === 'webtoon') {
+        setReadingMode('webtoon');
+      } else {
+        setReadingMode('single');
+      }
+      
       if (info.lastPageRead && info.lastPageRead > 0) {
-        setCurrentPage(Math.min(info.lastPageRead, info.pageCount - 1));
+        setCurrentPage(Math.min(info.lastPageRead, pagesList.length - 1));
       } else {
         setCurrentPage(0);
       }
@@ -43,8 +56,8 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
   };
 
   useEffect(() => {
-    loadChapter();
-  }, [mangaId, chapterIndex]);
+    loadChapterAndPages();
+  }, [chapterId]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -58,38 +71,47 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentPage, chapterInfo, readingMode]);
+  }, [currentPage, pages, readingMode]);
 
-  // Mark read and save progress
+  // Save progress
   const saveProgress = async (pageIdx: number) => {
-    if (!chapterInfo) return;
     try {
-      const isLastPage = pageIdx === chapterInfo.pageCount - 1;
-      // Mark read if it's the last page
+      await api.updateProgress(chapterId, pageIdx);
+      const isLastPage = pageIdx === pages.length - 1;
       if (isLastPage) {
-        await api.markChapterRead(mangaId, chapterIndex, true);
+        await api.markChapterRead(chapterId, true);
       }
     } catch (e) {
       console.error(e);
     }
   };
 
+  // Navigate to adjacent chapters
+  const navigateToChapterOffset = (direction: 'next' | 'prev') => {
+    if (chapters.length === 0) return;
+    
+    // Sort chapters by sourceOrder (lower sourceOrder means earlier in the book)
+    const sorted = [...chapters].sort((a, b) => a.sourceOrder - b.sourceOrder);
+    const currentIndex = sorted.findIndex(ch => ch.id === chapterId);
+    
+    if (currentIndex === -1) return;
+    
+    let targetIndex = direction === 'next' ? currentIndex + 1 : currentIndex - 1;
+    if (targetIndex >= 0 && targetIndex < sorted.length) {
+      onChapterChange(sorted[targetIndex].id);
+    } else {
+      alert(direction === 'next' ? "You've reached the last chapter!" : "You are on the first chapter!");
+    }
+  };
+
   const handleNextPage = () => {
-    if (!chapterInfo) return;
-    if (currentPage < chapterInfo.pageCount - 1) {
+    if (currentPage < pages.length - 1) {
       const nextPage = currentPage + 1;
       setCurrentPage(nextPage);
       saveProgress(nextPage);
       window.scrollTo(0, 0);
     } else {
-      // Go to next chapter if available
-      if (chapterIndex > 0) { // In Suwayomi, chapterIndex decreases or increases based on sorting.
-        // Usually, 0 is the latest chapter (if sorted desc) or first.
-        // Let's prompt user or trigger index change
-        onChapterChange(chapterIndex - 1);
-      } else {
-        alert("You've reached the last chapter!");
-      }
+      navigateToChapterOffset('next');
     }
   };
 
@@ -100,11 +122,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
       saveProgress(prevPage);
       window.scrollTo(0, 0);
     } else {
-      if (chapterIndex < totalChapters - 1) {
-        onChapterChange(chapterIndex + 1);
-      } else {
-        alert("You are on the first chapter!");
-      }
+      navigateToChapterOffset('prev');
     }
   };
 
@@ -122,7 +140,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
     );
   }
 
-  if (!chapterInfo || chapterInfo.pageCount <= 0) {
+  if (pages.length === 0) {
     return (
       <div className="reader-container" style={{ justifyContent: 'center', height: '100vh', padding: 0 }}>
         <div className="comic-box" style={{ backgroundColor: 'var(--retro-pink)', color: '#fff', textAlign: 'center' }}>
@@ -167,16 +185,15 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
             </button>
             <div>
               <h4 style={{ margin: 0, fontWeight: 900, fontSize: '1rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '250px' }}>
-                {chapterInfo.name}
+                {chapterInfo?.name}
               </h4>
               <span className="comic-sticker sticker-purple" style={{ fontSize: '0.6rem', transform: 'none', marginTop: '0.2rem' }}>
-                PAGE {readingMode === 'single' ? `${currentPage + 1} / ${chapterInfo.pageCount}` : `LONG STRIP`}
+                PAGE {readingMode === 'single' ? `${currentPage + 1} / ${pages.length}` : `LONG STRIP`}
               </span>
             </div>
           </div>
 
           <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-            {/* Reading Mode Selector */}
             <button
               className={`comic-btn ${readingMode === 'single' ? 'comic-btn-yellow' : 'comic-btn-white'}`}
               style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}
@@ -214,22 +231,19 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
         {readingMode === 'single' ? (
           /* SINGLE PAGE MODE */
           <div style={{ position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', maxWidth: '850px' }} onClick={(e) => e.stopPropagation()}>
-            {/* Left Nav Tap hotspot */}
             <div 
               style={{ position: 'absolute', left: 0, top: 0, width: '25%', height: '100%', zIndex: 10, cursor: 'w-resize' }}
               onClick={handlePrevPage}
             />
 
-            {/* Comic Image */}
             <img
-              src={api.getPageImageUrl(mangaId, chapterIndex, currentPage)}
+              src={api.getPageImageUrl(pages[currentPage])}
               alt={`Page ${currentPage + 1}`}
               className="reader-img"
               style={{ userSelect: 'none' }}
               onClick={toggleHud}
             />
 
-            {/* Right Nav Tap hotspot */}
             <div 
               style={{ position: 'absolute', right: 0, top: 0, width: '25%', height: '100%', zIndex: 10, cursor: 'e-resize' }}
               onClick={handleNextPage}
@@ -238,10 +252,10 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
         ) : (
           /* WEBTOON MODE */
           <div className="reader-webtoon-container" onClick={(e) => e.stopPropagation()}>
-            {Array.from({ length: chapterInfo.pageCount }).map((_, idx) => (
+            {pages.map((url, idx) => (
               <img
                 key={idx}
-                src={api.getPageImageUrl(mangaId, chapterIndex, idx)}
+                src={api.getPageImageUrl(url)}
                 alt={`Page ${idx + 1}`}
                 className="reader-webtoon-img"
                 loading="lazy"
@@ -252,7 +266,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
         )}
       </div>
 
-      {/* Floating Bottom Navigator for Single Mode */}
+      {/* Floating Bottom Navigator */}
       {readingMode === 'single' && hudVisible && (
         <div style={{
           position: 'fixed',
@@ -274,7 +288,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
           </button>
           
           <span style={{ fontWeight: 900, color: 'var(--text-color)', fontSize: '1rem' }}>
-            {currentPage + 1} / {chapterInfo.pageCount}
+            {currentPage + 1} / {pages.length}
           </span>
 
           <button className="comic-btn comic-btn-white" style={{ padding: '0.4rem 0.8rem', borderRadius: '50%' }} onClick={handleNextPage}>

@@ -1,4 +1,5 @@
-const BASE_URL = 'http://localhost:4567/api/v1';
+const BASE_URL = 'http://localhost:3001/api/trpc';
+const SERVER_ORIGIN = 'http://localhost:3001';
 
 export interface Extension {
   name: string;
@@ -7,8 +8,7 @@ export interface Extension {
   versionCode: number;
   lang: string;
   isNsfw: boolean;
-  hasSubdirectory: boolean;
-  status: 'INSTALLED' | 'AVAILABLE' | 'UNTRUSTED';
+  status: 'INSTALLED' | 'AVAILABLE';
   iconUrl?: string;
 }
 
@@ -45,7 +45,7 @@ export interface Chapter {
   lastPageRead: number;
   dateUpload: number;
   sourceOrder: number;
-  downloadStatus: string;
+  downloaded: boolean;
 }
 
 export interface Category {
@@ -54,133 +54,304 @@ export interface Category {
   order: number;
 }
 
+// Helpers for tRPC SuperJSON serialization/deserialization over HTTP
+async function trpcQuery(path: string, input?: any) {
+  let url = `${BASE_URL}/${path}`;
+  if (input !== undefined) {
+    url += `?input=${encodeURIComponent(JSON.stringify(input))}`;
+  }
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`tRPC Query Error: ${res.statusText}`);
+  const json = await res.json();
+  return json.result.data.json;
+}
+
+async function trpcMutation(path: string, input?: any) {
+  const res = await fetch(`${BASE_URL}/${path}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ json: input ?? null }),
+  });
+  if (!res.ok) throw new Error(`tRPC Mutation Error: ${res.statusText}`);
+  const json = await res.json();
+  return json.result.data.json;
+}
+
+// Proxy URL for image assets
+const getProxyUrl = (url: string) => {
+  if (!url) return '';
+  if (url.startsWith('/data/') || url.startsWith('data/')) {
+    return `${SERVER_ORIGIN}${url.startsWith('/') ? '' : '/'}${url}`;
+  }
+  return `${SERVER_ORIGIN}/api/proxy?url=${encodeURIComponent(url)}`;
+};
+
 export const api = {
-  // Base URLs for static assets or images
-  getMangaThumbnailUrl: (mangaId: number) => `${BASE_URL}/manga/${mangaId}/thumbnail`,
-  getExtensionIconUrl: (pkgName: string) => `${BASE_URL}/extension/icon/${pkgName}`,
-  getPageImageUrl: (mangaId: number, chapterIndex: number, pageIndex: number) => 
-    `${BASE_URL}/manga/${mangaId}/chapter/${chapterIndex}/page/${pageIndex}`,
+  // Asset URLs
+  getMangaThumbnailUrl: (manga: Manga) => getProxyUrl(manga.thumbnailUrl),
+  getExtensionIconUrl: (pkgName: string) => `https://raw.githubusercontent.com/keiyoushi/extensions/repo/icon/${pkgName}.png`,
+  getPageImageUrl: (pageUrl: string) => getProxyUrl(pageUrl),
 
   // Extension API
   getExtensions: async (): Promise<Extension[]> => {
-    const res = await fetch(`${BASE_URL}/extension/list`);
-    return res.json();
+    // Merge installed and available
+    const [installed, available]: [any[], any[]] = await Promise.all([
+      trpcQuery('extension.installed'),
+      trpcQuery('extension.available')
+    ]);
+    
+    const allExts: Extension[] = [
+      ...installed.map(e => ({
+        name: e.name,
+        pkgName: e.pkgName,
+        versionName: e.versionName,
+        versionCode: e.versionCode,
+        lang: e.lang,
+        isNsfw: e.isNsfw,
+        status: 'INSTALLED' as const,
+        iconUrl: e.iconUrl
+      })),
+      ...available
+        .filter(av => !installed.some(ins => ins.pkgName === av.pkgName))
+        .map(e => ({
+          name: e.name,
+          pkgName: e.pkgName,
+          versionName: e.versionName,
+          versionCode: e.versionCode,
+          lang: e.lang,
+          isNsfw: e.isNsfw,
+          status: 'AVAILABLE' as const,
+          iconUrl: e.iconUrl
+        }))
+    ];
+    return allExts;
   },
+  
   installExtension: async (pkgName: string): Promise<void> => {
-    await fetch(`${BASE_URL}/extension/install/${pkgName}`);
+    await trpcMutation('extension.install', { pkgName });
   },
+  
   uninstallExtension: async (pkgName: string): Promise<void> => {
-    await fetch(`${BASE_URL}/extension/uninstall/${pkgName}`);
+    await trpcMutation('extension.uninstall', { pkgName });
   },
 
   // Sources API
   getSources: async (): Promise<Source[]> => {
-    const res = await fetch(`${BASE_URL}/source/list`);
-    return res.json();
+    const list: any[] = await trpcQuery('source.all');
+    return list.map(s => ({
+      id: s.id,
+      name: s.name,
+      lang: s.lang,
+      supportsLatest: true,
+      isConfigurable: false
+    }));
   },
-  getSourcePopular: async (sourceId: string, pageNum: number): Promise<{ mangas: Manga[]; hasNextPage: boolean }> => {
-    const res = await fetch(`${BASE_URL}/source/${sourceId}/popular/${pageNum}`);
-    const data = await res.json();
-    // Suwayomi API returns { "mangas": [...], "hasNextPage": boolean }
+  
+  getSourcePopular: async (sourceId: string, page: number): Promise<{ mangas: Manga[]; hasNextPage: boolean }> => {
+    const data = await trpcQuery('source.popular', { sourceId, page });
+    // tRPC returns { mangas: [...], hasNextPage: boolean }
+    const mangasMapped = (data.mangas || []).map((m: any) => ({
+      id: m.id ?? 0,
+      url: m.url,
+      title: m.title,
+      artist: m.artist,
+      author: m.author,
+      description: m.description,
+      genre: m.genre ? m.genre.split(',').map((s: string) => s.trim()) : [],
+      status: m.status === 1 ? 'ONGOING' : m.status === 2 ? 'COMPLETED' : 'UNKNOWN',
+      thumbnailUrl: m.thumbnailUrl ?? '',
+      initialized: m.initialized ?? false,
+      inLibrary: m.inLibrary ?? false,
+      sourceId: m.sourceId
+    }));
     return {
-      mangas: data.mangas || data || [],
-      hasNextPage: data.hasNextPage ?? false,
+      mangas: mangasMapped,
+      hasNextPage: data.hasNextPage ?? false
     };
   },
-  getSourceLatest: async (sourceId: string, pageNum: number): Promise<{ mangas: Manga[]; hasNextPage: boolean }> => {
-    const res = await fetch(`${BASE_URL}/source/${sourceId}/latest/${pageNum}`);
-    const data = await res.json();
+
+  getSourceLatest: async (sourceId: string, page: number): Promise<{ mangas: Manga[]; hasNextPage: boolean }> => {
+    const data = await trpcQuery('source.latest', { sourceId, page });
+    const mangasMapped = (data.mangas || []).map((m: any) => ({
+      id: m.id ?? 0,
+      url: m.url,
+      title: m.title,
+      artist: m.artist,
+      author: m.author,
+      description: m.description,
+      genre: m.genre ? m.genre.split(',').map((s: string) => s.trim()) : [],
+      status: m.status === 1 ? 'ONGOING' : m.status === 2 ? 'COMPLETED' : 'UNKNOWN',
+      thumbnailUrl: m.thumbnailUrl ?? '',
+      initialized: m.initialized ?? false,
+      inLibrary: m.inLibrary ?? false,
+      sourceId: m.sourceId
+    }));
     return {
-      mangas: data.mangas || data || [],
-      hasNextPage: data.hasNextPage ?? false,
+      mangas: mangasMapped,
+      hasNextPage: data.hasNextPage ?? false
     };
   },
-  searchSource: async (sourceId: string, query: string, pageNum: number): Promise<{ mangas: Manga[]; hasNextPage: boolean }> => {
-    // Suwayomi search endpoints can be GET or POST.
-    // GET /api/v1/source/{sourceId}/search?query={query}&pageNum={pageNum}
-    const res = await fetch(`${BASE_URL}/source/${sourceId}/search?query=${encodeURIComponent(query)}&pageNum=${pageNum}`);
-    const data = await res.json();
+
+  searchSource: async (sourceId: string, query: string, page: number): Promise<{ mangas: Manga[]; hasNextPage: boolean }> => {
+    const data = await trpcQuery('source.search', { sourceId, query, page });
+    const mangasMapped = (data.mangas || []).map((m: any) => ({
+      id: m.id ?? 0,
+      url: m.url,
+      title: m.title,
+      artist: m.artist,
+      author: m.author,
+      description: m.description,
+      genre: m.genre ? m.genre.split(',').map((s: string) => s.trim()) : [],
+      status: m.status === 1 ? 'ONGOING' : m.status === 2 ? 'COMPLETED' : 'UNKNOWN',
+      thumbnailUrl: m.thumbnailUrl ?? '',
+      initialized: m.initialized ?? false,
+      inLibrary: m.inLibrary ?? false,
+      sourceId: m.sourceId
+    }));
     return {
-      mangas: data.mangas || data || [],
-      hasNextPage: data.hasNextPage ?? false,
+      mangas: mangasMapped,
+      hasNextPage: data.hasNextPage ?? false
     };
   },
 
   // Manga Details
   getMangaDetails: async (mangaId: number): Promise<Manga> => {
-    const res = await fetch(`${BASE_URL}/manga/${mangaId}`);
-    return res.json();
+    const m = await trpcQuery('manga.byId', { id: mangaId });
+    return {
+      id: m.id,
+      url: m.url,
+      title: m.title,
+      artist: m.artist,
+      author: m.author,
+      description: m.description,
+      genre: m.genre ? m.genre.split(',').map((s: string) => s.trim()) : [],
+      status: m.status === 1 ? 'ONGOING' : m.status === 2 ? 'COMPLETED' : 'UNKNOWN',
+      thumbnailUrl: m.thumbnailUrl ?? '',
+      initialized: m.initialized,
+      inLibrary: m.inLibrary,
+      sourceId: m.sourceId
+    };
   },
+  
   getMangaDetailsFull: async (mangaId: number): Promise<Manga> => {
-    const res = await fetch(`${BASE_URL}/manga/${mangaId}/full`);
-    return res.json();
+    // 1. Trigger details fetch from source
+    await trpcMutation('manga.fetchDetails', { mangaId });
+    // 2. Load latest details
+    return api.getMangaDetails(mangaId);
   },
+  
   getMangaChapters: async (mangaId: number): Promise<Chapter[]> => {
-    const res = await fetch(`${BASE_URL}/manga/${mangaId}/chapters`);
-    return res.json();
+    // 1. Fetch from source to get latest chapters
+    await trpcMutation('chapter.fetchFromSource', { mangaId });
+    // 2. Query chapters database
+    const list: any[] = await trpcQuery('chapter.byMangaId', { mangaId });
+    return list.map(ch => ({
+      id: ch.id,
+      url: ch.url,
+      name: ch.name,
+      chapterNumber: ch.chapterNumber,
+      read: ch.isRead,
+      bookmark: ch.isBookmarked,
+      lastPageRead: ch.lastPageRead,
+      dateUpload: ch.dateUpload ? new Date(ch.dateUpload).getTime() : 0,
+      sourceOrder: ch.sourceOrder,
+      downloaded: ch.isDownloaded
+    }));
   },
 
   // Library actions
   addToLibrary: async (mangaId: number): Promise<void> => {
-    await fetch(`${BASE_URL}/manga/${mangaId}/library`);
+    await trpcMutation('manga.addToLibrary', { mangaId });
   },
+  
   removeFromLibrary: async (mangaId: number): Promise<void> => {
-    await fetch(`${BASE_URL}/manga/${mangaId}/library`, { method: 'DELETE' });
+    await trpcMutation('manga.removeFromLibrary', { mangaId });
   },
 
   // Categories & Library Management
   getCategories: async (): Promise<Category[]> => {
-    const res = await fetch(`${BASE_URL}/category`);
-    return res.json();
-  },
-  getCategoryMangas: async (categoryId: number): Promise<Manga[]> => {
-    const res = await fetch(`${BASE_URL}/category/${categoryId}`);
-    return res.json();
+    const list: any[] = await trpcQuery('category.all');
+    return list.map(c => ({
+      id: c.id,
+      name: c.name,
+      order: c.order
+    }));
   },
   
-  // Custom API wrapper for all library mangas
-  // Since Suwayomi retrieves library mangas via category index, category id -1 is default/all
+  getCategoryMangas: async (categoryId: number): Promise<Manga[]> => {
+    const list: any[] = await trpcQuery('manga.library', { categoryId });
+    return list.map(m => ({
+      id: m.id,
+      url: m.url,
+      title: m.title,
+      artist: m.artist,
+      author: m.author,
+      description: m.description,
+      genre: m.genre ? m.genre.split(',').map((s: string) => s.trim()) : [],
+      status: m.status === 1 ? 'ONGOING' : m.status === 2 ? 'COMPLETED' : 'UNKNOWN',
+      thumbnailUrl: m.thumbnailUrl ?? '',
+      initialized: m.initialized,
+      inLibrary: m.inLibrary,
+      sourceId: m.sourceId
+    }));
+  },
+  
   getLibrary: async (): Promise<Manga[]> => {
-    // We can fetch category -1 (which stands for default/all in Suwayomi) or list categories and merge
-    try {
-      const res = await fetch(`${BASE_URL}/category/-1`);
-      if (res.ok) {
-        return res.json();
-      }
-    } catch (e) {
-      console.error("Failed to load category -1, trying default endpoints", e);
-    }
-    // Fallback to fetch categories and read each
-    const categories = await api.getCategories();
-    let allManga: Manga[] = [];
-    const seenIds = new Set<number>();
-    
-    for (const cat of categories) {
-      try {
-        const mangas = await api.getCategoryMangas(cat.id);
-        for (const m of mangas) {
-          if (!seenIds.has(m.id)) {
-            seenIds.add(m.id);
-            allManga.push(m);
-          }
-        }
-      } catch (err) {
-        console.error(`Failed to load category ${cat.name}`, err);
-      }
-    }
-    return allManga;
+    const list: any[] = await trpcQuery('manga.library');
+    return list.map(m => ({
+      id: m.id,
+      url: m.url,
+      title: m.title,
+      artist: m.artist,
+      author: m.author,
+      description: m.description,
+      genre: m.genre ? m.genre.split(',').map((s: string) => s.trim()) : [],
+      status: m.status === 1 ? 'ONGOING' : m.status === 2 ? 'COMPLETED' : 'UNKNOWN',
+      thumbnailUrl: m.thumbnailUrl ?? '',
+      initialized: m.initialized,
+      inLibrary: m.inLibrary,
+      sourceId: m.sourceId
+    }));
   },
 
-  // Chapter details / Pages
-  getChapterDetails: async (mangaId: number, chapterIndex: number): Promise<any> => {
-    const res = await fetch(`${BASE_URL}/manga/${mangaId}/chapter/${chapterIndex}`);
-    return res.json();
+  // Chapter details & reading pages
+  getChapterDetails: async (chapterId: number): Promise<any> => {
+    const ch = await trpcQuery('chapter.byId', { id: chapterId });
+    return {
+      id: ch.id,
+      name: ch.name,
+      chapterNumber: ch.chapterNumber,
+      lastPageRead: ch.lastPageRead,
+      pageCount: ch.pageCount
+    };
   },
-  markChapterRead: async (mangaId: number, chapterIndex: number, read: boolean): Promise<void> => {
-    await fetch(`${BASE_URL}/manga/${mangaId}/chapter/${chapterIndex}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ read })
-    });
+
+  getPages: async (chapterId: number): Promise<string[]> => {
+    // Resolves pages list `{ index: number, url: string }[]` from source
+    const pagesList: any[] = await trpcQuery('chapter.pages', { chapterId });
+    // Return array of proxy URLs or raw URLs
+    return pagesList.sort((a, b) => a.index - b.index).map(p => p.url);
+  },
+  
+  markChapterRead: async (chapterId: number, read: boolean): Promise<void> => {
+    await trpcMutation('chapter.markRead', { chapterId, read });
+  },
+
+  updateProgress: async (chapterId: number, page: number): Promise<void> => {
+    await trpcMutation('chapter.updateProgress', { chapterId, page });
+  },
+
+  getSettings: async (): Promise<Record<string, string>> => {
+    return trpcQuery('settings.all');
+  },
+
+  updateSetting: async (key: string, value: string): Promise<void> => {
+    await trpcMutation('settings.set', { key, value });
+  },
+
+  updateSettings: async (settings: Record<string, string>): Promise<void> => {
+    await trpcMutation('settings.setMany', settings);
   }
 };

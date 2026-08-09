@@ -17,7 +17,7 @@ export default function App() {
   
   // Reader selection
   const [readerMangaId, setReaderMangaId] = useState<number | null>(null);
-  const [readerChapterIndex, setReaderChapterIndex] = useState<number | null>(null);
+  const [readerChapterId, setReaderChapterId] = useState<number | null>(null);
 
   // Initialize theme from localStorage or system preference
   useEffect(() => {
@@ -45,9 +45,9 @@ export default function App() {
     setActivePage('manga-detail');
   };
 
-  const handleChapterSelect = (mangaId: number, chapterIndex: number) => {
+  const handleChapterSelect = (mangaId: number, chapterId: number) => {
     setReaderMangaId(mangaId);
-    setReaderChapterIndex(chapterIndex);
+    setReaderChapterId(chapterId);
     setActivePage('reader');
   };
 
@@ -68,13 +68,12 @@ export default function App() {
           <LibraryPage onMangaSelect={handleMangaSelect} />
         );
       case 'reader':
-        return readerMangaId !== null && readerChapterIndex !== null ? (
+        return readerMangaId !== null && readerChapterId !== null ? (
           <ReaderPage
             mangaId={readerMangaId}
-            chapterIndex={readerChapterIndex}
+            chapterId={readerChapterId}
             onBack={() => setActivePage('manga-detail')}
-            onChapterChange={(idx) => setReaderChapterIndex(idx)}
-            totalChapters={100} // Simple limit fallback
+            onChapterChange={(id) => setReaderChapterId(id)}
           />
         ) : (
           <LibraryPage onMangaSelect={handleMangaSelect} />
