@@ -22,3 +22,15 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Gradle & Java server build files
+server/.gradle/
+server/build/
+server/*/build/
+server/local.properties
+server/server.conf
+server/data/
+server/db/
+server/out/
+server/.idea/
+server/*.log

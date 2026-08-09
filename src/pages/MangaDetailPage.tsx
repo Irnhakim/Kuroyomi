@@ -67,7 +67,7 @@ export const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
   const toggleChapterRead = async (e: React.MouseEvent, chapterId: number, currentRead: boolean) => {
     e.stopPropagation(); // prevent opening the reader when clicking the eye button
     try {
-      await api.markChapterRead(chapterId, !currentRead);
+      await api.markChapterRead(mangaId, chapterId, !currentRead);
       // Update local state
       setChapters(prev => prev.map((ch) => {
         if (ch.id === chapterId) {
