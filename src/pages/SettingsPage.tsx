@@ -18,10 +18,10 @@ export const SettingsPage: React.FC = () => {
     setLoading(true);
     try {
       // Check server health
-      const res = await fetch('http://localhost:3001/api/health');
+      const res = await fetch('http://localhost:4567/api/v1/meta');
       if (res.ok) {
         const data = await res.json();
-        setServerVersion(data.version || 'v1.0.0');
+        setServerVersion(data.version || 'v0.6.x');
         setStatus('online');
         
         // Fetch all configs from server
@@ -215,7 +215,7 @@ export const SettingsPage: React.FC = () => {
                   Status: {status === 'online' ? 'ONLINE' : 'OFFLINE'}
                 </p>
                 <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--muted-text)', fontWeight: 700 }}>
-                  http://localhost:3001
+                  http://localhost:4567
                 </p>
               </div>
             </div>
@@ -224,7 +224,7 @@ export const SettingsPage: React.FC = () => {
               <strong>Server Version:</strong> {serverVersion}
             </p>
             <p style={{ fontWeight: 600, fontSize: '0.95rem', margin: '0.5rem 0' }}>
-              <strong>Server Port:</strong> 3001 (Default)
+              <strong>Server Port:</strong> 4567 (Default)
             </p>
 
             <button className="comic-btn comic-btn-yellow" style={{ marginTop: '1rem' }} onClick={loadSettingsAndStatus} disabled={loading}>

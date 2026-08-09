@@ -1,24 +1,24 @@
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700;900&display=swap');
 
 :root {
-  /* Color system - Light mode (Faded Comic Paper/Newsprint) */
-  --bg-color: #f4edd8;
-  --bg-card: #fdfaf2;
+  /* Color system - Light mode (Logo-aligned warm pulp paper) */
+  --bg-color: #f5eedc;
+  --bg-card: #fbf9f3;
   --text-color: #2b2520;
   --border-color: #2b2520;
   --shadow-color: #2b2520;
   
-  /* Vintage / Faded Retro Colors */
+  /* Vintage / Faded Retro Colors (Aligned with logo #e7bf53) */
   --retro-yellow: #e7bf53;
-  --retro-pink: #d17887;
-  --retro-teal: #78a69a;
-  --retro-purple: #9082a6;
-  --retro-orange: #d68965;
-  --retro-blue: #6d8ba6;
+  --retro-pink: #d95f52;    /* Softer coral/red */
+  --retro-teal: #5a8f7c;    /* Soft sage/teal */
+  --retro-purple: #7d6b8d;  /* Muted vintage purple */
+  --retro-orange: #e59a59;  /* Soft retro orange */
+  --retro-blue: #5c7c8c;    /* Dusty blue */
   
   --muted-text: #70655c;
-  --card-shadow: 6px 6px 0px var(--shadow-color);
-  --btn-shadow: 4px 4px 0px var(--shadow-color);
+  --card-shadow: 5px 5px 0px var(--shadow-color);
+  --btn-shadow: 3px 3px 0px var(--shadow-color);
   --border-width: 3px;
   
   font-family: 'Space Grotesk', system-ui, sans-serif;
@@ -30,24 +30,24 @@
 }
 
 [data-theme="dark"] {
-  /* Color system - Dark mode (Warm Charcoal Paper) */
-  --bg-color: #211d1a;
-  --bg-card: #2d2824;
-  --text-color: #eee7da;
-  --border-color: #eee7da;
-  --shadow-color: #eee7da;
+  /* Color system - Dark mode (Warm Charcoal Paper with comic outlines) */
+  --bg-color: #201b18;      /* Deep logo-based charcoal */
+  --bg-card: #2e2723;       /* Slightly lighter charcoal */
+  --text-color: #f5eedc;     /* Soft pulp text */
+  --border-color: #0e0b0a;   /* Solid black ink outlines */
+  --shadow-color: #0e0b0a;   /* Solid black ink shadows */
   
-  /* Vintage Retro Colors for Dark mode */
-  --retro-yellow: #cca13c;
-  --retro-pink: #b85d6e;
-  --retro-teal: #5c8b7f;
-  --retro-purple: #75688a;
-  --retro-orange: #b96b48;
-  --retro-blue: #53738e;
+  /* Vintage Retro Colors for Dark mode (Slightly adjusted for contrast) */
+  --retro-yellow: #e7bf53;
+  --retro-pink: #ca5245;
+  --retro-teal: #4b7868;
+  --retro-purple: #6a5879;
+  --retro-orange: #cb8446;
+  --retro-blue: #4a6775;
   
-  --muted-text: #a2968a;
-  --card-shadow: 6px 6px 0px var(--shadow-color);
-  --btn-shadow: 4px 4px 0px var(--shadow-color);
+  --muted-text: #96867a;
+  --card-shadow: 5px 5px 0px var(--shadow-color);
+  --btn-shadow: 3px 3px 0px var(--shadow-color);
 }
 
 body {

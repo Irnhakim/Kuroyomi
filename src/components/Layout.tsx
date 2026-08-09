@@ -34,9 +34,6 @@ export const Layout: React.FC<LayoutProps> = ({
         {/* Logo and Brand */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer' }} onClick={() => setActiveTab('library')}>
           <img src="/logo.png" alt="Kuroyomi" style={{ height: '42px' }} />
-          <div className="comic-sticker sticker-pink" style={{ fontSize: '0.65rem' }}>
-            NATIVE BETA
-          </div>
         </div>
 
         {/* Desktop Navigation & Actions */}
@@ -143,20 +140,13 @@ export const Layout: React.FC<LayoutProps> = ({
       <footer style={{
         borderTop: '3px solid var(--border-color)',
         backgroundColor: 'var(--bg-card)',
-        padding: '1.5rem',
+        padding: '1.25rem',
         textAlign: 'center',
         marginTop: 'auto'
       }}>
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', flexDirection: 'column' }}>
-          <p style={{ margin: 0, fontWeight: 700 }}>
-            KUROYOMI • Powered by Suwayomi Server
-          </p>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <span className="comic-sticker sticker-teal">Neo-Brutalist</span>
-            <span className="comic-sticker sticker-yellow">Playful Retro</span>
-            <span className="comic-sticker sticker-purple">Offline First</span>
-          </div>
-        </div>
+        <p style={{ margin: 0, fontWeight: 800, fontSize: '0.9rem', color: 'var(--text-color)' }}>
+          KUROYOMI © 2026 • Powered by Suwayomi Server
+        </p>
       </footer>
     </div>
   );
