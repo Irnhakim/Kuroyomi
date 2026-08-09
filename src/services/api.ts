@@ -197,22 +197,22 @@ export const api = {
   },
 
   // Settings Management (LocalStorage for frontend specs + GraphQL for backend specs)
-  getSettings: async (): Promise<Record<string, string>> => {
+  getSettings: async (): Promise<Record<string, any>> => {
     const localReaderMode = localStorage.getItem('readerMode') || 'paged-ltr';
     const localTheme = localStorage.getItem('theme') || 'light';
     
-    let extensionRepoUrl = 'https://raw.githubusercontent.com/keiyoushi/extensions/main/index.min.json';
+    let extensionRepoUrls: string[] = [];
     try {
       const data = await graphqlRequest(`
         query {
-          settings {
-            extensionRepos
+          extensionStores {
+            nodes {
+              indexUrl
+            }
           }
         }
       `);
-      if (data?.settings?.extensionRepos?.length > 0) {
-        extensionRepoUrl = data.settings.extensionRepos[0];
-      }
+      extensionRepoUrls = (data?.extensionStores?.nodes || []).map((n: any) => n.indexUrl);
     } catch (e) {
       console.warn("Failed to load repo settings from GraphQL", e);
     }
@@ -220,32 +220,38 @@ export const api = {
     return {
       readerMode: localReaderMode,
       theme: localTheme,
-      extensionRepoUrl
+      extensionRepoUrls
     };
   },
 
   updateSettings: async (settings: Record<string, string>): Promise<void> => {
     if (settings.readerMode) localStorage.setItem('readerMode', settings.readerMode);
     if (settings.theme) localStorage.setItem('theme', settings.theme);
-    
-    if (settings.extensionRepoUrl) {
-      const query = `
-        mutation($input: SetSettingsInput!) {
-          setSettings(input: $input) {
-            settings {
-              extensionRepos
-            }
+  },
+
+  addExtensionStore: async (url: string): Promise<void> => {
+    await graphqlRequest(`
+      mutation($input: AddExtensionStoreInput!) {
+        addExtensionStore(input: $input) {
+          extensionStore {
+            indexUrl
           }
         }
-      `;
-      const variables = {
-        input: {
-          settings: {
-            extensionRepos: [settings.extensionRepoUrl]
-          }
+      }
+    `, {
+      input: { indexUrl: url }
+    });
+  },
+
+  removeExtensionStore: async (url: string): Promise<void> => {
+    await graphqlRequest(`
+      mutation($input: RemoveExtensionStoreInput!) {
+        removeExtensionStore(input: $input) {
+          clientMutationId
         }
-      };
-      await graphqlRequest(query, variables);
-    }
+      }
+    `, {
+      input: { indexUrl: url }
+    });
   }
 };

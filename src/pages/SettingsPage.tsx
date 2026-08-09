@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
-import { RefreshCw, Save, CheckCircle } from 'lucide-react';
+import { RefreshCw, Save, CheckCircle, Trash2, Plus } from 'lucide-react';
 
 export const SettingsPage: React.FC = () => {
   const [serverVersion, setServerVersion] = useState<string>('Unknown');
@@ -10,9 +10,12 @@ export const SettingsPage: React.FC = () => {
   // Settings states
   const [readerMode, setReaderMode] = useState<string>('paged-ltr');
   const [theme, setTheme] = useState<string>('light');
-  const [repoUrl, setRepoUrl] = useState<string>('');
+  const [repoUrls, setRepoUrls] = useState<string[]>([]);
+  const [newRepoUrl, setNewRepoUrl] = useState<string>('');
+  
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
 
   const loadSettingsAndStatus = async () => {
     setLoading(true);
@@ -28,7 +31,7 @@ export const SettingsPage: React.FC = () => {
         const configs = await api.getSettings();
         setReaderMode(configs.readerMode || 'paged-ltr');
         setTheme(configs.theme || 'light');
-        setRepoUrl(configs.extensionRepoUrl || '');
+        setRepoUrls(configs.extensionRepoUrls || []);
       } else {
         setStatus('offline');
       }
@@ -43,15 +46,14 @@ export const SettingsPage: React.FC = () => {
     loadSettingsAndStatus();
   }, []);
 
-  const handleSaveSettings = async (e: React.FormEvent) => {
+  const handleSaveGeneralSettings = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     setSaveSuccess(false);
     try {
       await api.updateSettings({
         readerMode,
-        theme,
-        extensionRepoUrl: repoUrl
+        theme
       });
       
       // Instantly apply theme in DOM
@@ -62,9 +64,39 @@ export const SettingsPage: React.FC = () => {
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err) {
       console.error("Failed to save settings", err);
-      alert("Failed to save settings to backend.");
+      alert("Failed to save settings to browser.");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleAddRepo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newRepoUrl.trim()) return;
+    setActionLoading(true);
+    try {
+      await api.addExtensionStore(newRepoUrl.trim());
+      setRepoUrls(prev => [...prev, newRepoUrl.trim()]);
+      setNewRepoUrl('');
+    } catch (err) {
+      console.error("Failed to add extension store", err);
+      alert("Failed to add repository. Make sure the URL is a valid index.json or index.pb path.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleRemoveRepo = async (url: string) => {
+    if (!confirm("Are you sure you want to remove this extension repository?")) return;
+    setActionLoading(true);
+    try {
+      await api.removeExtensionStore(url);
+      setRepoUrls(prev => prev.filter(item => item !== url));
+    } catch (err) {
+      console.error("Failed to remove extension store", err);
+      alert("Failed to remove repository.");
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -80,77 +112,149 @@ export const SettingsPage: React.FC = () => {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2rem' }}>
-        {/* Configurations Form */}
-        <div className="comic-box" style={{ gridColumn: 'span 2' }}>
-          <h2 style={{ margin: '0 0 1.5rem 0', fontWeight: 900, textTransform: 'uppercase', fontSize: '1.4rem' }}>
-            Reading & General Settings
-          </h2>
+        {/* Configurations Forms Container */}
+        <div style={{ gridColumn: 'span 2', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+          
+          {/* General settings box */}
+          <div className="comic-box">
+            <h2 style={{ margin: '0 0 1.5rem 0', fontWeight: 900, textTransform: 'uppercase', fontSize: '1.4rem' }}>
+              Reading & General Settings
+            </h2>
 
-          <form onSubmit={handleSaveSettings} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            {/* Reading Mode */}
-            <div>
-              <label style={{ display: 'block', fontWeight: 800, marginBottom: '0.5rem', textTransform: 'uppercase', fontSize: '0.9rem' }}>
-                Mode Baca Default
-              </label>
-              <select
-                value={readerMode}
-                onChange={(e) => setReaderMode(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  border: '3px solid var(--border-color)',
-                  borderRadius: '8px',
-                  backgroundColor: 'var(--bg-card)',
-                  color: 'var(--text-color)',
-                  fontFamily: 'inherit',
-                  fontWeight: 700,
-                  outline: 'none',
-                  boxShadow: '3px 3px 0px var(--border-color)'
-                }}
-              >
-                <option value="paged-ltr">Single Page (Halaman demi Halaman)</option>
-                <option value="webtoon">Webtoon (Scroll Vertikal)</option>
-              </select>
+            <form onSubmit={handleSaveGeneralSettings} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              {/* Reading Mode */}
+              <div>
+                <label style={{ display: 'block', fontWeight: 800, marginBottom: '0.5rem', textTransform: 'uppercase', fontSize: '0.9rem' }}>
+                  Mode Baca Default
+                </label>
+                <select
+                  value={readerMode}
+                  onChange={(e) => setReaderMode(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '3px solid var(--border-color)',
+                    borderRadius: '8px',
+                    backgroundColor: 'var(--bg-card)',
+                    color: 'var(--text-color)',
+                    fontFamily: 'inherit',
+                    fontWeight: 700,
+                    outline: 'none',
+                    boxShadow: '3px 3px 0px var(--border-color)'
+                  }}
+                >
+                  <option value="paged-ltr">Single Page (Halaman demi Halaman)</option>
+                  <option value="webtoon">Webtoon (Scroll Vertikal)</option>
+                </select>
+              </div>
+
+              {/* Theme */}
+              <div>
+                <label style={{ display: 'block', fontWeight: 800, marginBottom: '0.5rem', textTransform: 'uppercase', fontSize: '0.9rem' }}>
+                  Tema Aplikasi (Theme)
+                </label>
+                <select
+                  value={theme}
+                  onChange={(e) => setTheme(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '3px solid var(--border-color)',
+                    borderRadius: '8px',
+                    backgroundColor: 'var(--bg-card)',
+                    color: 'var(--text-color)',
+                    fontFamily: 'inherit',
+                    fontWeight: 700,
+                    outline: 'none',
+                    boxShadow: '3px 3px 0px var(--border-color)'
+                  }}
+                >
+                  <option value="light">Light Mode (Tokyo Night Day)</option>
+                  <option value="dark">Dark Mode (Tokyo Night Classic)</option>
+                </select>
+              </div>
+
+              {/* Actions */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '1rem' }}>
+                <button type="submit" className="comic-btn comic-btn-pink" disabled={saving}>
+                  <Save size={18} />
+                  {saving ? 'Saving...' : 'Save Configurations'}
+                </button>
+                
+                {saveSuccess && (
+                  <span className="comic-sticker sticker-teal" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', padding: '0.4rem 0.8rem', transform: 'none' }}>
+                    <CheckCircle size={16} /> Saved Successfully!
+                  </span>
+                )}
+              </div>
+            </form>
+          </div>
+
+          {/* Extension repositories settings box */}
+          <div className="comic-box">
+            <h2 style={{ margin: '0 0 1rem 0', fontWeight: 900, textTransform: 'uppercase', fontSize: '1.4rem' }}>
+              Extension Repositories ({repoUrls.length})
+            </h2>
+            <p style={{ margin: '0 0 1.5rem 0', fontSize: '0.9rem', color: 'var(--muted-text)', fontWeight: 600 }}>
+              Add one or more extension stores to download more sources (e.g. Keiyoushi).
+            </p>
+
+            {/* Repos list */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '2rem' }}>
+              {repoUrls.length === 0 ? (
+                <p style={{ fontStyle: 'italic', fontWeight: 600, color: 'var(--muted-text)', margin: 0 }}>
+                  No custom repositories added. Standard/bundled sources only.
+                </p>
+              ) : (
+                repoUrls.map((url, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: '0.75rem 1rem',
+                      border: '2px solid var(--border-color)',
+                      borderRadius: '8px',
+                      backgroundColor: 'var(--bg-color)',
+                      boxShadow: '2px 2px 0px var(--border-color)'
+                    }}
+                  >
+                    <span style={{ fontWeight: 700, fontSize: '0.9rem', wordBreak: 'break-all', paddingRight: '1rem' }}>
+                      {url}
+                    </span>
+                    <button
+                      className="comic-btn"
+                      onClick={() => handleRemoveRepo(url)}
+                      disabled={actionLoading}
+                      style={{
+                        padding: '0.4rem 0.6rem',
+                        backgroundColor: 'var(--retro-pink)',
+                        color: '#fff',
+                        border: '2px solid var(--border-color)',
+                        transform: 'none',
+                        boxShadow: 'none'
+                      }}
+                      title="Remove Repository"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                ))
+              )}
             </div>
 
-            {/* Theme */}
-            <div>
-              <label style={{ display: 'block', fontWeight: 800, marginBottom: '0.5rem', textTransform: 'uppercase', fontSize: '0.9rem' }}>
-                Tema Aplikasi (Theme)
-              </label>
-              <select
-                value={theme}
-                onChange={(e) => setTheme(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  border: '3px solid var(--border-color)',
-                  borderRadius: '8px',
-                  backgroundColor: 'var(--bg-card)',
-                  color: 'var(--text-color)',
-                  fontFamily: 'inherit',
-                  fontWeight: 700,
-                  outline: 'none',
-                  boxShadow: '3px 3px 0px var(--border-color)'
-                }}
-              >
-                <option value="light">Light Mode (Kertas Komik Buram)</option>
-                <option value="dark">Dark Mode (Warm Charcoal Paper)</option>
-              </select>
-            </div>
-
-            {/* Extension Repository URL */}
-            <div>
-              <label style={{ display: 'block', fontWeight: 800, marginBottom: '0.5rem', textTransform: 'uppercase', fontSize: '0.9rem' }}>
-                Repositori Ekstensi URL
-              </label>
+            {/* Add new repo form */}
+            <form onSubmit={handleAddRepo} style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
               <input
                 type="text"
-                value={repoUrl}
-                onChange={(e) => setRepoUrl(e.target.value)}
-                placeholder="https://raw.githubusercontent.com/..."
+                value={newRepoUrl}
+                onChange={(e) => setNewRepoUrl(e.target.value)}
+                placeholder="Enter repository index URL (e.g., https://...)"
+                disabled={actionLoading}
                 style={{
-                  width: '100%',
+                  flex: 1,
+                  minWidth: '240px',
                   padding: '0.75rem',
                   border: '3px solid var(--border-color)',
                   borderRadius: '8px',
@@ -163,25 +267,21 @@ export const SettingsPage: React.FC = () => {
                   boxSizing: 'border-box'
                 }}
               />
-              <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.8rem', color: 'var(--muted-text)', fontWeight: 700 }}>
-                Default: https://raw.githubusercontent.com/keiyoushi/extensions/main/index.min.json
-              </p>
-            </div>
-
-            {/* Actions */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '1rem' }}>
-              <button type="submit" className="comic-btn comic-btn-pink" disabled={saving}>
-                <Save size={18} />
-                {saving ? 'Saving...' : 'Save Configurations'}
+              <button
+                type="submit"
+                className="comic-btn comic-btn-yellow"
+                disabled={actionLoading || !newRepoUrl.trim()}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+              >
+                <Plus size={18} />
+                Add Repository
               </button>
-              
-              {saveSuccess && (
-                <span className="comic-sticker sticker-teal" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', padding: '0.4rem 0.8rem', transform: 'none' }}>
-                  <CheckCircle size={16} /> Saved Successfully!
-                </span>
-              )}
-            </div>
-          </form>
+            </form>
+            <p style={{ margin: '0.75rem 0 0 0', fontSize: '0.75rem', color: 'var(--muted-text)', fontWeight: 700 }}>
+              Keiyoushi Repo: https://raw.githubusercontent.com/keiyoushi/extensions/repo/index.min.json
+            </p>
+          </div>
+
         </div>
 
         {/* Server Status and Info */}

@@ -86,8 +86,16 @@ object ExtensionStoreService {
             }
         } catch (e: Exception) {
             if (e is CancellationException) throw e
-            logger.error(e) { "Failed to fetch extension store '$indexUrl'" }
-            throw e
+            logger.error(e) { "Failed to fetch extension store '$indexUrl' - using offline fallback" }
+            ExtensionStore(
+                indexUrl = indexUrl,
+                name = indexUrl.substringAfterLast("/").substringBefore("?").ifBlank { "Custom Store" },
+                badgeLabel = "Custom",
+                signingKey = "",
+                contact = ExtensionStore.Contact("", null),
+                isLegacy = indexUrl.endsWith(".json") || indexUrl.contains(".json"),
+                extensionListUrl = indexUrl
+            )
         }
     }
 
