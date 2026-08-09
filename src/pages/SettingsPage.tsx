@@ -21,7 +21,9 @@ export const SettingsPage: React.FC = () => {
     setLoading(true);
     try {
       // Check server health
-      const res = await fetch('http://localhost:4567/api/v1/meta');
+      const isDev = window.location.port === '5173' || window.location.port === '5174';
+      const serverOrigin = isDev ? 'http://localhost:4567' : window.location.origin;
+      const res = await fetch(`${serverOrigin}/api/v1/meta`);
       if (res.ok) {
         const data = await res.json();
         setServerVersion(data.version || 'v0.6.x');

@@ -1,5 +1,8 @@
-const BASE_URL = 'http://localhost:4567/api/v1';
-const GRAPHQL_URL = 'http://localhost:4567/graphql';
+const isDev = window.location.port === '5173' || window.location.port === '5174';
+const SERVER_ORIGIN = isDev ? 'http://localhost:4567' : window.location.origin;
+
+const BASE_URL = `${SERVER_ORIGIN}/api/v1`;
+const GRAPHQL_URL = `${SERVER_ORIGIN}/graphql`;
 
 export interface Extension {
   name: string;
