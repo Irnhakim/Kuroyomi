@@ -1,0 +1,244 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700;900&display=swap');
+
+:root {
+  /* Color system - Light mode */
+  --bg-color: #fffdec;
+  --bg-card: #ffffff;
+  --text-color: #1a1a1a;
+  --border-color: #1a1a1a;
+  --shadow-color: #1a1a1a;
+  
+  /* Saturated Retro Colors */
+  --retro-yellow: #ffde43;
+  --retro-pink: #ff6097;
+  --retro-teal: #3de6c4;
+  --retro-purple: #9c67ff;
+  --retro-orange: #ff8533;
+  --retro-blue: #3b82f6;
+  
+  --muted-text: #666666;
+  --card-shadow: 6px 6px 0px var(--shadow-color);
+  --btn-shadow: 4px 4px 0px var(--shadow-color);
+  --border-width: 3px;
+  
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  margin: 0;
+  padding: 0;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+[data-theme="dark"] {
+  /* Color system - Dark mode */
+  --bg-color: #141416;
+  --bg-card: #202024;
+  --text-color: #f7f7f7;
+  --border-color: #f7f7f7;
+  --shadow-color: #f7f7f7;
+  
+  /* Saturated Retro Colors for Dark mode (slightly adjusted for contrast) */
+  --retro-yellow: #ffd51a;
+  --retro-pink: #ff528c;
+  --retro-teal: #1cd4b0;
+  --retro-purple: #8547ff;
+  --retro-orange: #ff7315;
+  --retro-blue: #2563eb;
+  
+  --muted-text: #aaaaaa;
+  --card-shadow: 6px 6px 0px var(--shadow-color);
+  --btn-shadow: 4px 4px 0px var(--shadow-color);
+}
+
+body {
+  margin: 0;
+  overflow-x: hidden;
+}
+
+/* Comic-style borders and boxes */
+.comic-box {
+  background: var(--bg-card);
+  border: var(--border-width) solid var(--border-color);
+  box-shadow: var(--card-shadow);
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s ease;
+  position: relative;
+}
+
+.comic-box-interactive:hover {
+  transform: translate(-4px, -4px);
+  box-shadow: 10px 10px 0px var(--shadow-color);
+  cursor: pointer;
+}
+
+/* Buttons */
+.comic-btn {
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.75rem 1.5rem;
+  border: var(--border-width) solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: var(--btn-shadow);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+  user-select: none;
+}
+
+.comic-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0px var(--shadow-color);
+}
+
+.comic-btn-yellow { background: var(--retro-yellow); color: #1a1a1a; }
+.comic-btn-pink { background: var(--retro-pink); color: #ffffff; }
+.comic-btn-teal { background: var(--retro-teal); color: #1a1a1a; }
+.comic-btn-purple { background: var(--retro-purple); color: #ffffff; }
+.comic-btn-orange { background: var(--retro-orange); color: #ffffff; }
+.comic-btn-white { background: var(--bg-card); color: var(--text-color); }
+
+/* Badge / Sticker elements */
+.comic-sticker {
+  font-weight: 900;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  padding: 0.25rem 0.6rem;
+  border: 2px solid var(--border-color);
+  border-radius: 4px;
+  display: inline-block;
+  transform: rotate(-2deg);
+  box-shadow: 2px 2px 0px var(--shadow-color);
+}
+
+.sticker-yellow { background: var(--retro-yellow); color: #1a1a1a; }
+.sticker-pink { background: var(--retro-pink); color: #ffffff; }
+.sticker-teal { background: var(--retro-teal); color: #1a1a1a; }
+.sticker-purple { background: var(--retro-purple); color: #ffffff; }
+
+/* Grid / Layout helper */
+.comic-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 2rem;
+  padding: 1rem;
+}
+
+/* Custom speech bubbles */
+.speech-bubble {
+  position: relative;
+  background: var(--bg-card);
+  border: 3px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 4px 4px 0px var(--shadow-color);
+}
+
+.speech-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -15px;
+  left: 20px;
+  border-width: 15px 15px 0;
+  border-style: solid;
+  border-color: var(--border-color) transparent;
+  display: block;
+  width: 0;
+}
+
+.speech-bubble::before {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 22px;
+  border-width: 12px 12px 0;
+  border-style: solid;
+  border-color: var(--bg-card) transparent;
+  display: block;
+  width: 0;
+  z-index: 1;
+}
+
+/* Navigation link layout */
+.nav-tab {
+  padding: 0.75rem 1.25rem;
+  font-weight: 700;
+  font-size: 1.1rem;
+  border-bottom: var(--border-width) solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.nav-tab.active {
+  border-bottom-color: var(--retro-pink);
+  transform: scale(1.05);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-color);
+  border-left: 2px solid var(--border-color);
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--retro-yellow);
+  border-radius: 6px;
+  border: 3px solid var(--bg-color);
+}
+
+/* Full height container */
+.app-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.main-content {
+  flex: 1;
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Reader Page Specific Styles */
+.reader-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #000000;
+  min-height: 100vh;
+  padding-bottom: 5rem;
+}
+
+.reader-img {
+  max-width: 100%;
+  height: auto;
+  border: 4px solid #ffffff;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  margin-bottom: 1rem;
+}
+
+.reader-webtoon-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 800px;
+}
+
+.reader-webtoon-img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
