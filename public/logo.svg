@@ -1,21 +1,21 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" width="200" height="60">
   <!-- Retro Shadow -->
-  <rect x="8" y="8" width="180" height="42" rx="8" fill="#1a1a1a" />
+  <rect x="8" y="8" width="180" height="42" rx="8" fill="#2b2520" />
   
   <!-- Main Box -->
-  <rect x="4" y="4" width="180" height="42" rx="8" fill="#ffde43" stroke="#1a1a1a" stroke-width="3" />
+  <rect x="4" y="4" width="180" height="42" rx="8" fill="#e7bf53" stroke="#2b2520" stroke-width="3" />
   
   <!-- Little decorative speech bubble pointer on the side -->
-  <path d="M 30 46 L 36 54 L 42 46 Z" fill="#ffde43" stroke="#1a1a1a" stroke-width="3" stroke-linejoin="round" />
+  <path d="M 30 46 L 36 54 L 42 46 Z" fill="#e7bf53" stroke="#2b2520" stroke-width="3" stroke-linejoin="round" />
   <!-- Cover up the border overlap -->
-  <path d="M 31 45 L 41 45" stroke="#ffde43" stroke-width="4" />
+  <path d="M 31 45 L 41 45" stroke="#e7bf53" stroke-width="4" />
 
   <!-- App Title Text -->
-  <text x="94" y="32" font-family="'Space Grotesk', system-ui, sans-serif" font-weight="900" font-size="22" fill="#1a1a1a" text-anchor="middle" letter-spacing="1">
+  <text x="94" y="32" font-family="'Space Grotesk', system-ui, sans-serif" font-weight="900" font-size="22" fill="#2b2520" text-anchor="middle" letter-spacing="1">
     KUROYOMI
   </text>
   
   <!-- Retro comic sparkles/lines -->
-  <path d="M 160 14 L 166 8" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round" />
-  <path d="M 164 20 L 172 18" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round" />
+  <path d="M 160 14 L 166 8" stroke="#2b2520" stroke-width="2" stroke-linecap="round" />
+  <path d="M 164 20 L 172 18" stroke="#2b2520" stroke-width="2" stroke-linecap="round" />
 </svg>

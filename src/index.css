@@ -1,22 +1,22 @@
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700;900&display=swap');
 
 :root {
-  /* Color system - Light mode */
-  --bg-color: #fffdec;
-  --bg-card: #ffffff;
-  --text-color: #1a1a1a;
-  --border-color: #1a1a1a;
-  --shadow-color: #1a1a1a;
+  /* Color system - Light mode (Faded Comic Paper/Newsprint) */
+  --bg-color: #f4edd8;
+  --bg-card: #fdfaf2;
+  --text-color: #2b2520;
+  --border-color: #2b2520;
+  --shadow-color: #2b2520;
   
-  /* Saturated Retro Colors */
-  --retro-yellow: #ffde43;
-  --retro-pink: #ff6097;
-  --retro-teal: #3de6c4;
-  --retro-purple: #9c67ff;
-  --retro-orange: #ff8533;
-  --retro-blue: #3b82f6;
+  /* Vintage / Faded Retro Colors */
+  --retro-yellow: #e7bf53;
+  --retro-pink: #d17887;
+  --retro-teal: #78a69a;
+  --retro-purple: #9082a6;
+  --retro-orange: #d68965;
+  --retro-blue: #6d8ba6;
   
-  --muted-text: #666666;
+  --muted-text: #70655c;
   --card-shadow: 6px 6px 0px var(--shadow-color);
   --btn-shadow: 4px 4px 0px var(--shadow-color);
   --border-width: 3px;
@@ -30,22 +30,22 @@
 }
 
 [data-theme="dark"] {
-  /* Color system - Dark mode */
-  --bg-color: #141416;
-  --bg-card: #202024;
-  --text-color: #f7f7f7;
-  --border-color: #f7f7f7;
-  --shadow-color: #f7f7f7;
+  /* Color system - Dark mode (Warm Charcoal Paper) */
+  --bg-color: #211d1a;
+  --bg-card: #2d2824;
+  --text-color: #eee7da;
+  --border-color: #eee7da;
+  --shadow-color: #eee7da;
   
-  /* Saturated Retro Colors for Dark mode (slightly adjusted for contrast) */
-  --retro-yellow: #ffd51a;
-  --retro-pink: #ff528c;
-  --retro-teal: #1cd4b0;
-  --retro-purple: #8547ff;
-  --retro-orange: #ff7315;
-  --retro-blue: #2563eb;
+  /* Vintage Retro Colors for Dark mode */
+  --retro-yellow: #cca13c;
+  --retro-pink: #b85d6e;
+  --retro-teal: #5c8b7f;
+  --retro-purple: #75688a;
+  --retro-orange: #b96b48;
+  --retro-blue: #53738e;
   
-  --muted-text: #aaaaaa;
+  --muted-text: #a2968a;
   --card-shadow: 6px 6px 0px var(--shadow-color);
   --btn-shadow: 4px 4px 0px var(--shadow-color);
 }
@@ -241,4 +241,113 @@ body {
   width: 100%;
   height: auto;
   display: block;
+}
+
+/* Responsive Layout Utilities */
+.desktop-nav {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: var(--bg-card);
+  border-top: 3px solid var(--border-color);
+  z-index: 100;
+  justify-content: space-around;
+  padding: 0.5rem 0;
+  box-shadow: 0 -4px 10px rgba(0,0,0,0.05);
+}
+
+.bottom-nav-btn {
+  background: none;
+  border: none;
+  color: var(--text-color);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 0.8rem;
+  padding: 0.5rem;
+  cursor: pointer;
+  width: 25%;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.bottom-nav-btn.active {
+  color: var(--retro-pink);
+  transform: scale(1.1);
+}
+
+/* Screen Size Media Queries */
+@media (max-width: 767px) {
+  .desktop-nav {
+    display: none; /* Hide header text nav links */
+  }
+  
+  .bottom-nav {
+    display: flex; /* Show mobile bottom navbar */
+  }
+
+  .main-content {
+    padding: 1rem;
+    padding-bottom: 5.5rem; /* Add spacing so bottom navbar doesn't cover content */
+  }
+
+  h1 {
+    font-size: 2.2rem !important; /* Scale down giant headers */
+  }
+
+  .comic-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); /* Fit 2 cards per row on mobile */
+    gap: 1rem;
+    padding: 0.25rem;
+  }
+
+  .comic-box {
+    padding: 0.5rem;
+  }
+
+  .comic-box h3 {
+    font-size: 0.9rem !important;
+    height: 2rem !important;
+  }
+
+  /* Adjust detail view headers on mobile */
+  .manga-detail-header {
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+    gap: 1.5rem !important;
+  }
+
+  .manga-detail-cover {
+    max-width: 200px !important;
+  }
+}
+
+/* Micro-animations and states */
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+.loading-skeleton {
+  animation: pulse 1.5s infinite ease-in-out;
+  background-color: var(--muted-text);
+  opacity: 0.2;
+}
+
+/* Interactive elements feedback */
+.comic-box-interactive:active {
+  transform: scale(0.97) rotate(0deg) !important;
+  box-shadow: 2px 2px 0px var(--shadow-color) !important;
 }

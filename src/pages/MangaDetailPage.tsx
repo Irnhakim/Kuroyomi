@@ -111,7 +111,7 @@ export const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
       </button>
 
       {/* Comic Book Header Info */}
-      <div style={{
+      <div className="manga-detail-header" style={{
         display: 'flex',
         gap: '2.5rem',
         flexWrap: 'wrap',
@@ -119,7 +119,7 @@ export const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
         alignItems: 'flex-start'
       }}>
         {/* Cover Art Box */}
-        <div className="comic-box" style={{
+        <div className="comic-box manga-detail-cover" style={{
           padding: '0.75rem',
           transform: 'rotate(-1.5deg)',
           maxWidth: '300px',
