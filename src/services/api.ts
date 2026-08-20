@@ -15,6 +15,7 @@ export interface Extension {
   isNsfw: boolean;
   status: 'INSTALLED' | 'AVAILABLE';
   iconUrl?: string;
+  installed?: boolean;
 }
 
 export interface Source {
@@ -112,22 +113,28 @@ export const api = {
   },
 
   installExtension: async (pkgName: string): Promise<void> => {
+    // 1. Check if the extension is already installed on the backend server
+    const resList = await fetch(`${BASE_URL}/extension/list`);
+    if (resList.ok) {
+      const serverExts: Extension[] = await resList.json();
+      const match = serverExts.find(e => e.pkgName === pkgName);
+      if (match && match.installed) {
+        const installedSet = getUserInstalledExtensions();
+        installedSet.add(pkgName);
+        saveUserInstalledExtensions(installedSet);
+        return;
+      }
+    }
+
+    // 2. Otherwise call backend to install
     const res = await fetch(`${BASE_URL}/extension/install/${pkgName}`);
-    let alreadyInstalled = false;
     if (!res.ok) {
       let msg = `Gagal menginstal ekstensi (${res.status})`;
       try {
         const text = await res.text();
-        if (text) {
-          msg = text;
-          if (text.includes("already installed")) {
-            alreadyInstalled = true;
-          }
-        }
+        if (text) msg = text;
       } catch (_) {}
-      if (!alreadyInstalled) {
-        throw new Error(msg);
-      }
+      throw new Error(msg);
     }
     const installedSet = getUserInstalledExtensions();
     installedSet.add(pkgName);
@@ -196,7 +203,7 @@ export const api = {
       throw new Error(msg);
     }
     const data = await res.json();
-    const mangas: Manga[] = data.mangas || data || [];
+    const mangas: Manga[] = data.mangaList || data.mangas || (Array.isArray(data) ? data : []);
 
     // Overlay user library status
     const prefix = getUserPrefix();
@@ -226,7 +233,7 @@ export const api = {
       throw new Error(msg);
     }
     const data = await res.json();
-    const mangas: Manga[] = data.mangas || data || [];
+    const mangas: Manga[] = data.mangaList || data.mangas || (Array.isArray(data) ? data : []);
 
     // Overlay user library status
     const prefix = getUserPrefix();
@@ -256,7 +263,7 @@ export const api = {
       throw new Error(msg);
     }
     const data = await res.json();
-    const mangas: Manga[] = data.mangas || data || [];
+    const mangas: Manga[] = data.mangaList || data.mangas || (Array.isArray(data) ? data : []);
 
     // Overlay user library status
     const prefix = getUserPrefix();
