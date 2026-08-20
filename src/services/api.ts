@@ -92,6 +92,29 @@ const saveUserInstalledExtensions = (exts: Set<string>) => {
   localStorage.setItem(`${prefix}_installed_extensions`, JSON.stringify(Array.from(exts)));
 };
 
+export const syncUserDataToServer = async (): Promise<void> => {
+  const user = auth.getCurrentUser();
+  if (!user) return;
+  const key = user.toLowerCase();
+  const data = {
+    library: localStorage.getItem(`kuroyomi_user_${key}_library`),
+    progress: localStorage.getItem(`kuroyomi_user_${key}_progress`),
+    categories: localStorage.getItem(`kuroyomi_user_${key}_categories`),
+    settings: localStorage.getItem(`kuroyomi_user_${key}_settings`),
+    installed_extensions: localStorage.getItem(`kuroyomi_user_${key}_installed_extensions`),
+    manga_categories: localStorage.getItem(`kuroyomi_user_${key}_manga_categories`),
+  };
+  try {
+    await fetch(`${BASE_URL}/kuroyomi/user/${key}/data`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+  } catch (e) {
+    console.warn("Failed to sync user data to server", e);
+  }
+};
+
 export const api = {
   // Asset URLs directly connecting to Suwayomi REST endpoints
   getMangaThumbnailUrl: (manga: Manga) => `${BASE_URL}/manga/${manga.id}/thumbnail`,
@@ -122,6 +145,7 @@ export const api = {
         const installedSet = getUserInstalledExtensions();
         installedSet.add(pkgName);
         saveUserInstalledExtensions(installedSet);
+        await syncUserDataToServer();
         return;
       }
     }
@@ -139,6 +163,7 @@ export const api = {
     const installedSet = getUserInstalledExtensions();
     installedSet.add(pkgName);
     saveUserInstalledExtensions(installedSet);
+    await syncUserDataToServer();
   },
 
   uninstallExtension: async (pkgName: string): Promise<void> => {
@@ -147,7 +172,18 @@ export const api = {
     saveUserInstalledExtensions(installedSet);
 
     // Check if other users are using it
-    const usernames = auth.getRegisteredUsernames();
+    let usernames: string[] = [];
+    try {
+      const res = await fetch(`${BASE_URL}/kuroyomi/users`);
+      if (res.ok) {
+        const usersObj = await res.json();
+        usernames = Object.values(usersObj).map((u: any) => u.username);
+      }
+    } catch (e) {
+      console.warn("Failed to fetch usernames from server during uninstall check, using local fallback", e);
+      usernames = auth.getRegisteredUsernames();
+    }
+
     const currentUsername = auth.getCurrentUser()?.toLowerCase();
     const otherUsersHaveIt = usernames.some(uname => {
       const lowerUname = uname.toLowerCase();
@@ -172,6 +208,7 @@ export const api = {
         throw new Error(msg);
       }
     }
+    await syncUserDataToServer();
   },
 
   // Sources API
