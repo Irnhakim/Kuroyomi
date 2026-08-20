@@ -33,4 +33,12 @@ server/data/
 server/db/
 server/out/
 server/.idea/
-server/*.log
+server/*.log 
+
+# Claude settings
+.claude
+.claude/*
+
+#freebuf
+.freebuf
+.freebuf/*

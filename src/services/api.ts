@@ -1,3 +1,5 @@
+import { auth } from './auth';
+
 const isDev = window.location.port === '5173' || window.location.port === '5174';
 const SERVER_ORIGIN = isDev ? 'http://localhost:4567' : window.location.origin;
 
@@ -21,6 +23,7 @@ export interface Source {
   lang: string;
   supportsLatest: boolean;
   isConfigurable: boolean;
+  iconUrl?: string;
 }
 
 export interface Manga {
@@ -70,56 +73,204 @@ async function graphqlRequest(query: string, variables?: any) {
   return json.data;
 }
 
+// Helper to get localstorage key prefix for current user
+const getUserPrefix = () => {
+  const user = auth.getCurrentUser();
+  return user ? `kuroyomi_user_${user.toLowerCase()}` : 'kuroyomi_guest';
+};
+
+// Helper for user-isolated extensions
+const getUserInstalledExtensions = (): Set<string> => {
+  const prefix = getUserPrefix();
+  const val = localStorage.getItem(`${prefix}_installed_extensions`);
+  return new Set(val ? JSON.parse(val) : []);
+};
+
+const saveUserInstalledExtensions = (exts: Set<string>) => {
+  const prefix = getUserPrefix();
+  localStorage.setItem(`${prefix}_installed_extensions`, JSON.stringify(Array.from(exts)));
+};
+
 export const api = {
   // Asset URLs directly connecting to Suwayomi REST endpoints
   getMangaThumbnailUrl: (manga: Manga) => `${BASE_URL}/manga/${manga.id}/thumbnail`,
   getExtensionIconUrl: (pkgName: string) => `${BASE_URL}/extension/icon/${pkgName}`,
-  getPageImageUrl: (mangaId: number, chapterIndex: number, pageIndex: number) => 
+  getPageImageUrl: (mangaId: number, chapterIndex: number, pageIndex: number) =>
     `${BASE_URL}/manga/${mangaId}/chapter/${chapterIndex}/page/${pageIndex}`,
 
   // Extension API
   getExtensions: async (): Promise<Extension[]> => {
     const res = await fetch(`${BASE_URL}/extension/list`);
-    return res.json();
+    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+    const exts: Extension[] = await res.json();
+    const installedSet = getUserInstalledExtensions();
+
+    return exts.map(ext => ({
+      ...ext,
+      status: installedSet.has(ext.pkgName) ? 'INSTALLED' : 'AVAILABLE'
+    }));
   },
-  
+
   installExtension: async (pkgName: string): Promise<void> => {
-    await fetch(`${BASE_URL}/extension/install/${pkgName}`);
+    const res = await fetch(`${BASE_URL}/extension/install/${pkgName}`);
+    let alreadyInstalled = false;
+    if (!res.ok) {
+      let msg = `Gagal menginstal ekstensi (${res.status})`;
+      try {
+        const text = await res.text();
+        if (text) {
+          msg = text;
+          if (text.includes("already installed")) {
+            alreadyInstalled = true;
+          }
+        }
+      } catch (_) {}
+      if (!alreadyInstalled) {
+        throw new Error(msg);
+      }
+    }
+    const installedSet = getUserInstalledExtensions();
+    installedSet.add(pkgName);
+    saveUserInstalledExtensions(installedSet);
   },
-  
+
   uninstallExtension: async (pkgName: string): Promise<void> => {
-    await fetch(`${BASE_URL}/extension/uninstall/${pkgName}`);
+    const installedSet = getUserInstalledExtensions();
+    installedSet.delete(pkgName);
+    saveUserInstalledExtensions(installedSet);
+
+    // Check if other users are using it
+    const usernames = auth.getRegisteredUsernames();
+    const currentUsername = auth.getCurrentUser()?.toLowerCase();
+    const otherUsersHaveIt = usernames.some(uname => {
+      const lowerUname = uname.toLowerCase();
+      if (lowerUname === currentUsername) return false;
+      const key = `kuroyomi_user_${lowerUname}_installed_extensions`;
+      const val = localStorage.getItem(key);
+      if (val) {
+        const list: string[] = JSON.parse(val);
+        return list.includes(pkgName);
+      }
+      return false;
+    });
+
+    if (!otherUsersHaveIt) {
+      const res = await fetch(`${BASE_URL}/extension/uninstall/${pkgName}`);
+      if (!res.ok) {
+        let msg = `Gagal menghapus ekstensi (${res.status})`;
+        try {
+          const text = await res.text();
+          if (text) msg = text;
+        } catch (_) {}
+        throw new Error(msg);
+      }
+    }
   },
 
   // Sources API
   getSources: async (): Promise<Source[]> => {
     const res = await fetch(`${BASE_URL}/source/list`);
-    return res.json();
+    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+    const sources: Source[] = await res.json();
+    const installedSet = getUserInstalledExtensions();
+
+    return sources.filter(source => {
+      if (source.id === '0' || source.name.toLowerCase() === 'local source') {
+        return true;
+      }
+      if (!source.iconUrl) return false;
+      const parts = source.iconUrl.split('/extension/icon/');
+      const pkgName = parts.length > 1 ? parts[1] : null;
+      return pkgName ? installedSet.has(pkgName) : false;
+    });
   },
-  
+
   getSourcePopular: async (sourceId: string, pageNum: number): Promise<{ mangas: Manga[]; hasNextPage: boolean }> => {
     const res = await fetch(`${BASE_URL}/source/${sourceId}/popular/${pageNum}`);
+    if (!res.ok) {
+      let msg = `Gagal memuat catalog populer (${res.status})`;
+      try {
+        const text = await res.text();
+        if (text) msg = text;
+      } catch (_) {}
+      throw new Error(msg);
+    }
     const data = await res.json();
+    const mangas: Manga[] = data.mangas || data || [];
+
+    // Overlay user library status
+    const prefix = getUserPrefix();
+    const listJson = localStorage.getItem(`${prefix}_library`);
+    const list: Manga[] = listJson ? JSON.parse(listJson) : [];
+    const libraryIds = new Set(list.map(m => m.id));
+
+    const mapped = mangas.map(m => ({
+      ...m,
+      inLibrary: libraryIds.has(m.id)
+    }));
+
     return {
-      mangas: data.mangas || data || [],
+      mangas: mapped,
       hasNextPage: data.hasNextPage ?? false,
     };
   },
 
   getSourceLatest: async (sourceId: string, pageNum: number): Promise<{ mangas: Manga[]; hasNextPage: boolean }> => {
     const res = await fetch(`${BASE_URL}/source/${sourceId}/latest/${pageNum}`);
+    if (!res.ok) {
+      let msg = `Gagal memuat catalog terbaru (${res.status})`;
+      try {
+        const text = await res.text();
+        if (text) msg = text;
+      } catch (_) {}
+      throw new Error(msg);
+    }
     const data = await res.json();
+    const mangas: Manga[] = data.mangas || data || [];
+
+    // Overlay user library status
+    const prefix = getUserPrefix();
+    const listJson = localStorage.getItem(`${prefix}_library`);
+    const list: Manga[] = listJson ? JSON.parse(listJson) : [];
+    const libraryIds = new Set(list.map(m => m.id));
+
+    const mapped = mangas.map(m => ({
+      ...m,
+      inLibrary: libraryIds.has(m.id)
+    }));
+
     return {
-      mangas: data.mangas || data || [],
+      mangas: mapped,
       hasNextPage: data.hasNextPage ?? false,
     };
   },
 
   searchSource: async (sourceId: string, query: string, pageNum: number): Promise<{ mangas: Manga[]; hasNextPage: boolean }> => {
     const res = await fetch(`${BASE_URL}/source/${sourceId}/search?query=${encodeURIComponent(query)}&pageNum=${pageNum}`);
+    if (!res.ok) {
+      let msg = `Gagal mencari catalog (${res.status})`;
+      try {
+        const text = await res.text();
+        if (text) msg = text;
+      } catch (_) {}
+      throw new Error(msg);
+    }
     const data = await res.json();
+    const mangas: Manga[] = data.mangas || data || [];
+
+    // Overlay user library status
+    const prefix = getUserPrefix();
+    const listJson = localStorage.getItem(`${prefix}_library`);
+    const list: Manga[] = listJson ? JSON.parse(listJson) : [];
+    const libraryIds = new Set(list.map(m => m.id));
+
+    const mapped = mangas.map(m => ({
+      ...m,
+      inLibrary: libraryIds.has(m.id)
+    }));
+
     return {
-      mangas: data.mangas || data || [],
+      mangas: mapped,
       hasNextPage: data.hasNextPage ?? false,
     };
   },
@@ -127,83 +278,245 @@ export const api = {
   // Manga Details
   getMangaDetails: async (mangaId: number): Promise<Manga> => {
     const res = await fetch(`${BASE_URL}/manga/${mangaId}`);
-    return res.json();
-  },
-  
-  getMangaDetailsFull: async (mangaId: number): Promise<Manga> => {
-    const res = await fetch(`${BASE_URL}/manga/${mangaId}/full`);
-    return res.json();
-  },
-  
-  getMangaChapters: async (mangaId: number): Promise<Chapter[]> => {
-    const res = await fetch(`${BASE_URL}/manga/${mangaId}/chapters`);
-    const list: any[] = await res.json();
-    return list.map((ch, idx) => ({
-      id: idx, // Use list index as ID for mapping/loading pages
-      url: ch.url,
-      name: ch.name,
-      chapterNumber: ch.chapterNumber,
-      read: ch.read,
-      bookmark: ch.bookmark,
-      lastPageRead: ch.lastPageRead,
-      dateUpload: ch.dateUpload || 0,
-      sourceOrder: ch.sourceOrder,
-      downloaded: ch.downloadStatus === 'DOWNLOADED'
-    }));
+    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+    const manga: Manga = await res.json();
+
+    // Overlay user library status
+    const prefix = getUserPrefix();
+    const listJson = localStorage.getItem(`${prefix}_library`);
+    const list: Manga[] = listJson ? JSON.parse(listJson) : [];
+    manga.inLibrary = list.some(m => m.id === manga.id);
+
+    return manga;
   },
 
-  // Library Actions
-  addToLibrary: async (mangaId: number): Promise<void> => {
-    await fetch(`${BASE_URL}/manga/${mangaId}/library`);
+  getMangaDetailsFull: async (mangaId: number): Promise<Manga> => {
+    const res = await fetch(`${BASE_URL}/manga/${mangaId}/full`);
+    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+    const manga: Manga = await res.json();
+
+    // Overlay user library status
+    const prefix = getUserPrefix();
+    const listJson = localStorage.getItem(`${prefix}_library`);
+    const list: Manga[] = listJson ? JSON.parse(listJson) : [];
+    manga.inLibrary = list.some(m => m.id === manga.id);
+
+    return manga;
   },
-  
+
+  getMangaChapters: async (mangaId: number): Promise<Chapter[]> => {
+    const res = await fetch(`${BASE_URL}/manga/${mangaId}/chapters`);
+    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+    const list: any[] = await res.json();
+
+    // Overlay user reading progress
+    const prefix = getUserPrefix();
+    const progressJson = localStorage.getItem(`${prefix}_progress`);
+    const progress = progressJson ? JSON.parse(progressJson) : {};
+
+    return list.map((ch, idx) => {
+      const key = `${mangaId}_${idx}`;
+      const userProgress = progress[key] || {};
+
+      return {
+        id: idx, // Use list index as ID for mapping/loading pages
+        url: ch.url,
+        name: ch.name,
+        chapterNumber: ch.chapterNumber,
+        read: userProgress.read !== undefined ? userProgress.read : ch.read,
+        bookmark: ch.bookmark,
+        lastPageRead: userProgress.lastPageRead !== undefined ? userProgress.lastPageRead : ch.lastPageRead,
+        dateUpload: ch.dateUpload || 0,
+        sourceOrder: ch.sourceOrder,
+        downloaded: ch.downloadStatus === 'DOWNLOADED'
+      };
+    });
+  },
+
+  // Library Actions (Multi-user per user storage override)
+  addToLibrary: async (mangaId: number): Promise<void> => {
+    // Notify backend so it compiles source data
+    try {
+      await fetch(`${BASE_URL}/manga/${mangaId}/library`);
+    } catch (e) {
+      console.warn("Backend library sync skipped:", e);
+    }
+
+    const manga = await api.getMangaDetailsFull(mangaId);
+    const prefix = getUserPrefix();
+    const listJson = localStorage.getItem(`${prefix}_library`);
+    const list: Manga[] = listJson ? JSON.parse(listJson) : [];
+
+    if (!list.some(m => m.id === manga.id)) {
+      list.push({ ...manga, inLibrary: true });
+      localStorage.setItem(`${prefix}_library`, JSON.stringify(list));
+    }
+  },
+
   removeFromLibrary: async (mangaId: number): Promise<void> => {
-    await fetch(`${BASE_URL}/manga/${mangaId}/library`, { method: 'DELETE' });
+    try {
+      await fetch(`${BASE_URL}/manga/${mangaId}/library`, { method: 'DELETE' });
+    } catch (e) {
+      console.warn("Backend library sync skipped:", e);
+    }
+
+    const prefix = getUserPrefix();
+    const listJson = localStorage.getItem(`${prefix}_library`);
+    if (listJson) {
+      const list: Manga[] = JSON.parse(listJson);
+      const newList = list.filter(m => m.id !== mangaId);
+      localStorage.setItem(`${prefix}_library`, JSON.stringify(newList));
+    }
   },
 
   // Categories & Library Management
   getCategories: async (): Promise<Category[]> => {
-    const res = await fetch(`${BASE_URL}/category`);
-    return res.json();
+    const prefix = getUserPrefix();
+    const catsJson = localStorage.getItem(`${prefix}_categories`);
+    if (catsJson) {
+      return JSON.parse(catsJson);
+    }
+
+    const defaultCats: Category[] = [
+      { id: 1, name: 'Membaca', order: 0 },
+      { id: 2, name: 'Selesai', order: 1 }
+    ];
+    localStorage.setItem(`${prefix}_categories`, JSON.stringify(defaultCats));
+    return defaultCats;
   },
-  
+
   getCategoryMangas: async (categoryId: number): Promise<Manga[]> => {
-    const res = await fetch(`${BASE_URL}/category/${categoryId}`);
-    return res.json();
+    const prefix = getUserPrefix();
+    const mapJson = localStorage.getItem(`${prefix}_manga_categories`);
+    const map = mapJson ? JSON.parse(mapJson) : {};
+
+    const library = await api.getLibrary();
+    // Default to the first category if manga has no category assigned yet
+    return library.filter(m => {
+      const mangaCatId = map[m.id] || 1; // Default to category ID 1
+      return mangaCatId === categoryId;
+    });
   },
-  
+
   getLibrary: async (): Promise<Manga[]> => {
-    const res = await fetch(`${BASE_URL}/category/-1`);
-    return res.json();
+    const prefix = getUserPrefix();
+    const listJson = localStorage.getItem(`${prefix}_library`);
+    return listJson ? JSON.parse(listJson) : [];
+  },
+
+  setMangaCategory: async (mangaId: number, categoryId: number): Promise<void> => {
+    const prefix = getUserPrefix();
+    const mapJson = localStorage.getItem(`${prefix}_manga_categories`);
+    const map = mapJson ? JSON.parse(mapJson) : {};
+    map[mangaId] = categoryId;
+    localStorage.setItem(`${prefix}_manga_categories`, JSON.stringify(map));
+  },
+
+  addCategory: async (name: string): Promise<Category[]> => {
+    const prefix = getUserPrefix();
+    const cats = await api.getCategories();
+    const nextId = cats.length > 0 ? Math.max(...cats.map(c => c.id)) + 1 : 1;
+    cats.push({ id: nextId, name, order: cats.length });
+    localStorage.setItem(`${prefix}_categories`, JSON.stringify(cats));
+    return cats;
+  },
+
+  deleteCategory: async (id: number): Promise<Category[]> => {
+    const prefix = getUserPrefix();
+    const cats = await api.getCategories();
+    const updated = cats.filter(c => c.id !== id);
+    localStorage.setItem(`${prefix}_categories`, JSON.stringify(updated));
+
+    // Cleanup manga category mappings that used this category
+    const mapJson = localStorage.getItem(`${prefix}_manga_categories`);
+    if (mapJson) {
+      const map = JSON.parse(mapJson);
+      for (const mangaId in map) {
+        if (map[mangaId] === id) {
+          delete map[mangaId];
+        }
+      }
+      localStorage.setItem(`${prefix}_manga_categories`, JSON.stringify(map));
+    }
+
+    return updated;
   },
 
   // Chapter Details & Pages
   getChapterDetails: async (mangaId: number, chapterIndex: number): Promise<any> => {
     const res = await fetch(`${BASE_URL}/manga/${mangaId}/chapter/${chapterIndex}`);
-    return res.json();
+    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+    const details = await res.json();
+
+    const prefix = getUserPrefix();
+    const progressJson = localStorage.getItem(`${prefix}_progress`);
+    const progress = progressJson ? JSON.parse(progressJson) : {};
+    const key = `${mangaId}_${chapterIndex}`;
+    const userProgress = progress[key] || {};
+
+    if (userProgress.lastPageRead !== undefined) {
+      details.lastPageRead = userProgress.lastPageRead;
+    }
+    if (userProgress.read !== undefined) {
+      details.read = userProgress.read;
+    }
+
+    return details;
   },
 
   markChapterRead: async (mangaId: number, chapterIndex: number, read: boolean): Promise<void> => {
-    await fetch(`${BASE_URL}/manga/${mangaId}/chapter/${chapterIndex}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: `read=${read}`
-    });
+    try {
+      await fetch(`${BASE_URL}/manga/${mangaId}/chapter/${chapterIndex}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `read=${read}`
+      });
+    } catch (e) {
+      console.warn("Backend chapter read status sync skipped:", e);
+    }
+
+    const prefix = getUserPrefix();
+    const progressJson = localStorage.getItem(`${prefix}_progress`);
+    const progress = progressJson ? JSON.parse(progressJson) : {};
+    const key = `${mangaId}_${chapterIndex}`;
+
+    if (!progress[key]) progress[key] = {};
+    progress[key].read = read;
+    localStorage.setItem(`${prefix}_progress`, JSON.stringify(progress));
   },
 
   updateProgress: async (mangaId: number, chapterIndex: number, lastPageRead: number): Promise<void> => {
-    await fetch(`${BASE_URL}/manga/${mangaId}/chapter/${chapterIndex}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: `lastPageRead=${lastPageRead}`
-    });
+    try {
+      await fetch(`${BASE_URL}/manga/${mangaId}/chapter/${chapterIndex}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `lastPageRead=${lastPageRead}`
+      });
+    } catch (e) {
+      console.warn("Backend chapter progress sync skipped:", e);
+    }
+
+    const prefix = getUserPrefix();
+    const progressJson = localStorage.getItem(`${prefix}_progress`);
+    const progress = progressJson ? JSON.parse(progressJson) : {};
+    const key = `${mangaId}_${chapterIndex}`;
+
+    if (!progress[key]) progress[key] = {};
+    progress[key].lastPageRead = lastPageRead;
+    localStorage.setItem(`${prefix}_progress`, JSON.stringify(progress));
   },
 
   // Settings Management (LocalStorage for frontend specs + GraphQL for backend specs)
   getSettings: async (): Promise<Record<string, any>> => {
+    const prefix = getUserPrefix();
+    const settingsJson = localStorage.getItem(`${prefix}_settings`);
+    if (settingsJson) {
+      return JSON.parse(settingsJson);
+    }
+
     const localReaderMode = localStorage.getItem('readerMode') || 'paged-ltr';
     const localTheme = localStorage.getItem('theme') || 'light';
-    
+
     let extensionRepoUrls: string[] = [];
     try {
       const data = await graphqlRequest(`
@@ -219,15 +532,23 @@ export const api = {
     } catch (e) {
       console.warn("Failed to load repo settings from GraphQL", e);
     }
-    
-    return {
+
+    const defaultSettings = {
       readerMode: localReaderMode,
       theme: localTheme,
       extensionRepoUrls
     };
+
+    localStorage.setItem(`${prefix}_settings`, JSON.stringify(defaultSettings));
+    return defaultSettings;
   },
 
   updateSettings: async (settings: Record<string, string>): Promise<void> => {
+    const prefix = getUserPrefix();
+    const currentSettings = await api.getSettings();
+    const updated = { ...currentSettings, ...settings };
+    localStorage.setItem(`${prefix}_settings`, JSON.stringify(updated));
+
     if (settings.readerMode) localStorage.setItem('readerMode', settings.readerMode);
     if (settings.theme) localStorage.setItem('theme', settings.theme);
   },
@@ -256,5 +577,43 @@ export const api = {
     `, {
       input: { indexUrl: url }
     });
+  },
+
+  deleteUserAccount: async (password: string): Promise<void> => {
+    const user = auth.getCurrentUser();
+    if (!user) throw new Error('Tidak ada sesi aktif!');
+    const key = user.toLowerCase();
+
+    // 1. Get user's installed extensions
+    const installedSet = getUserInstalledExtensions();
+
+    // 2. Call auth.deleteAccount (validates password, deletes user, removes other keys, logs out)
+    await auth.deleteAccount(password);
+
+    // 3. Clean up the user's extensions key
+    localStorage.removeItem(`kuroyomi_user_${key}_installed_extensions`);
+
+    // 4. Uninstall extensions on the backend if no other users are using them
+    const usernames = auth.getRegisteredUsernames(); // Gets remaining usernames
+    for (const pkgName of installedSet) {
+      const otherUsersHaveIt = usernames.some(uname => {
+        const lowerUname = uname.toLowerCase();
+        const userKey = `kuroyomi_user_${lowerUname}_installed_extensions`;
+        const val = localStorage.getItem(userKey);
+        if (val) {
+          const list: string[] = JSON.parse(val);
+          return list.includes(pkgName);
+        }
+        return false;
+      });
+
+      if (!otherUsersHaveIt) {
+        try {
+          await fetch(`${BASE_URL}/extension/uninstall/${pkgName}`);
+        } catch (e) {
+          console.warn(`Failed to uninstall unused extension ${pkgName} from server:`, e);
+        }
+      }
+    }
   }
 };

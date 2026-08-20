@@ -21,6 +21,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [hasNextPage, setHasNextPage] = useState(false);
   const [catalogLoading, setCatalogLoading] = useState(false);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
 
   // Extension search and filtering states
   const [extSearchQuery, setExtSearchQuery] = useState('');
@@ -59,6 +60,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
   const loadSourceCatalog = async (page = 1, append = false) => {
     if (!selectedSource) return;
     setCatalogLoading(true);
+    setCatalogError(null);
     try {
       let result;
       if (browseMode === 'popular') {
@@ -68,7 +70,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
       } else {
         result = await api.searchSource(selectedSource.id, searchQuery, page);
       }
-      
+
       if (append) {
         setCatalogManga(prev => [...prev, ...result.mangas]);
       } else {
@@ -76,8 +78,10 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
       }
       setHasNextPage(result.hasNextPage);
       setCurrentPage(page);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      setCatalogError(err.message || String(err));
+      setCatalogManga([]);
     } finally {
       setCatalogLoading(false);
     }
@@ -209,6 +213,13 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
           <div style={{ textAlign: 'center', padding: '4rem 0' }}>
             <div className="comic-box" style={{ display: 'inline-block', backgroundColor: 'var(--retro-yellow)' }}>
               <h3 style={{ margin: 0, fontWeight: 900 }}>CATALOGING SOURCE...</h3>
+            </div>
+          </div>
+        ) : catalogError ? (
+          <div style={{ textAlign: 'center', padding: '4rem 0' }}>
+            <div className="speech-bubble" style={{ display: 'inline-block', borderColor: 'var(--retro-pink)' }}>
+              <h3 style={{ margin: 0, fontWeight: 900, color: 'var(--retro-pink)' }}>ERROR LOADING CATALOG</h3>
+              <p style={{ margin: '0.5rem 0 0 0', fontWeight: 600 }}>{catalogError}</p>
             </div>
           </div>
         ) : catalogManga.length === 0 ? (

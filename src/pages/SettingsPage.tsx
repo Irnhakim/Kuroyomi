@@ -1,21 +1,39 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
-import { RefreshCw, Save, CheckCircle, Trash2, Plus } from 'lucide-react';
+import { auth } from '../services/auth';
+import { RefreshCw, Save, CheckCircle, Trash2, Plus, LogOut, Key, ShieldAlert } from 'lucide-react';
 
-export const SettingsPage: React.FC = () => {
+interface SettingsPageProps {
+  onLogout: () => void;
+}
+
+export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
   const [serverVersion, setServerVersion] = useState<string>('Unknown');
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<'online' | 'offline'>('offline');
-  
+
   // Settings states
   const [readerMode, setReaderMode] = useState<string>('paged-ltr');
   const [theme, setTheme] = useState<string>('light');
   const [repoUrls, setRepoUrls] = useState<string[]>([]);
   const [newRepoUrl, setNewRepoUrl] = useState<string>('');
-  
+
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+
+  // Account Management states
+  const currentUser = auth.getCurrentUser();
+  const [oldPassword, setOldPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passError, setPassError] = useState<string | null>(null);
+  const [passSuccess, setPassSuccess] = useState<string | null>(null);
+
+  // Account Delete states
+  const [deleteConfirmPassword, setDeleteConfirmPassword] = useState('');
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const loadSettingsAndStatus = async () => {
     setLoading(true);
@@ -28,7 +46,7 @@ export const SettingsPage: React.FC = () => {
         const data = await res.json();
         setServerVersion(data.version || 'v0.6.x');
         setStatus('online');
-        
+
         // Fetch all configs from server
         const configs = await api.getSettings();
         setReaderMode(configs.readerMode || 'paged-ltr');
@@ -57,11 +75,11 @@ export const SettingsPage: React.FC = () => {
         readerMode,
         theme
       });
-      
+
       // Instantly apply theme in DOM
       document.documentElement.setAttribute('data-theme', theme);
       localStorage.setItem('theme', theme);
-      
+
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err) {
@@ -102,6 +120,51 @@ export const SettingsPage: React.FC = () => {
     }
   };
 
+  const handleLogout = () => {
+    if (confirm("Apakah Anda yakin ingin keluar?")) {
+      auth.logout();
+      onLogout();
+    }
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPassError(null);
+    setPassSuccess(null);
+
+    if (newPassword !== confirmPassword) {
+      setPassError('Password baru dan konfirmasi password tidak cocok!');
+      return;
+    }
+
+    try {
+      await auth.changePassword(oldPassword, newPassword);
+      setPassSuccess('Password berhasil diubah!');
+      setOldPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err: any) {
+      setPassError(err.message || 'Terjadi kesalahan saat mengubah password.');
+    }
+  };
+
+  const handleDeleteAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setDeleteError(null);
+
+    if (!confirm("Tindakan ini permanen. Semua data library dan riwayat Anda akan terhapus. Lanjutkan hapus akun?")) {
+      return;
+    }
+
+    try {
+      await api.deleteUserAccount(deleteConfirmPassword);
+      alert('Akun Anda berhasil dihapus.');
+      onLogout();
+    } catch (err: any) {
+      setDeleteError(err.message || 'Gagal menghapus akun.');
+    }
+  };
+
   return (
     <div>
       <div style={{ marginBottom: '2.5rem' }}>
@@ -109,14 +172,183 @@ export const SettingsPage: React.FC = () => {
           App <span style={{ background: 'var(--retro-purple)', color: '#fff', padding: '0 0.5rem', display: 'inline-block', transform: 'rotate(-1.5deg)' }}>Settings</span>
         </h1>
         <p style={{ margin: '0.5rem 0 0 0', fontWeight: 500, color: 'var(--muted-text)' }}>
-          Manage your server connection, reader defaults, and source repositories.
+          Manage your server connection, user account, reader defaults, and source repositories.
         </p>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2rem' }}>
         {/* Configurations Forms Container */}
         <div style={{ gridColumn: 'span 2', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-          
+
+          {/* Account Management Box */}
+          <div className="comic-box" style={{ borderColor: 'var(--retro-purple)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+              <h2 style={{ margin: 0, fontWeight: 900, textTransform: 'uppercase', fontSize: '1.4rem' }}>
+                Kelola Akun ({currentUser})
+              </h2>
+              <button className="comic-btn comic-btn-pink" style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }} onClick={handleLogout}>
+                <LogOut size={16} /> Log Out
+              </button>
+            </div>
+
+            {/* Change password form */}
+            <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', borderBottom: '2px dashed var(--border-color)', paddingBottom: '1.5rem', marginBottom: '1.5rem' }}>
+              <h3 style={{ margin: '0 0 0.5rem 0', fontWeight: 800, fontSize: '1rem', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Key size={18} /> Ubah Password
+              </h3>
+
+              {passError && (
+                <div className="comic-sticker sticker-pink" style={{ transform: 'none', margin: '0.5rem 0', display: 'block' }}>
+                  {passError}
+                </div>
+              )}
+
+              {passSuccess && (
+                <div className="comic-sticker sticker-teal" style={{ transform: 'none', margin: '0.5rem 0', display: 'block' }}>
+                  {passSuccess}
+                </div>
+              )}
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontWeight: 800, marginBottom: '0.25rem', fontSize: '0.8rem', textTransform: 'uppercase' }}>Password Lama</label>
+                  <input
+                    type="password"
+                    value={oldPassword}
+                    onChange={(e) => setOldPassword(e.target.value)}
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '0.5rem',
+                      border: '2px solid var(--border-color)',
+                      borderRadius: '6px',
+                      backgroundColor: 'var(--bg-color)',
+                      color: 'var(--text-color)',
+                      fontWeight: 700,
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontWeight: 800, marginBottom: '0.25rem', fontSize: '0.8rem', textTransform: 'uppercase' }}>Password Baru</label>
+                  <input
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '0.5rem',
+                      border: '2px solid var(--border-color)',
+                      borderRadius: '6px',
+                      backgroundColor: 'var(--bg-color)',
+                      color: 'var(--text-color)',
+                      fontWeight: 700,
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontWeight: 800, marginBottom: '0.25rem', fontSize: '0.8rem', textTransform: 'uppercase' }}>Konfirmasi Password Baru</label>
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '0.5rem',
+                      border: '2px solid var(--border-color)',
+                      borderRadius: '6px',
+                      backgroundColor: 'var(--bg-color)',
+                      color: 'var(--text-color)',
+                      fontWeight: 700,
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+              </div>
+
+              <button type="submit" className="comic-btn comic-btn-purple" style={{ alignSelf: 'flex-start', marginTop: '0.5rem', padding: '0.5rem 1rem', fontSize: '0.9rem' }}>
+                Simpan Password Baru
+              </button>
+            </form>
+
+            {/* Danger Zone: Delete Account */}
+            <div>
+              <h3 style={{ margin: '0 0 0.5rem 0', fontWeight: 800, fontSize: '1rem', color: 'var(--retro-pink)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <ShieldAlert size={18} /> Zona Bahaya (Danger Zone)
+              </h3>
+
+              {!showDeleteConfirm ? (
+                <button
+                  type="button"
+                  className="comic-btn"
+                  onClick={() => setShowDeleteConfirm(true)}
+                  style={{
+                    backgroundColor: 'transparent',
+                    color: 'var(--retro-pink)',
+                    borderColor: 'var(--retro-pink)',
+                    padding: '0.5rem 1rem',
+                    fontSize: '0.85rem',
+                    boxShadow: 'none'
+                  }}
+                >
+                  Hapus Akun Ini
+                </button>
+              ) : (
+                <form onSubmit={handleDeleteAccount} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.5rem' }}>
+                  <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 700, color: 'var(--retro-pink)' }}>
+                    PERINGATAN: Menghapus akun akan membuang semua library, riwayat, dan data lokal secara permanen!
+                  </p>
+                  <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                    <div style={{ flex: 1, minWidth: '200px' }}>
+                      <label style={{ display: 'block', fontWeight: 800, marginBottom: '0.25rem', fontSize: '0.8rem' }}>Masukkan Password untuk Konfirmasi</label>
+                      <input
+                        type="password"
+                        value={deleteConfirmPassword}
+                        onChange={(e) => setDeleteConfirmPassword(e.target.value)}
+                        required
+                        style={{
+                          width: '100%',
+                          padding: '0.5rem',
+                          border: '2px solid var(--retro-pink)',
+                          borderRadius: '6px',
+                          backgroundColor: 'var(--bg-color)',
+                          color: 'var(--text-color)',
+                          fontWeight: 700,
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <button type="submit" className="comic-btn comic-btn-pink" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
+                        Konfirmasi Hapus Akun
+                      </button>
+                      <button
+                        type="button"
+                        className="comic-btn comic-btn-white"
+                        style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}
+                        onClick={() => {
+                          setShowDeleteConfirm(false);
+                          setDeleteConfirmPassword('');
+                          setDeleteError(null);
+                        }}
+                      >
+                        Batal
+                      </button>
+                    </div>
+                  </div>
+                  {deleteError && (
+                    <div className="comic-sticker sticker-pink" style={{ transform: 'none', display: 'inline-block', marginTop: '0.5rem' }}>
+                      {deleteError}
+                    </div>
+                  )}
+                </form>
+              )}
+            </div>
+          </div>
+
           {/* General settings box */}
           <div className="comic-box">
             <h2 style={{ margin: '0 0 1.5rem 0', fontWeight: 900, textTransform: 'uppercase', fontSize: '1.4rem' }}>
@@ -182,7 +414,7 @@ export const SettingsPage: React.FC = () => {
                   <Save size={18} />
                   {saving ? 'Saving...' : 'Save Configurations'}
                 </button>
-                
+
                 {saveSuccess && (
                   <span className="comic-sticker sticker-teal" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', padding: '0.4rem 0.8rem', transform: 'none' }}>
                     <CheckCircle size={16} /> Saved Successfully!

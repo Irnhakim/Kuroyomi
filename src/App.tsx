@@ -5,22 +5,36 @@ import { BrowsePage } from './pages/BrowsePage';
 import { MangaDetailPage } from './pages/MangaDetailPage';
 import { ReaderPage } from './pages/ReaderPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { LoginPage } from './pages/LoginPage';
+import { auth } from './services/auth';
+import { api } from './services/api';
 
 type ActivePage = 'library' | 'browse' | 'settings' | 'manga-detail' | 'reader';
 
 export default function App() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [activePage, setActivePage] = useState<ActivePage>('library');
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
-  
+
   // Detail selection
   const [selectedMangaId, setSelectedMangaId] = useState<number | null>(null);
-  
+
   // Reader selection
   const [readerMangaId, setReaderMangaId] = useState<number | null>(null);
   const [readerChapterId, setReaderChapterId] = useState<number | null>(null);
 
-  // Initialize theme from localStorage or system preference
+  // Check login session on mount
   useEffect(() => {
+    const logged = auth.isLoggedIn();
+    setIsLoggedIn(logged);
+    if (logged) {
+      applyUserTheme();
+    } else {
+      applyDefaultTheme();
+    }
+  }, [isLoggedIn]);
+
+  const applyDefaultTheme = () => {
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
     if (savedTheme) {
       setTheme(savedTheme);
@@ -31,13 +45,39 @@ export default function App() {
       setTheme(initialTheme);
       document.documentElement.setAttribute('data-theme', initialTheme);
     }
-  }, []);
+  };
 
-  const toggleTheme = () => {
+  const applyUserTheme = async () => {
+    try {
+      const configs = await api.getSettings();
+      const userTheme = (configs.theme as 'light' | 'dark') || 'light';
+      setTheme(userTheme);
+      document.documentElement.setAttribute('data-theme', userTheme);
+    } catch (e) {
+      applyDefaultTheme();
+    }
+  };
+
+  const toggleTheme = async () => {
     const newTheme = theme === 'light' ? 'dark' : 'light';
     setTheme(newTheme);
-    localStorage.setItem('theme', newTheme);
     document.documentElement.setAttribute('data-theme', newTheme);
+
+    if (isLoggedIn) {
+      await api.updateSettings({ theme: newTheme });
+    } else {
+      localStorage.setItem('theme', newTheme);
+    }
+  };
+
+  const handleLoginSuccess = (_username: string) => {
+    setIsLoggedIn(true);
+    setActivePage('library');
+  };
+
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    setActivePage('library');
   };
 
   const handleMangaSelect = (mangaId: number) => {
@@ -79,11 +119,15 @@ export default function App() {
           <LibraryPage onMangaSelect={handleMangaSelect} />
         );
       case 'settings':
-        return <SettingsPage />;
+        return <SettingsPage onLogout={handleLogout} />;
       default:
         return <LibraryPage onMangaSelect={handleMangaSelect} />;
     }
   };
+
+  if (!isLoggedIn) {
+    return <LoginPage onLoginSuccess={handleLoginSuccess} />;
+  }
 
   return (
     <Layout
