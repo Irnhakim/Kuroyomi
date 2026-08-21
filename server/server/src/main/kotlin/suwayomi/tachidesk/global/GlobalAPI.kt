@@ -12,7 +12,6 @@ import io.javalin.apibuilder.ApiBuilder.patch
 import io.javalin.apibuilder.ApiBuilder.path
 import io.javalin.apibuilder.ApiBuilder.post
 import io.javalin.apibuilder.ApiBuilder.ws
-import uy.kohesive.injekt.api.get
 import suwayomi.tachidesk.global.controller.GlobalMetaController
 import suwayomi.tachidesk.global.controller.SettingsController
 import suwayomi.tachidesk.global.controller.WebViewController
@@ -33,7 +32,7 @@ object GlobalAPI {
         }
         path("kuroyomi") {
             get("users") { ctx ->
-                val applicationDirs = uy.kohesive.injekt.Injekt.get<suwayomi.tachidesk.server.ApplicationDirs>()
+                val applicationDirs = xyz.nulldev.androidcompat.util.KoinGlobalHelper.instance(suwayomi.tachidesk.server.ApplicationDirs::class.java)
                 val file = java.io.File(applicationDirs.dataRoot, "kuroyomi_users.json")
                 if (file.exists()) {
                     ctx.contentType("application/json")
@@ -43,14 +42,14 @@ object GlobalAPI {
                 }
             }
             post("users") { ctx ->
-                val applicationDirs = uy.kohesive.injekt.Injekt.get<suwayomi.tachidesk.server.ApplicationDirs>()
+                val applicationDirs = xyz.nulldev.androidcompat.util.KoinGlobalHelper.instance(suwayomi.tachidesk.server.ApplicationDirs::class.java)
                 val file = java.io.File(applicationDirs.dataRoot, "kuroyomi_users.json")
                 file.writeText(ctx.body())
                 ctx.status(200)
             }
             get("user/{username}/data") { ctx ->
                 val username = ctx.pathParam("username")
-                val applicationDirs = uy.kohesive.injekt.Injekt.get<suwayomi.tachidesk.server.ApplicationDirs>()
+                val applicationDirs = xyz.nulldev.androidcompat.util.KoinGlobalHelper.instance(suwayomi.tachidesk.server.ApplicationDirs::class.java)
                 val file = java.io.File(applicationDirs.dataRoot, "kuroyomi_user_${username}.json")
                 if (file.exists()) {
                     ctx.contentType("application/json")
@@ -61,7 +60,7 @@ object GlobalAPI {
             }
             post("user/{username}/data") { ctx ->
                 val username = ctx.pathParam("username")
-                val applicationDirs = uy.kohesive.injekt.Injekt.get<suwayomi.tachidesk.server.ApplicationDirs>()
+                val applicationDirs = xyz.nulldev.androidcompat.util.KoinGlobalHelper.instance(suwayomi.tachidesk.server.ApplicationDirs::class.java)
                 val file = java.io.File(applicationDirs.dataRoot, "kuroyomi_user_${username}.json")
                 file.writeText(ctx.body())
                 ctx.status(200)

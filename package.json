@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"vite\" \"vite build --watch\" \"cd server && gradlew.bat server:run\"",
+    "dev": "concurrently \"vite\" \"vite build --watch\" \"cd server && .\\gradlew.bat server:run\"",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview"

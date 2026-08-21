@@ -1,7 +1,7 @@
 import { auth } from './auth';
 
 const isDev = window.location.port === '5173' || window.location.port === '5174';
-const SERVER_ORIGIN = isDev ? 'http://localhost:4567' : window.location.origin;
+const SERVER_ORIGIN = isDev ? `${window.location.protocol}//${window.location.hostname}:4567` : window.location.origin;
 
 const BASE_URL = `${SERVER_ORIGIN}/api/v1`;
 const GRAPHQL_URL = `${SERVER_ORIGIN}/graphql`;
@@ -394,6 +394,7 @@ export const api = {
     if (!list.some(m => m.id === manga.id)) {
       list.push({ ...manga, inLibrary: true });
       localStorage.setItem(`${prefix}_library`, JSON.stringify(list));
+      await syncUserDataToServer();
     }
   },
 
@@ -410,6 +411,7 @@ export const api = {
       const list: Manga[] = JSON.parse(listJson);
       const newList = list.filter(m => m.id !== mangaId);
       localStorage.setItem(`${prefix}_library`, JSON.stringify(newList));
+      await syncUserDataToServer();
     }
   },
 
@@ -454,6 +456,7 @@ export const api = {
     const map = mapJson ? JSON.parse(mapJson) : {};
     map[mangaId] = categoryId;
     localStorage.setItem(`${prefix}_manga_categories`, JSON.stringify(map));
+    await syncUserDataToServer();
   },
 
   addCategory: async (name: string): Promise<Category[]> => {
@@ -462,6 +465,7 @@ export const api = {
     const nextId = cats.length > 0 ? Math.max(...cats.map(c => c.id)) + 1 : 1;
     cats.push({ id: nextId, name, order: cats.length });
     localStorage.setItem(`${prefix}_categories`, JSON.stringify(cats));
+    await syncUserDataToServer();
     return cats;
   },
 
@@ -483,6 +487,7 @@ export const api = {
       localStorage.setItem(`${prefix}_manga_categories`, JSON.stringify(map));
     }
 
+    await syncUserDataToServer();
     return updated;
   },
 
@@ -527,6 +532,7 @@ export const api = {
     if (!progress[key]) progress[key] = {};
     progress[key].read = read;
     localStorage.setItem(`${prefix}_progress`, JSON.stringify(progress));
+    await syncUserDataToServer();
   },
 
   updateProgress: async (mangaId: number, chapterIndex: number, lastPageRead: number): Promise<void> => {
@@ -548,6 +554,7 @@ export const api = {
     if (!progress[key]) progress[key] = {};
     progress[key].lastPageRead = lastPageRead;
     localStorage.setItem(`${prefix}_progress`, JSON.stringify(progress));
+    await syncUserDataToServer();
   },
 
   // Settings Management (LocalStorage for frontend specs + GraphQL for backend specs)
@@ -595,6 +602,7 @@ export const api = {
 
     if (settings.readerMode) localStorage.setItem('readerMode', settings.readerMode);
     if (settings.theme) localStorage.setItem('theme', settings.theme);
+    await syncUserDataToServer();
   },
 
   addExtensionStore: async (url: string): Promise<void> => {

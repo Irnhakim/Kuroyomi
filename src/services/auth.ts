@@ -4,15 +4,92 @@ export interface User {
 }
 
 const isDev = window.location.port === '5173' || window.location.port === '5174';
-const SERVER_ORIGIN = isDev ? 'http://localhost:4567' : window.location.origin;
+const SERVER_ORIGIN = isDev ? `${window.location.protocol}//${window.location.hostname}:4567` : window.location.origin;
 const BASE_URL = `${SERVER_ORIGIN}/api/v1`;
 
-// Simple native SHA-256 hashing helper
+// Simple native SHA-256 hashing helper with pure JS fallback for non-secure contexts (e.g. HTTP on local network IP)
 async function sha256(text: string): Promise<string> {
-  const msgBuffer = new TextEncoder().encode(text);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  if (typeof window !== 'undefined' && window.crypto && window.crypto.subtle) {
+    const msgBuffer = new TextEncoder().encode(text);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  // Pure JS fallback
+  function rightRotate(value: number, amount: number) {
+    return (value >>> amount) | (value << (32 - amount));
+  }
+  const mathPow = Math.pow;
+  const maxWord = mathPow(2, 32);
+  const lengthProperty = 'length';
+  let i, j;
+  let result = '';
+  const words: number[] = [];
+  const asciiLength = text[lengthProperty] * 8;
+  const hash: number[] = [];
+  const k: number[] = [];
+  let primeCounter = 0;
+  const isComposite: Record<number, number> = {};
+  for (let candidate = 2; primeCounter < 64; candidate++) {
+    if (!isComposite[candidate]) {
+      for (i = 0; i < 313; i += candidate) {
+        isComposite[i] = 1;
+      }
+      if (primeCounter < 8) {
+        hash[primeCounter] = (mathPow(candidate, .5) * maxWord) | 0;
+      }
+      k[primeCounter++] = (mathPow(candidate, 1/3) * maxWord) | 0;
+    }
+  }
+  let ascii = text + '\x80';
+  while (ascii[lengthProperty] % 64 - 56) {
+    ascii += '\x00';
+  }
+  for (i = 0; i < ascii[lengthProperty]; i++) {
+    j = ascii.charCodeAt(i);
+    if (j >> 8) throw new Error('Only ASCII characters supported');
+    words[i >> 2] |= j << ((3 - i % 4) * 8);
+  }
+  words[words[lengthProperty]] = ((asciiLength / maxWord) | 0);
+  words[words[lengthProperty]] = (asciiLength | 0);
+  for (j = 0; j < words[lengthProperty];) {
+    const w = words.slice(j, j += 16);
+    const oldHash = hash.slice(0);
+    for (i = 0; i < 64; i++) {
+      if (i >= 16) {
+        const w15 = w[i - 15], w2 = w[i - 2];
+        const s0 = (rightRotate(w15, 7) ^ rightRotate(w15, 18) ^ (w15 >>> 3));
+        const s1 = (rightRotate(w2, 17) ^ rightRotate(w2, 19) ^ (w2 >>> 10));
+        w[i] = (w[i - 16] + s0 + w[i - 7] + s1) | 0;
+      }
+      const a = hash[0], e = hash[4];
+      const S0 = rightRotate(a, 2) ^ rightRotate(a, 13) ^ rightRotate(a, 22);
+      const maj = (a & hash[1]) ^ (a & hash[2]) ^ (hash[1] & hash[2]);
+      const temp1 = (S0 + maj) | 0;
+      const S1 = rightRotate(e, 6) ^ rightRotate(e, 11) ^ rightRotate(e, 25);
+      const ch = (e & hash[5]) ^ ((~e) & hash[6]);
+      const temp3 = (hash[7] + S1 + ch + k[i] + w[i]) | 0;
+      hash[7] = hash[6];
+      hash[6] = hash[5];
+      hash[5] = hash[4];
+      hash[4] = (hash[3] + temp3) | 0;
+      hash[3] = hash[2];
+      hash[2] = hash[1];
+      hash[1] = hash[0];
+      hash[0] = (temp3 + temp1) | 0;
+    }
+    for (i = 0; i < 8; i++) {
+      hash[i] = (hash[i] + oldHash[i]) | 0;
+    }
+  }
+  for (i = 0; i < 8; i++) {
+    for (j = 3; j + 1; j--) {
+      const b = (hash[i] >> (j * 8)) & 255;
+      result += (b < 16 ? '0' : '') + b.toString(16);
+    }
+  }
+  return result;
 }
 
 export const auth = {
@@ -105,6 +182,7 @@ export const auth = {
     }
 
     // 2. Fetch user's data from server and save to localStorage
+    localStorage.setItem('kuroyomi_users', JSON.stringify(users));
     try {
       const resData = await fetch(`${BASE_URL}/kuroyomi/user/${key}/data`);
       if (resData.ok) {
