@@ -163,6 +163,37 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
     setHudVisible(!hudVisible);
   };
 
+  // Webtoon scroll beyond bottom detection
+  useEffect(() => {
+    if (readingMode !== 'webtoon') return;
+
+    let lastScrollTop = window.scrollY || document.documentElement.scrollTop;
+    let thresholdTriggered = false;
+
+    const handleScroll = () => {
+      const scrollTop = window.scrollY || document.documentElement.scrollTop;
+      const windowHeight = window.innerHeight;
+      const docHeight = document.documentElement.scrollHeight;
+
+      // Check if we are at the very bottom of the page
+      const isAtBottom = (scrollTop + windowHeight) >= (docHeight - 15); // 15px buffer
+
+      if (isAtBottom && scrollTop > lastScrollTop) {
+        // User is at bottom and trying to scroll down further
+        if (!thresholdTriggered) {
+          thresholdTriggered = true;
+          navigateToChapterOffset('next');
+        }
+      } else {
+        thresholdTriggered = false;
+      }
+      lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [readingMode, chapters, chapterId]);
+
   if (loading) {
     return (
       <div className="reader-container" style={{ justifyContent: 'center', height: '100vh', padding: 0 }}>
@@ -194,7 +225,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
           top: '1rem',
           left: '50%',
           transform: 'translateX(-50%)',
-          width: '90%',
+          width: '95%',
           maxWidth: '900px',
           zIndex: 100,
           display: 'flex',
@@ -204,32 +235,33 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
           border: '3px solid var(--border-color)',
           borderRadius: '12px',
           boxShadow: '4px 4px 0px var(--border-color)',
-          padding: '0.75rem 1.5rem',
-          color: 'var(--text-color)'
+          padding: '0.5rem 1rem',
+          color: 'var(--text-color)',
+          boxSizing: 'border-box'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 0, flex: 1 }}>
             <button
               className="comic-btn comic-btn-white"
-              style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}
+              style={{ padding: '0.4rem 0.6rem', fontSize: '0.85rem', flexShrink: 0 }}
               onClick={onBack}
             >
               <ArrowLeft size={16} />
               Exit
             </button>
-            <div>
-              <h4 style={{ margin: 0, fontWeight: 900, fontSize: '1rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '250px' }}>
+            <div style={{ minWidth: 0 }}>
+              <h4 style={{ margin: 0, fontWeight: 900, fontSize: '0.95rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {chapterInfo?.name}
               </h4>
-              <span className="comic-sticker sticker-purple" style={{ fontSize: '0.6rem', transform: 'none', marginTop: '0.2rem' }}>
+              <span className="comic-sticker sticker-purple" style={{ fontSize: '0.55rem', transform: 'none', padding: '0.1rem 0.35rem', marginTop: '0.15rem', display: 'inline-block' }}>
                 PAGE {readingMode === 'single' ? `${currentPage + 1} / ${chapterInfo.pageCount}` : `LONG STRIP`}
               </span>
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
             <button
               className={`comic-btn ${readingMode === 'single' ? 'comic-btn-yellow' : 'comic-btn-white'}`}
-              style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}
+              style={{ padding: '0.4rem 0.6rem', fontSize: '0.85rem' }}
               onClick={() => setReadingMode('single')}
               title="Single Page Mode"
             >
@@ -238,7 +270,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
             </button>
             <button
               className={`comic-btn ${readingMode === 'webtoon' ? 'comic-btn-yellow' : 'comic-btn-white'}`}
-              style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}
+              style={{ padding: '0.4rem 0.6rem', fontSize: '0.85rem' }}
               onClick={() => setReadingMode('webtoon')}
               title="Webtoon Mode"
             >
@@ -250,9 +282,9 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
       )}
 
       {/* Main Pages Canvas */}
-      <div 
+      <div
         style={{
-          marginTop: hudVisible ? '6rem' : '1rem',
+          marginTop: hudVisible ? '5.5rem' : '1rem',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
@@ -264,7 +296,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
         {readingMode === 'single' ? (
           /* SINGLE PAGE MODE */
           <div style={{ position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', maxWidth: '850px' }} onClick={(e) => e.stopPropagation()}>
-            <div 
+            <div
               style={{ position: 'absolute', left: 0, top: 0, width: '25%', height: '100%', zIndex: 10, cursor: 'w-resize' }}
               onClick={handlePrevPage}
             />
@@ -277,7 +309,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
               onClick={toggleHud}
             />
 
-            <div 
+            <div
               style={{ position: 'absolute', right: 0, top: 0, width: '25%', height: '100%', zIndex: 10, cursor: 'e-resize' }}
               onClick={handleNextPage}
             />
@@ -300,39 +332,71 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
         )}
       </div>
 
-      {/* Floating Bottom Navigator */}
-      {readingMode === 'single' && hudVisible && (
+      {/* Floating Bottom HUD Banner */}
+      {hudVisible && (
         <div style={{
           position: 'fixed',
-          bottom: '1.5rem',
+          bottom: '1rem',
           left: '50%',
           transform: 'translateX(-50%)',
+          width: '95%',
+          maxWidth: '900px',
           zIndex: 100,
           display: 'flex',
+          justifyContent: 'space-between',
           alignItems: 'center',
-          gap: '1rem',
           backgroundColor: 'var(--bg-card)',
           border: '3px solid var(--border-color)',
-          borderRadius: '30px',
+          borderRadius: '12px',
           boxShadow: '4px 4px 0px var(--border-color)',
-          padding: '0.5rem 1rem'
+          padding: '0.5rem 1rem',
+          color: 'var(--text-color)',
+          boxSizing: 'border-box'
         }}>
-          <button className="comic-btn comic-btn-white" style={{ padding: '0.4rem 0.8rem', borderRadius: '50%' }} onClick={handlePrevPage}>
-            <ChevronLeft size={20} />
+          <button
+            className="comic-btn comic-btn-white"
+            style={{ padding: '0.4rem 0.6rem', fontSize: '0.85rem' }}
+            onClick={() => navigateToChapterOffset('prev')}
+          >
+            <ChevronLeft size={16} />
+            Prev
           </button>
-          
-          <span style={{ fontWeight: 900, color: 'var(--text-color)', fontSize: '1rem' }}>
-            {currentPage + 1} / {chapterInfo.pageCount}
-          </span>
 
-          <button className="comic-btn comic-btn-white" style={{ padding: '0.4rem 0.8rem', borderRadius: '50%' }} onClick={handleNextPage}>
-            <ChevronRight size={20} />
+          {readingMode === 'single' && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <button
+                className="comic-btn comic-btn-white"
+                style={{ padding: '0.25rem', borderRadius: '50%' }}
+                onClick={handlePrevPage}
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <span style={{ fontWeight: 900, fontSize: '0.9rem', color: 'var(--text-color)' }}>
+                {currentPage + 1} / {chapterInfo.pageCount}
+              </span>
+              <button
+                className="comic-btn comic-btn-white"
+                style={{ padding: '0.25rem', borderRadius: '50%' }}
+                onClick={handleNextPage}
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          )}
+
+          <button
+            className="comic-btn comic-btn-yellow"
+            style={{ padding: '0.4rem 0.6rem', fontSize: '0.85rem' }}
+            onClick={() => navigateToChapterOffset('next')}
+          >
+            Next
+            <ChevronRight size={16} />
           </button>
         </div>
       )}
 
       {/* Permanent Page Counter */}
-      {((readingMode === 'single' && !hudVisible) || readingMode === 'webtoon') && (
+      {!hudVisible && (
         <div style={{
           position: 'fixed',
           bottom: '1rem',

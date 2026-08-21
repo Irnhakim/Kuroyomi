@@ -19,31 +19,20 @@ export const Layout: React.FC<LayoutProps> = ({
   return (
     <div className="app-container">
       {/* Header */}
-      <header style={{
-        borderBottom: '3px solid var(--border-color)',
-        backgroundColor: 'var(--bg-card)',
-        padding: '1rem 2rem',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        position: 'sticky',
-        top: 0,
-        zIndex: 50,
-        boxShadow: '0 4px 0px rgba(0,0,0,0.05)'
-      }}>
+      <header className="app-header">
         {/* Logo and Brand */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer' }} onClick={() => setActiveTab('library')}>
-          <img src="/logo.png" alt="Kuroyomi" style={{ height: '42px' }} />
-          <span style={{ fontSize: '1.5rem', fontWeight: 900, letterSpacing: '-0.5px', color: 'var(--text-color)', textTransform: 'uppercase' }}>Kuroyomi</span>
+        <div className="header-brand" onClick={() => setActiveTab('library')}>
+          <img src="/logo.png" alt="Kuroyomi" className="header-logo" />
+          <span className="header-title">Kuroyomi</span>
         </div>
 
         {/* Desktop Navigation & Actions */}
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+        <div className="header-actions">
           <nav className="desktop-nav">
-            <button 
+            <button
               className={`nav-tab ${activeTab === 'library' ? 'active' : ''}`}
-              style={{ 
-                background: 'none', 
+              style={{
+                background: 'none',
                 border: 'none',
                 color: 'var(--text-color)',
                 display: 'flex',
@@ -55,11 +44,11 @@ export const Layout: React.FC<LayoutProps> = ({
               <BookOpen size={20} />
               Library
             </button>
-            
-            <button 
+
+            <button
               className={`nav-tab ${activeTab === 'browse' ? 'active' : ''}`}
-              style={{ 
-                background: 'none', 
+              style={{
+                background: 'none',
                 border: 'none',
                 color: 'var(--text-color)',
                 display: 'flex',
@@ -72,10 +61,10 @@ export const Layout: React.FC<LayoutProps> = ({
               Browse
             </button>
 
-            <button 
+            <button
               className={`nav-tab ${activeTab === 'settings' ? 'active' : ''}`}
-              style={{ 
-                background: 'none', 
+              style={{
+                background: 'none',
                 border: 'none',
                 color: 'var(--text-color)',
                 display: 'flex',
@@ -91,15 +80,8 @@ export const Layout: React.FC<LayoutProps> = ({
 
           {/* Theme Toggle Button */}
           <button
-            className="comic-btn comic-btn-yellow"
+            className="comic-btn comic-btn-yellow theme-toggle"
             onClick={toggleTheme}
-            style={{ 
-              padding: '0.5rem', 
-              borderRadius: '50%',
-              width: '40px',
-              height: '40px',
-              justifyContent: 'center'
-            }}
             title={theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
           >
             {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}

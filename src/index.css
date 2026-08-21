@@ -243,6 +243,53 @@ body {
   display: block;
 }
 
+/* App Header & Brand */
+.app-header {
+  border-bottom: 3px solid var(--border-color);
+  background-color: var(--bg-card);
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  box-shadow: 0 4px 0px rgba(0,0,0,0.05);
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  cursor: pointer;
+}
+
+.header-logo {
+  height: 42px;
+}
+
+.header-title {
+  font-size: 1.5rem;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+  color: var(--text-color);
+  text-transform: uppercase;
+}
+
+.header-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.theme-toggle {
+  padding: 0.5rem !important;
+  border-radius: 50% !important;
+  width: 40px;
+  height: 40px;
+  justify-content: center;
+}
+
 /* Responsive Layout Utilities */
 .desktop-nav {
   display: flex;
@@ -288,6 +335,23 @@ body {
 
 /* Screen Size Media Queries */
 @media (max-width: 767px) {
+  .app-header {
+    padding: 0.5rem 1rem !important;
+  }
+
+  .header-title {
+    font-size: 1.15rem !important;
+    letter-spacing: -0.2px !important;
+  }
+
+  .header-logo {
+    height: 32px !important;
+  }
+
+  .header-brand {
+    gap: 0.5rem !important;
+  }
+
   .desktop-nav {
     display: none; /* Hide header text nav links */
   }
