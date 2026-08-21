@@ -21,10 +21,66 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
   const [currentPage, setCurrentPage] = useState(0);
   const [readingMode, setReadingMode] = useState<'single' | 'webtoon'>('single');
   const [hudVisible, setHudVisible] = useState(true);
+  const [failedPages, setFailedPages] = useState<Record<number, boolean>>({});
+  const [reloadKeys, setReloadKeys] = useState<Record<number, number>>({});
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const getPageSrc = (idx: number) => {
+    const baseUrl = api.getPageImageUrl(mangaId, chapterId, idx);
+    const key = reloadKeys[idx] || 0;
+    return key > 0 ? `${baseUrl}?r=${key}` : baseUrl;
+  };
+
+  const handleReloadPage = (idx: number) => {
+    setFailedPages(prev => {
+      const copy = { ...prev };
+      delete copy[idx];
+      return copy;
+    });
+    setReloadKeys(prev => ({
+      ...prev,
+      [idx]: (prev[idx] || 0) + 1
+    }));
+  };
+
+  const renderErrorCard = (idx: number) => (
+    <div className="reader-error-placeholder comic-box" style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '2rem',
+      backgroundColor: 'var(--bg-card)',
+      border: '3px solid var(--border-color)',
+      maxWidth: '400px',
+      margin: '2rem auto',
+      textAlign: 'center',
+      position: 'relative',
+      zIndex: 20
+    }}>
+      <h4 style={{ margin: '0 0 0.5rem 0', fontWeight: 900, color: 'var(--retro-pink)', textTransform: 'uppercase' }}>
+        Failed to load page {idx + 1}
+      </h4>
+      <p style={{ margin: '0 0 1.5rem 0', fontSize: '0.9rem', fontWeight: 600 }}>
+        The server returned an error or the page image has not been seeded yet.
+      </p>
+      <button
+        className="comic-btn comic-btn-yellow"
+        style={{ position: 'relative', zIndex: 30 }}
+        onClick={(e) => {
+          e.stopPropagation();
+          handleReloadPage(idx);
+        }}
+      >
+        Retry Page
+      </button>
+    </div>
+  );
 
   const loadChapterAndPages = async () => {
     setLoading(true);
+    setFailedPages({});
+    setReloadKeys({});
     try {
       const [info, chaptersList, configs] = await Promise.all([
         api.getChapterDetails(mangaId, chapterId),
@@ -273,13 +329,18 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
               onClick={handlePrevPage}
             />
 
-            <img
-              src={api.getPageImageUrl(mangaId, chapterId, currentPage)}
-              alt={`Page ${currentPage + 1}`}
-              className="reader-img"
-              style={{ userSelect: 'none' }}
-              onClick={toggleHud}
-            />
+            {failedPages[currentPage] ? (
+              renderErrorCard(currentPage)
+            ) : (
+              <img
+                src={getPageSrc(currentPage)}
+                alt={`Page ${currentPage + 1}`}
+                className="reader-img"
+                style={{ userSelect: 'none' }}
+                onClick={toggleHud}
+                onError={() => setFailedPages(prev => ({ ...prev, [currentPage]: true }))}
+              />
+            )}
 
             <div
               className="reader-nav-zone-next"
@@ -290,15 +351,22 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
           /* WEBTOON MODE */
           <div className="reader-webtoon-container" onClick={(e) => e.stopPropagation()}>
             {Array.from({ length: chapterInfo.pageCount }).map((_, idx) => (
-              <img
-                key={idx}
-                data-page-index={idx}
-                src={api.getPageImageUrl(mangaId, chapterId, idx)}
-                alt={`Page ${idx + 1}`}
-                className="reader-webtoon-img reader-page-image"
-                loading="lazy"
-                onClick={toggleHud}
-              />
+              failedPages[idx] ? (
+                <div key={idx} style={{ minHeight: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {renderErrorCard(idx)}
+                </div>
+              ) : (
+                <img
+                  key={idx}
+                  data-page-index={idx}
+                  src={getPageSrc(idx)}
+                  alt={`Page ${idx + 1}`}
+                  className="reader-webtoon-img reader-page-image"
+                  loading="lazy"
+                  onClick={toggleHud}
+                  onError={() => setFailedPages(prev => ({ ...prev, [idx]: true }))}
+                />
+              )
             ))}
           </div>
         )}

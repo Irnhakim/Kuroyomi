@@ -1,5 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700;900&display=swap');
 
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
 :root {
   /* Color system - Light mode (Tokyo Night Day) */
   --bg-color: #e1e2e7;      /* Soft ice-blue paper */
@@ -548,6 +552,7 @@ body {
   align-items: center;
   gap: 1rem;
   min-width: 0;
+  flex: 1;
 }
 
 .manga-chapter-badge {
@@ -792,6 +797,19 @@ body {
     padding: 0.75rem !important;
   }
 
+  .manga-chapter-title-wrap {
+    gap: 0.5rem !important;
+  }
+
+  .manga-chapter-controls {
+    gap: 0.5rem !important;
+  }
+
+  .manga-chapter-badge {
+    padding: 0.15rem 0.35rem !important;
+    font-size: 0.55rem !important;
+  }
+
   .manga-chapter-name {
     font-size: 0.95rem !important;
   }
@@ -893,6 +911,16 @@ body {
   .settings-grid {
     grid-template-columns: 1fr !important;
     gap: 1.5rem !important;
+  }
+
+  .app-footer {
+    padding-bottom: 5.5rem !important;
+  }
+
+  .reader-error-placeholder {
+    max-width: 90% !important;
+    padding: 1.25rem !important;
+    margin: 1rem auto !important;
   }
 }
 

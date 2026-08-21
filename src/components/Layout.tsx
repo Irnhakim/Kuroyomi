@@ -120,7 +120,7 @@ export const Layout: React.FC<LayoutProps> = ({
       </nav>
 
       {/* Retro Comic Footer */}
-      <footer style={{
+      <footer className="app-footer" style={{
         borderTop: '3px solid var(--border-color)',
         backgroundColor: 'var(--bg-card)',
         padding: '1.25rem',
