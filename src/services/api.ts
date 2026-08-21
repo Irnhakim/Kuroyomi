@@ -578,7 +578,7 @@ export const api = {
       return JSON.parse(settingsJson);
     }
 
-    const localReaderMode = localStorage.getItem('readerMode') || 'paged-ltr';
+    const localReaderMode = localStorage.getItem('readerMode') || 'webtoon';
     const localTheme = localStorage.getItem('theme') || 'light';
 
     let extensionRepoUrls: string[] = [];

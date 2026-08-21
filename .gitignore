@@ -41,8 +41,6 @@ server/*.log
 
 #freebuff
 .freebuff
-.freebuff/*
+.freebuff/* 
 
-#server
-server/build
-server/out
+
