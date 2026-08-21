@@ -83,18 +83,20 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
     setFailedPages({});
     setReloadKeys({});
     try {
-      const [info, chaptersList, configs] = await Promise.all([
+      const [info, chaptersList, configs, manga] = await Promise.all([
         api.getChapterDetails(mangaId, chapterId),
         api.getMangaChapters(mangaId),
-        api.getSettings()
+        api.getSettings(),
+        api.getMangaDetails(mangaId)
       ]);
       setChapterInfo(info);
       setChapters(chaptersList);
-      
-      if (configs.readerMode === 'webtoon') {
-        setReadingMode('webtoon');
-      } else {
+      setMangaDetail(manga);
+
+      if (configs.readerMode === 'paged-ltr') {
         setReadingMode('single');
+      } else {
+        setReadingMode('webtoon');
       }
       
       if (info.lastPageRead && info.lastPageRead > 0) {
@@ -231,6 +233,14 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
       const scrollTop = window.scrollY || document.documentElement.scrollTop;
       const windowHeight = window.innerHeight;
       const docHeight = document.documentElement.scrollHeight;
+
+      // Auto hide HUD on scroll if it's currently visible
+      if (Math.abs(scrollTop - lastScrollTop) > 10) {
+        setHudVisible(prev => {
+          if (prev) return false;
+          return prev;
+        });
+      }
 
       // Check if we are at the very bottom of the page
       const isAtBottom = (scrollTop + windowHeight) >= (docHeight - 15); // 15px buffer
