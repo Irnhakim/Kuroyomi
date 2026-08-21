@@ -129,9 +129,13 @@ export default function App() {
     return <LoginPage onLoginSuccess={handleLoginSuccess} />;
   }
 
+  if (activePage === 'reader') {
+    return renderContent();
+  }
+
   return (
     <Layout
-      activeTab={activePage === 'manga-detail' || activePage === 'reader' ? 'library' : activePage}
+      activeTab={activePage === 'manga-detail' ? 'library' : activePage}
       setActiveTab={(tab) => {
         setActivePage(tab as ActivePage);
       }}

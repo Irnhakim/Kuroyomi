@@ -34,6 +34,7 @@ export const Layout: React.FC<LayoutProps> = ({
         {/* Logo and Brand */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer' }} onClick={() => setActiveTab('library')}>
           <img src="/logo.png" alt="Kuroyomi" style={{ height: '42px' }} />
+          <span style={{ fontSize: '1.5rem', fontWeight: 900, letterSpacing: '-0.5px', color: 'var(--text-color)', textTransform: 'uppercase' }}>Kuroyomi</span>
         </div>
 
         {/* Desktop Navigation & Actions */}

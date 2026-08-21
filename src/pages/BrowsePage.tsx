@@ -388,24 +388,50 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
                   justifyContent: 'space-between',
                   alignItems: 'center',
                   padding: '1.25rem',
-                  borderRadius: '8px'
+                  borderRadius: '8px',
+                  gap: '1rem'
                 }}
                 onClick={() => setSelectedSource(source)}
               >
-                <div>
-                  <h3 style={{ margin: 0, fontWeight: 900, fontSize: '1.3rem' }}>{source.name}</h3>
-                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.4rem' }}>
-                    <span className="comic-sticker sticker-teal" style={{ fontSize: '0.6rem' }}>
-                      {source.lang.toUpperCase()}
-                    </span>
-                    {source.supportsLatest && (
-                      <span className="comic-sticker sticker-yellow" style={{ fontSize: '0.6rem' }}>
-                        LATEST
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  {/* Source Icon */}
+                  <div style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '6px',
+                    border: '2px solid var(--border-color)',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    backgroundColor: '#fff',
+                    overflow: 'hidden',
+                    flexShrink: 0
+                  }}>
+                    <img
+                      src={api.getSourceIconUrl(source)}
+                      alt={source.name}
+                      style={{ width: '80%', height: '80%', objectFit: 'contain' }}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = '/logo.svg';
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <h3 style={{ margin: 0, fontWeight: 900, fontSize: '1.3rem' }}>{source.name}</h3>
+                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.4rem' }}>
+                      <span className="comic-sticker sticker-teal" style={{ fontSize: '0.6rem' }}>
+                        {source.lang.toUpperCase()}
                       </span>
-                    )}
+                      {source.supportsLatest && (
+                        <span className="comic-sticker sticker-yellow" style={{ fontSize: '0.6rem' }}>
+                          LATEST
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
-                
+
                 <button className="comic-btn comic-btn-pink" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
                   Explore Catalog
                 </button>

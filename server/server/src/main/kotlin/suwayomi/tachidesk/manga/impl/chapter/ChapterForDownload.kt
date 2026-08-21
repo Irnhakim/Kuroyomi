@@ -23,6 +23,7 @@ import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.update
 import suwayomi.tachidesk.manga.impl.ChapterDownloadHelper
+import suwayomi.tachidesk.manga.impl.Chapter
 import suwayomi.tachidesk.manga.impl.util.source.GetSource.getSourceOrStub
 import suwayomi.tachidesk.manga.model.dataclass.ChapterDataClass
 import suwayomi.tachidesk.manga.model.table.ChapterTable
@@ -119,6 +120,16 @@ suspend fun getChapterDownloadReady(
     chapterIndex: Int? = null,
     mangaId: Int? = null,
 ): ChapterDataClass {
+    if (chapterId == null && chapterIndex != null && mangaId != null) {
+        val exists = transaction {
+            ChapterTable.selectAll().where {
+                (ChapterTable.sourceOrder eq chapterIndex) and (ChapterTable.manga eq mangaId)
+            }.firstOrNull() != null
+        }
+        if (!exists) {
+            Chapter.getChapterList(mangaId, onlineFetch = true)
+        }
+    }
     val chapter = ChapterForDownload(chapterId, chapterIndex, mangaId)
     return chapter.asDownloadReady()
 }
@@ -206,6 +217,6 @@ private class ChapterForDownload(
                 } else {
                     throw Exception("'optChapterId' or 'optChapterIndex' and 'optMangaId' have to be passed")
                 }
-            }.first()
+            }.firstOrNull() ?: throw IllegalArgumentException("Chapter tidak ditemukan di database server. Coba muat ulang detail manga terlebih dahulu.")
     }
 }

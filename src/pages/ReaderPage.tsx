@@ -70,6 +70,40 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [currentPage, chapterInfo, readingMode]);
 
+  // Webtoon scroll progress tracking
+  useEffect(() => {
+    if (readingMode !== 'webtoon' || !chapterInfo) return;
+
+    const observerOptions = {
+      root: null,
+      rootMargin: '-20% 0px -20% 0px',
+      threshold: 0
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const indexAttr = entry.target.getAttribute('data-page-index');
+          if (indexAttr !== null) {
+            const pageIdx = parseInt(indexAttr, 10);
+            setCurrentPage(pageIdx);
+            saveProgress(pageIdx);
+          }
+        }
+      });
+    }, observerOptions);
+
+    const timer = setTimeout(() => {
+      const images = document.querySelectorAll('.reader-page-image');
+      images.forEach((img) => observer.observe(img));
+    }, 100);
+
+    return () => {
+      clearTimeout(timer);
+      observer.disconnect();
+    };
+  }, [readingMode, chapterInfo, chapterId]);
+
   // Save progress
   const saveProgress = async (pageIdx: number) => {
     if (!chapterInfo) return;
@@ -254,9 +288,10 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
             {Array.from({ length: chapterInfo.pageCount }).map((_, idx) => (
               <img
                 key={idx}
+                data-page-index={idx}
                 src={api.getPageImageUrl(mangaId, chapterId, idx)}
                 alt={`Page ${idx + 1}`}
-                className="reader-webtoon-img"
+                className="reader-webtoon-img reader-page-image"
                 loading="lazy"
                 onClick={toggleHud}
               />
@@ -293,6 +328,27 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
           <button className="comic-btn comic-btn-white" style={{ padding: '0.4rem 0.8rem', borderRadius: '50%' }} onClick={handleNextPage}>
             <ChevronRight size={20} />
           </button>
+        </div>
+      )}
+
+      {/* Permanent Page Counter */}
+      {((readingMode === 'single' && !hudVisible) || readingMode === 'webtoon') && (
+        <div style={{
+          position: 'fixed',
+          bottom: '1rem',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          backgroundColor: 'rgba(0, 0, 0, 0.65)',
+          color: '#ffffff',
+          padding: '0.25rem 0.75rem',
+          borderRadius: '20px',
+          fontSize: '0.85rem',
+          fontWeight: 'bold',
+          zIndex: 90,
+          pointerEvents: 'none',
+          border: '1px solid rgba(255, 255, 255, 0.15)'
+        }}>
+          {currentPage + 1} / {chapterInfo.pageCount}
         </div>
       )}
     </div>

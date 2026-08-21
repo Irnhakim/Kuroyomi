@@ -119,6 +119,19 @@ export const api = {
   // Asset URLs directly connecting to Suwayomi REST endpoints
   getMangaThumbnailUrl: (manga: Manga) => `${BASE_URL}/manga/${manga.id}/thumbnail`,
   getExtensionIconUrl: (pkgName: string) => `${BASE_URL}/extension/icon/${pkgName}`,
+  getSourceIconUrl: (source: Source) => {
+    if (source.id === '0' || source.name.toLowerCase() === 'local source') {
+      return '/logo.svg';
+    }
+    if (source.iconUrl) {
+      const parts = source.iconUrl.split('/extension/icon/');
+      const pkgName = parts.length > 1 ? parts[1] : null;
+      if (pkgName) {
+        return `${SERVER_ORIGIN}/api/v1/extension/icon/${pkgName}`;
+      }
+    }
+    return '/logo.svg';
+  },
   getPageImageUrl: (mangaId: number, chapterIndex: number, pageIndex: number) =>
     `${BASE_URL}/manga/${mangaId}/chapter/${chapterIndex}/page/${pageIndex}`,
 
@@ -358,12 +371,12 @@ export const api = {
     const progressJson = localStorage.getItem(`${prefix}_progress`);
     const progress = progressJson ? JSON.parse(progressJson) : {};
 
-    return list.map((ch, idx) => {
-      const key = `${mangaId}_${idx}`;
+    return list.map((ch) => {
+      const key = `${mangaId}_${ch.index}`;
       const userProgress = progress[key] || {};
 
       return {
-        id: idx, // Use list index as ID for mapping/loading pages
+        id: ch.index, // Use index as ID to match REST chapterIndex parameter
         url: ch.url,
         name: ch.name,
         chapterNumber: ch.chapterNumber,
@@ -371,7 +384,7 @@ export const api = {
         bookmark: ch.bookmark,
         lastPageRead: userProgress.lastPageRead !== undefined ? userProgress.lastPageRead : ch.lastPageRead,
         dateUpload: ch.dateUpload || 0,
-        sourceOrder: ch.sourceOrder,
+        sourceOrder: ch.index,
         downloaded: ch.downloadStatus === 'DOWNLOADED'
       };
     });

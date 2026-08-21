@@ -17,6 +17,10 @@ import suwayomi.tachidesk.global.controller.SettingsController
 import suwayomi.tachidesk.global.controller.WebViewController
 
 object GlobalAPI {
+    private val applicationDirs by lazy {
+        xyz.nulldev.androidcompat.util.KoinGlobalHelper.instance(suwayomi.tachidesk.server.ApplicationDirs::class.java)
+    }
+
     fun defineEndpoints() {
         path("meta") {
             get("", GlobalMetaController.getMeta)
@@ -32,37 +36,41 @@ object GlobalAPI {
         }
         path("kuroyomi") {
             get("users") { ctx ->
-                val applicationDirs = xyz.nulldev.androidcompat.util.KoinGlobalHelper.instance(suwayomi.tachidesk.server.ApplicationDirs::class.java)
                 val file = java.io.File(applicationDirs.dataRoot, "kuroyomi_users.json")
                 if (file.exists()) {
                     ctx.contentType("application/json")
-                    ctx.result(file.readText())
+                    ctx.result(file.inputStream())
                 } else {
                     ctx.result("{}")
                 }
             }
             post("users") { ctx ->
-                val applicationDirs = xyz.nulldev.androidcompat.util.KoinGlobalHelper.instance(suwayomi.tachidesk.server.ApplicationDirs::class.java)
                 val file = java.io.File(applicationDirs.dataRoot, "kuroyomi_users.json")
-                file.writeText(ctx.body())
+                ctx.bodyInputStream().use { input ->
+                    file.outputStream().use { output ->
+                        input.copyTo(output)
+                    }
+                }
                 ctx.status(200)
             }
             get("user/{username}/data") { ctx ->
                 val username = ctx.pathParam("username")
-                val applicationDirs = xyz.nulldev.androidcompat.util.KoinGlobalHelper.instance(suwayomi.tachidesk.server.ApplicationDirs::class.java)
                 val file = java.io.File(applicationDirs.dataRoot, "kuroyomi_user_${username}.json")
                 if (file.exists()) {
                     ctx.contentType("application/json")
-                    ctx.result(file.readText())
+                    ctx.result(file.inputStream())
                 } else {
                     ctx.result("{}")
                 }
             }
             post("user/{username}/data") { ctx ->
                 val username = ctx.pathParam("username")
-                val applicationDirs = xyz.nulldev.androidcompat.util.KoinGlobalHelper.instance(suwayomi.tachidesk.server.ApplicationDirs::class.java)
                 val file = java.io.File(applicationDirs.dataRoot, "kuroyomi_user_${username}.json")
-                file.writeText(ctx.body())
+                ctx.bodyInputStream().use { input ->
+                    file.outputStream().use { output ->
+                        input.copyTo(output)
+                    }
+                }
                 ctx.status(200)
             }
         }
