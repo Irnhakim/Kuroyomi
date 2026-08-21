@@ -39,6 +39,10 @@ server/*.log
 .claude
 .claude/*
 
-#freebuf
-.freebuf
-.freebuf/*
+#freebuff
+.freebuff
+.freebuff/*
+
+#server
+server/build
+server/out
