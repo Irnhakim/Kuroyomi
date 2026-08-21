@@ -209,7 +209,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
                 </div>
               )}
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+              <div className="settings-password-grid" style={{ display: 'grid', gap: '1rem' }}>
                 <div>
                   <label style={{ display: 'block', fontWeight: 800, marginBottom: '0.25rem', fontSize: '0.8rem', textTransform: 'uppercase' }}>Password Lama</label>
                   <input
@@ -511,7 +511,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
                 Add Repository
               </button>
             </form>
-            <p style={{ margin: '0.75rem 0 0 0', fontSize: '0.75rem', color: 'var(--muted-text)', fontWeight: 700 }}>
+            <p style={{ margin: '0.75rem 0 0 0', fontSize: '0.75rem', color: 'var(--muted-text)', fontWeight: 700, wordBreak: 'break-all' }}>
               Keiyoushi Repo: https://raw.githubusercontent.com/keiyoushi/extensions/repo/index.min.json
             </p>
           </div>

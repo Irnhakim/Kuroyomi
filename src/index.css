@@ -679,6 +679,11 @@ body {
   gap: 2rem;
 }
 
+.settings-password-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
 .settings-main-col {
   grid-column: span 2;
   display: flex;
@@ -753,6 +758,9 @@ body {
 
   .comic-box {
     padding: 0.5rem;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
   }
 
   .comic-box h3 {
@@ -906,11 +914,19 @@ body {
 
   .settings-main-col {
     grid-column: span 1 !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
   }
 
   .settings-grid {
     grid-template-columns: 1fr !important;
     gap: 1.5rem !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .settings-password-grid {
+    grid-template-columns: 1fr !important;
   }
 
   .app-footer {
