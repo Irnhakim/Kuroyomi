@@ -220,62 +220,41 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
     <div className="reader-container" ref={containerRef}>
       {/* Floating HUD Header */}
       {hudVisible && (
-        <div style={{
-          position: 'fixed',
-          top: '1rem',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: '95%',
-          maxWidth: '900px',
-          zIndex: 100,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          backgroundColor: 'var(--bg-card)',
-          border: '3px solid var(--border-color)',
-          borderRadius: '12px',
-          boxShadow: '4px 4px 0px var(--border-color)',
-          padding: '0.5rem 1rem',
-          color: 'var(--text-color)',
-          boxSizing: 'border-box'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 0, flex: 1 }}>
+        <div className="reader-hud-header">
+          <div className="reader-hud-header-left">
             <button
-              className="comic-btn comic-btn-white"
-              style={{ padding: '0.4rem 0.6rem', fontSize: '0.85rem', flexShrink: 0 }}
+              className="comic-btn comic-btn-white reader-hud-btn"
               onClick={onBack}
             >
               <ArrowLeft size={16} />
-              Exit
+              <span>Exit</span>
             </button>
-            <div style={{ minWidth: 0 }}>
-              <h4 style={{ margin: 0, fontWeight: 900, fontSize: '0.95rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <div className="reader-hud-info">
+              <h4 className="reader-hud-title">
                 {chapterInfo?.name}
               </h4>
-              <span className="comic-sticker sticker-purple" style={{ fontSize: '0.55rem', transform: 'none', padding: '0.1rem 0.35rem', marginTop: '0.15rem', display: 'inline-block' }}>
+              <span className="comic-sticker sticker-purple reader-hud-badge">
                 PAGE {readingMode === 'single' ? `${currentPage + 1} / ${chapterInfo.pageCount}` : `LONG STRIP`}
               </span>
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <div className="reader-hud-header-right">
             <button
-              className={`comic-btn ${readingMode === 'single' ? 'comic-btn-yellow' : 'comic-btn-white'}`}
-              style={{ padding: '0.4rem 0.6rem', fontSize: '0.85rem' }}
+              className={`comic-btn reader-hud-btn ${readingMode === 'single' ? 'comic-btn-yellow' : 'comic-btn-white'}`}
               onClick={() => setReadingMode('single')}
               title="Single Page Mode"
             >
               <BookOpen size={16} />
-              Single
+              <span>Single</span>
             </button>
             <button
-              className={`comic-btn ${readingMode === 'webtoon' ? 'comic-btn-yellow' : 'comic-btn-white'}`}
-              style={{ padding: '0.4rem 0.6rem', fontSize: '0.85rem' }}
+              className={`comic-btn reader-hud-btn ${readingMode === 'webtoon' ? 'comic-btn-yellow' : 'comic-btn-white'}`}
               onClick={() => setReadingMode('webtoon')}
               title="Webtoon Mode"
             >
               <LayoutList size={16} />
-              Scroll
+              <span>Scroll</span>
             </button>
           </div>
         </div>
@@ -283,21 +262,14 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
 
       {/* Main Pages Canvas */}
       <div
-        style={{
-          marginTop: hudVisible ? '5.5rem' : '1rem',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          width: '100%',
-          cursor: 'pointer'
-        }}
+        className={`reader-canvas-wrap ${hudVisible ? 'hud-active' : ''}`}
         onClick={toggleHud}
       >
         {readingMode === 'single' ? (
           /* SINGLE PAGE MODE */
-          <div style={{ position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', maxWidth: '850px' }} onClick={(e) => e.stopPropagation()}>
+          <div className="reader-single-wrap" onClick={(e) => e.stopPropagation()}>
             <div
-              style={{ position: 'absolute', left: 0, top: 0, width: '25%', height: '100%', zIndex: 10, cursor: 'w-resize' }}
+              className="reader-nav-zone-prev"
               onClick={handlePrevPage}
             />
 
@@ -310,7 +282,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
             />
 
             <div
-              style={{ position: 'absolute', right: 0, top: 0, width: '25%', height: '100%', zIndex: 10, cursor: 'e-resize' }}
+              className="reader-nav-zone-next"
               onClick={handleNextPage}
             />
           </div>
@@ -334,49 +306,28 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
 
       {/* Floating Bottom HUD Banner */}
       {hudVisible && (
-        <div style={{
-          position: 'fixed',
-          bottom: '1rem',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: '95%',
-          maxWidth: '900px',
-          zIndex: 100,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          backgroundColor: 'var(--bg-card)',
-          border: '3px solid var(--border-color)',
-          borderRadius: '12px',
-          boxShadow: '4px 4px 0px var(--border-color)',
-          padding: '0.5rem 1rem',
-          color: 'var(--text-color)',
-          boxSizing: 'border-box'
-        }}>
+        <div className="reader-hud-footer">
           <button
-            className="comic-btn comic-btn-white"
-            style={{ padding: '0.4rem 0.6rem', fontSize: '0.85rem' }}
+            className="comic-btn comic-btn-white reader-hud-btn"
             onClick={() => navigateToChapterOffset('prev')}
           >
             <ChevronLeft size={16} />
-            Prev
+            <span>Prev</span>
           </button>
 
           {readingMode === 'single' && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <div className="reader-hud-page-controls">
               <button
-                className="comic-btn comic-btn-white"
-                style={{ padding: '0.25rem', borderRadius: '50%' }}
+                className="comic-btn comic-btn-white reader-hud-page-btn"
                 onClick={handlePrevPage}
               >
                 <ChevronLeft size={16} />
               </button>
-              <span style={{ fontWeight: 900, fontSize: '0.9rem', color: 'var(--text-color)' }}>
+              <span className="reader-hud-page-number">
                 {currentPage + 1} / {chapterInfo.pageCount}
               </span>
               <button
-                className="comic-btn comic-btn-white"
-                style={{ padding: '0.25rem', borderRadius: '50%' }}
+                className="comic-btn comic-btn-white reader-hud-page-btn"
                 onClick={handleNextPage}
               >
                 <ChevronRight size={16} />
@@ -385,11 +336,10 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
           )}
 
           <button
-            className="comic-btn comic-btn-yellow"
-            style={{ padding: '0.4rem 0.6rem', fontSize: '0.85rem' }}
+            className="comic-btn comic-btn-yellow reader-hud-btn"
             onClick={() => navigateToChapterOffset('next')}
           >
-            Next
+            <span>Next</span>
             <ChevronRight size={16} />
           </button>
         </div>
@@ -397,21 +347,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
 
       {/* Permanent Page Counter */}
       {!hudVisible && (
-        <div style={{
-          position: 'fixed',
-          bottom: '1rem',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          backgroundColor: 'rgba(0, 0, 0, 0.65)',
-          color: '#ffffff',
-          padding: '0.25rem 0.75rem',
-          borderRadius: '20px',
-          fontSize: '0.85rem',
-          fontWeight: 'bold',
-          zIndex: 90,
-          pointerEvents: 'none',
-          border: '1px solid rgba(255, 255, 255, 0.15)'
-        }}>
+        <div className="reader-permanent-counter">
           {currentPage + 1} / {chapterInfo.pageCount}
         </div>
       )}

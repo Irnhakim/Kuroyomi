@@ -154,24 +154,17 @@ export const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
         </div>
 
         {/* Title, tags and Description */}
-        <div style={{ flex: 1, minWidth: '300px' }}>
-          <h1 style={{
-            fontSize: '3rem',
-            lineHeight: 1,
-            fontWeight: 900,
-            margin: 0,
-            textTransform: 'uppercase',
-            letterSpacing: '-1px'
-          }}>
+        <div className="manga-detail-info">
+          <h1 className="manga-detail-title">
             {manga.title}
           </h1>
 
-          <p style={{ fontSize: '1.2rem', fontWeight: 700, margin: '0.75rem 0', color: 'var(--retro-pink)' }}>
+          <p className="manga-detail-creator">
             by {manga.author || manga.artist || 'Unknown Creator'}
           </p>
 
           {/* Badges */}
-          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', margin: '1rem 0' }}>
+          <div className="manga-detail-badges-wrap">
             <span className="comic-sticker sticker-yellow">{manga.status}</span>
             {manga.genre?.slice(0, 5).map((g, idx) => (
               <span key={idx} className="comic-sticker sticker-teal" style={{ transform: `rotate(${(idx % 2 === 0 ? 1 : -1) * 1.5}deg)` }}>
@@ -181,7 +174,7 @@ export const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
           </div>
 
           {/* Description speech bubble */}
-          <div className="comic-box" style={{ margin: '1.5rem 0', backgroundColor: 'var(--bg-card)' }}>
+          <div className="comic-box manga-detail-synopsis" style={{ backgroundColor: 'var(--bg-card)' }}>
             <h4 style={{ margin: '0 0 0.5rem 0', fontWeight: 900, fontSize: '1.1rem', textTransform: 'uppercase' }}>
               Synopsis
             </h4>
@@ -192,8 +185,8 @@ export const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
 
           {/* Library Toggle Action */}
           <button
-            className={`comic-btn ${inLibrary ? 'comic-btn-white' : 'comic-btn-pink'}`}
-            style={{ 
+            className={`comic-btn ${inLibrary ? 'comic-btn-white' : 'comic-btn-pink'} manga-detail-lib-btn`}
+            style={{
               borderColor: inLibrary ? 'var(--retro-pink)' : 'var(--border-color)',
               color: inLibrary ? 'var(--retro-pink)' : '#fff'
             }}
@@ -228,7 +221,7 @@ export const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
             No chapters loaded. Try syncing/fetching updates from Suwayomi.
           </p>
         ) : (
-          <div style={{
+          <div className="manga-chapters-list" style={{
             display: 'flex',
             flexDirection: 'column',
             gap: '0.75rem',
@@ -240,42 +233,26 @@ export const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
               <div
                 key={chapter.id}
                 onClick={() => onChapterSelect(manga.id, chapter.id)}
+                className="manga-chapter-row"
                 style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '1rem',
-                  border: '2px solid var(--border-color)',
-                  borderRadius: '8px',
                   backgroundColor: chapter.read ? 'var(--bg-color)' : 'var(--bg-card)',
-                  cursor: 'pointer',
-                  opacity: chapter.read ? 0.75 : 1,
-                  transition: 'transform 0.1s ease, box-shadow 0.1s ease',
-                  boxShadow: '3px 3px 0px var(--border-color)'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translate(-2px, -2px)';
-                  e.currentTarget.style.boxShadow = '5px 5px 0px var(--border-color)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translate(0, 0)';
-                  e.currentTarget.style.boxShadow = '3px 3px 0px var(--border-color)';
+                  opacity: chapter.read ? 0.75 : 1
                 }}
               >
                 {/* Chapter Name & Number */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                  <span className="comic-sticker sticker-purple" style={{ fontSize: '0.65rem', transform: 'none' }}>
+                <div className="manga-chapter-title-wrap">
+                  <span className="comic-sticker sticker-purple manga-chapter-badge">
                     #{chapter.chapterNumber}
                   </span>
-                  <span style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--text-color)' }}>
+                  <span className="manga-chapter-name">
                     {chapter.name}
                   </span>
                 </div>
 
                 {/* Read Status Controls */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div className="manga-chapter-controls">
                   {chapter.dateUpload > 0 && (
-                    <span style={{ fontSize: '0.8rem', color: 'var(--muted-text)', fontWeight: 700 }}>
+                    <span className="manga-chapter-date">
                       {new Date(chapter.dateUpload).toLocaleDateString()}
                     </span>
                   )}

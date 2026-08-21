@@ -143,19 +143,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
         </div>
 
         {/* Catalog Control Bar */}
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '1rem',
-          backgroundColor: 'var(--bg-card)',
-          border: '3px solid var(--border-color)',
-          boxShadow: '4px 4px 0px var(--border-color)',
-          borderRadius: '12px',
-          padding: '1rem',
-          marginBottom: '2rem'
-        }}>
+        <div className="catalog-control-bar">
           {/* Mode Toggles */}
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <button
@@ -177,16 +165,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
           </div>
 
           {/* Catalog Search Input */}
-          <form onSubmit={handleSearchSubmit} style={{
-            display: 'flex',
-            alignItems: 'center',
-            background: 'var(--bg-color)',
-            border: '2px solid var(--border-color)',
-            borderRadius: '6px',
-            padding: '0.25rem 0.5rem',
-            width: '100%',
-            maxWidth: '350px'
-          }}>
+          <form onSubmit={handleSearchSubmit} className="catalog-search-form">
             <input
               type="text"
               placeholder="Search source catalog..."
@@ -382,18 +361,10 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
             sources.map((source) => (
               <div
                 key={source.id}
-                className="comic-box comic-box-interactive"
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '1.25rem',
-                  borderRadius: '8px',
-                  gap: '1rem'
-                }}
+                className="comic-box comic-box-interactive source-card"
                 onClick={() => setSelectedSource(source)}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div className="source-info">
                   {/* Source Icon */}
                   <div style={{
                     width: '40px',
@@ -417,8 +388,8 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
                     />
                   </div>
 
-                  <div>
-                    <h3 style={{ margin: 0, fontWeight: 900, fontSize: '1.3rem' }}>{source.name}</h3>
+                  <div className="source-title-wrap">
+                    <h3 className="source-title">{source.name}</h3>
                     <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.4rem' }}>
                       <span className="comic-sticker sticker-teal" style={{ fontSize: '0.6rem' }}>
                         {source.lang.toUpperCase()}
@@ -432,8 +403,9 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
                   </div>
                 </div>
 
-                <button className="comic-btn comic-btn-pink" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
-                  Explore Catalog
+                <button className="comic-btn comic-btn-pink browse-explore-btn">
+                  <Compass size={16} />
+                  <span>Explore</span>
                 </button>
               </div>
             ))
@@ -517,14 +489,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
             {filteredExtensions.map((ext) => (
             <div
               key={ext.pkgName}
-              className="comic-box"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '1.5rem',
-                padding: '1.25rem',
-                borderRadius: '8px'
-              }}
+              className="comic-box extension-card"
             >
               {/* Icon */}
               <div style={{
@@ -536,7 +501,8 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
                 justifyContent: 'center',
                 alignItems: 'center',
                 backgroundColor: 'var(--bg-color)',
-                overflow: 'hidden'
+                overflow: 'hidden',
+                flexShrink: 0
               }}>
                 <img
                   src={api.getExtensionIconUrl(ext.pkgName)}
@@ -549,9 +515,9 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
               </div>
 
               {/* Info */}
-              <div style={{ flex: 1 }}>
-                <h3 style={{ margin: 0, fontWeight: 900, fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-                  {ext.name}
+              <div className="extension-info">
+                <h3 className="extension-title-wrap">
+                  <span className="extension-title" title={ext.name}>{ext.name}</span>
                   <span className="comic-sticker sticker-teal" style={{ fontSize: '0.6rem' }}>
                     {ext.lang.toUpperCase()}
                   </span>
@@ -561,7 +527,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
                     </span>
                   )}
                 </h3>
-                <p style={{ margin: '0.3rem 0 0 0', fontSize: '0.85rem', color: 'var(--muted-text)', fontWeight: 700 }}>
+                <p style={{ margin: '0.3rem 0 0 0', fontSize: '0.85rem', color: 'var(--muted-text)', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   v{ext.versionName} • {ext.pkgName.split('.').pop()}
                 </p>
               </div>
@@ -570,21 +536,20 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
               <div>
                 {ext.status === 'INSTALLED' ? (
                   <button
-                    className="comic-btn comic-btn-white"
-                    style={{ borderColor: 'var(--retro-pink)', color: 'var(--retro-pink)', padding: '0.5rem 1rem' }}
+                    className="comic-btn comic-btn-white ext-action-btn"
+                    style={{ borderColor: 'var(--retro-pink)', color: 'var(--retro-pink)' }}
                     onClick={() => handleUninstallExtension(ext.pkgName)}
                   >
                     <Trash2 size={16} />
-                    Uninstall
+                    <span>Uninstall</span>
                   </button>
                 ) : (
                   <button
-                    className="comic-btn comic-btn-yellow"
-                    style={{ padding: '0.5rem 1rem' }}
+                    className="comic-btn comic-btn-yellow ext-action-btn"
                     onClick={() => handleInstallExtension(ext.pkgName)}
                   >
                     <Plus size={16} />
-                    Install
+                    <span>Install</span>
                   </button>
                 )}
               </div>

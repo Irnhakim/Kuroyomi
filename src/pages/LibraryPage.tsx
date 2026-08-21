@@ -68,7 +68,7 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({ onMangaSelect }) => {
       </div>
 
       {/* Category Tabs */}
-      <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '2rem', flexWrap: 'wrap', alignItems: 'center' }}>
+      <div className="category-tabs-wrap">
         <button
           className="comic-btn"
           style={{
@@ -98,18 +98,7 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({ onMangaSelect }) => {
         ))}
 
         {/* Search Bar */}
-        <div style={{
-          marginLeft: 'auto',
-          display: 'flex',
-          alignItems: 'center',
-          background: 'var(--bg-card)',
-          border: '3px solid var(--border-color)',
-          borderRadius: '8px',
-          padding: '0.25rem 0.75rem',
-          boxShadow: '3px 3px 0px var(--border-color)',
-          maxWidth: '300px',
-          width: '100%'
-        }}>
+        <div className="search-bar-wrap">
           <Search size={18} style={{ marginRight: '0.5rem', color: 'var(--muted-text)' }} />
           <input
             type="text"

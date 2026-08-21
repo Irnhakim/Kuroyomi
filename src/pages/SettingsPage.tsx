@@ -176,9 +176,9 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
         </p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2rem' }}>
+      <div className="settings-grid">
         {/* Configurations Forms Container */}
-        <div style={{ gridColumn: 'span 2', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+        <div className="settings-main-col">
 
           {/* Account Management Box */}
           <div className="comic-box" style={{ borderColor: 'var(--retro-purple)' }}>
