@@ -1,10 +1,15 @@
 import { auth } from './auth';
 
-const isDev = window.location.port === '5173' || window.location.port === '5174';
-const SERVER_ORIGIN = isDev ? `${window.location.protocol}//${window.location.hostname}:4567` : window.location.origin;
+const getStoredServerUrl = () => {
+  return localStorage.getItem('suwayomi_server_url') || '';
+};
 
-const BASE_URL = `${SERVER_ORIGIN}/api/v1`;
-const GRAPHQL_URL = `${SERVER_ORIGIN}/graphql`;
+const isDev = window.location.port === '5173' || window.location.port === '5174';
+const DEFAULT_ORIGIN = isDev ? `${window.location.protocol}//${window.location.hostname}:4567` : window.location.origin;
+const SERVER_ORIGIN = getStoredServerUrl() || DEFAULT_ORIGIN;
+
+export const BASE_URL = `${SERVER_ORIGIN}/api/v1`;
+export const GRAPHQL_URL = `${SERVER_ORIGIN}/graphql`;
 
 export interface Extension {
   name: string;

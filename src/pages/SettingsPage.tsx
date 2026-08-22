@@ -591,8 +591,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
                   <p style={{ margin: 0, fontWeight: 800, textTransform: 'uppercase' }}>
                     {t('settings.server.status')}: {status === 'online' ? 'ONLINE' : 'OFFLINE'}
                   </p>
-                  <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--muted-text)', fontWeight: 700 }}>
-                    http://localhost:4567
+                  <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--muted-text)', fontWeight: 700, wordBreak: 'break-all' }}>
+                    {localStorage.getItem('suwayomi_server_url') || `${window.location.protocol}//${window.location.hostname}:4567`}
                   </p>
                 </div>
               </div>
@@ -604,10 +604,55 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
                 <strong>Server Port:</strong> 4567 (Default)
               </p>
 
-              <button className="comic-btn comic-btn-yellow" style={{ marginTop: '1rem' }} onClick={loadSettingsAndStatus} disabled={loading}>
-                <RefreshCw size={16} />
-                {t('settings.server.refresh')}
-              </button>
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '1rem' }}>
+                <button className="comic-btn comic-btn-yellow" onClick={loadSettingsAndStatus} disabled={loading}>
+                  <RefreshCw size={16} />
+                  {t('settings.server.refresh')}
+                </button>
+              </div>
+
+              <div style={{ marginTop: '1.5rem', borderTop: '2px dashed var(--border-color)', paddingTop: '1rem' }}>
+                <label style={{ display: 'block', fontWeight: 800, marginBottom: '0.5rem', textTransform: 'uppercase', fontSize: '0.8rem' }}>
+                  Update Server URL
+                </label>
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <input
+                    type="text"
+                    id="settings_server_url_input"
+                    defaultValue={localStorage.getItem('suwayomi_server_url') || ''}
+                    placeholder="https://suwayomi.yourdomain.com"
+                    style={{
+                      flex: 1,
+                      minWidth: '180px',
+                      padding: '0.5rem',
+                      border: '2px solid var(--border-color)',
+                      borderRadius: '6px',
+                      backgroundColor: 'var(--bg-color)',
+                      color: 'var(--text-color)',
+                      fontWeight: 700,
+                      fontSize: '0.85rem'
+                    }}
+                  />
+                  <button
+                    onClick={() => {
+                      const input = document.getElementById('settings_server_url_input') as HTMLInputElement;
+                      if (input) {
+                        const url = input.value.trim();
+                        if (url) {
+                          localStorage.setItem('suwayomi_server_url', url);
+                        } else {
+                          localStorage.removeItem('suwayomi_server_url');
+                        }
+                        window.location.reload();
+                      }
+                    }}
+                    className="comic-btn comic-btn-pink"
+                    style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', boxShadow: 'none', transform: 'none' }}
+                  >
+                    Save URL
+                  </button>
+                </div>
+              </div>
             </div>
           )}
 
