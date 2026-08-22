@@ -1,0 +1,201 @@
+import React, { useEffect, useState } from 'react';
+import { api } from '../services/api';
+import type { HistoryItem } from '../services/api';
+import { Trash2, Clock, AlertCircle, BookOpen } from 'lucide-react';
+
+interface HistoryPageProps {
+  onMangaSelect: (mangaId: number) => void;
+  onChapterSelect?: (mangaId: number, chapterId: number) => void;
+}
+
+export const HistoryPage: React.FC<HistoryPageProps> = ({
+  onMangaSelect,
+  onChapterSelect
+}) => {
+  const [historyItems, setHistoryItems] = useState<HistoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadHistory = async () => {
+    setLoading(true);
+    try {
+      const items = await api.getHistory();
+      setHistoryItems(items);
+    } catch (e) {
+      console.error("Failed to load reading history:", e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadHistory();
+  }, []);
+
+  const handleDeleteItem = async (e: React.MouseEvent, mangaId: number, chapterId: number) => {
+    e.stopPropagation();
+    if (window.confirm("Remove this chapter from history?")) {
+      await api.deleteHistoryItem(mangaId, chapterId);
+      await loadHistory();
+    }
+  };
+
+  const handleClearAll = async () => {
+    if (window.confirm("Clear all reading history? This cannot be undone.")) {
+      await api.clearHistory();
+      await loadHistory();
+    }
+  };
+
+  const formatTime = (timestamp: number) => {
+    const diffMs = Date.now() - timestamp;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    return `${diffDays}d ago`;
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+      {/* Header Info */}
+      <div className="catalog-control-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <h1 className="manga-detail-title" style={{ fontSize: '2rem', margin: 0 }}>
+            Reading History
+          </h1>
+          <p style={{ margin: '0.25rem 0 0 0', fontWeight: 600, color: 'var(--muted-text)' }}>
+            List of series you recently read, synchronized locally.
+          </p>
+        </div>
+        {historyItems.length > 0 && (
+          <button
+            className="comic-btn comic-btn-pink"
+            onClick={handleClearAll}
+            style={{ fontSize: '0.85rem', padding: '0.5rem 1rem' }}
+          >
+            <Trash2 size={16} />
+            <span>Clear All</span>
+          </button>
+        )}
+      </div>
+
+      {loading ? (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>
+          <div className="loading-skeleton" style={{ width: '50px', height: '50px', borderRadius: '50%' }}></div>
+        </div>
+      ) : historyItems.length === 0 ? (
+        <div className="speech-bubble" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '3rem', textAlign: 'center' }}>
+          <Clock size={48} style={{ color: 'var(--muted-text)', marginBottom: '1rem' }} />
+          <h3 style={{ margin: 0, fontWeight: 900 }}>No Reading History</h3>
+          <p style={{ margin: '0.5rem 0 0 0', fontWeight: 600, color: 'var(--muted-text)' }}>
+            Manga chapters you read will show up here. Go read some!
+          </p>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {historyItems.map((item, idx) => {
+            // Fix index to avoid React key collision if same chapter is read multiple times (should not happen with filter, but just in case)
+            const key = `${item.mangaId}_${item.chapterId}_${idx}`;
+
+            return (
+              <div
+                key={key}
+                className="comic-box comic-box-interactive"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '0.75rem 1rem',
+                  gap: '1rem',
+                  cursor: 'pointer'
+                }}
+                onClick={() => onMangaSelect(item.mangaId)}
+              >
+                {/* Manga Cover */}
+                <div style={{
+                  width: '60px',
+                  height: '80px',
+                  borderRadius: '6px',
+                  border: '2px solid var(--border-color)',
+                  backgroundColor: '#fff',
+                  overflow: 'hidden',
+                  flexShrink: 0
+                }}>
+                  <img
+                    src={api.getMangaThumbnailUrl(item.mangaId)}
+                    alt={item.mangaTitle}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/logo.svg';
+                    }}
+                  />
+                </div>
+
+                {/* History Details */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <h3 style={{
+                    margin: 0,
+                    fontWeight: 900,
+                    fontSize: '1.1rem',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    {item.mangaTitle}
+                  </h3>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.25rem', flexWrap: 'wrap' }}>
+                    <span className="comic-sticker sticker-purple" style={{ fontSize: '0.6rem', padding: '0.1rem 0.35rem', transform: 'none', boxShadow: '1px 1px 0px var(--shadow-color)' }}>
+                      {item.chapterName}
+                    </span>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--muted-text)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                      <Clock size={12} />
+                      {formatTime(item.readAt)}
+                    </span>
+                  </div>
+
+                  <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-color)', marginTop: '0.4rem' }}>
+                    Progress: Page {item.currentPage + 1} / {item.pageCount}
+                    {item.currentPage === item.pageCount - 1 && (
+                      <span className="comic-sticker sticker-teal" style={{ fontSize: '0.55rem', padding: '0.05rem 0.25rem', transform: 'none', marginLeft: '0.5rem', boxShadow: 'none' }}>
+                        COMPLETED
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                  {onChapterSelect && (
+                    <button
+                      className="comic-btn comic-btn-teal"
+                      style={{ padding: '0.4rem 0.6rem', fontSize: '0.75rem' }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onChapterSelect(item.mangaId, item.chapterId);
+                      }}
+                      title="Continue Reading"
+                    >
+                      <BookOpen size={14} />
+                      <span className="desktop-only-text" style={{ fontSize: '0.7rem' }}>Resume</span>
+                    </button>
+                  )}
+                  <button
+                    className="comic-btn comic-btn-pink"
+                    style={{ padding: '0.4rem', borderRadius: '50%', width: '32px', height: '32px', justifyContent: 'center' }}
+                    onClick={(e) => handleDeleteItem(e, item.mangaId, item.chapterId)}
+                    title="Remove from history"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};

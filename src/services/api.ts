@@ -27,6 +27,17 @@ export interface Source {
   iconUrl?: string;
 }
 
+export interface HistoryItem {
+  mangaId: number;
+  mangaTitle: string;
+  mangaThumbnail: string;
+  chapterId: number;
+  chapterName: string;
+  currentPage: number;
+  pageCount: number;
+  readAt: number;
+}
+
 export interface Manga {
   id: number;
   url: string;
@@ -680,5 +691,44 @@ export const api = {
         }
       }
     }
+  },
+
+  // Reading History Management (Per-user localStorage backup)
+  getHistory: async (): Promise<HistoryItem[]> => {
+    const prefix = getUserPrefix();
+    const historyJson = localStorage.getItem(`${prefix}_history`);
+    return historyJson ? JSON.parse(historyJson) : [];
+  },
+
+  saveHistory: async (item: Omit<HistoryItem, 'readAt'>): Promise<void> => {
+    const prefix = getUserPrefix();
+    const historyList = await api.getHistory();
+    const updatedList = historyList.filter(
+      h => !(h.mangaId === item.mangaId && h.chapterId === item.chapterId)
+    );
+    updatedList.unshift({
+      ...item,
+      readAt: Date.now()
+    });
+    // Limit history to top 100 entries to avoid bloating localStorage
+    const limitedList = updatedList.slice(0, 100);
+    localStorage.setItem(`${prefix}_history`, JSON.stringify(limitedList));
+    await syncUserDataToServer();
+  },
+
+  deleteHistoryItem: async (mangaId: number, chapterId: number): Promise<void> => {
+    const prefix = getUserPrefix();
+    const historyList = await api.getHistory();
+    const updatedList = historyList.filter(
+      h => !(h.mangaId === mangaId && h.chapterId === chapterId)
+    );
+    localStorage.setItem(`${prefix}_history`, JSON.stringify(updatedList));
+    await syncUserDataToServer();
+  },
+
+  clearHistory: async (): Promise<void> => {
+    const prefix = getUserPrefix();
+    localStorage.setItem(`${prefix}_history`, JSON.stringify([]));
+    await syncUserDataToServer();
   }
 };

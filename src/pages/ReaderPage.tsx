@@ -115,6 +115,21 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
     loadChapterAndPages();
   }, [chapterId]);
 
+  // Save to reading history
+  useEffect(() => {
+    if (chapterInfo && mangaDetail) {
+      api.saveHistory({
+        mangaId,
+        mangaTitle: mangaDetail.title,
+        mangaThumbnail: mangaDetail.thumbnailUrl,
+        chapterId,
+        chapterName: chapterInfo.name,
+        currentPage,
+        pageCount: chapterInfo.pageCount
+      }).catch(err => console.error("Error saving history:", err));
+    }
+  }, [currentPage, chapterInfo, mangaDetail, mangaId, chapterId]);
+
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -296,7 +311,12 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
               <ArrowLeft size={16} />
               <span>Exit</span>
             </button>
-            <div className="reader-hud-info">
+            <div className="reader-hud-info" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+              {mangaDetail?.title && (
+                <div className="reader-hud-manga">
+                  {mangaDetail.title}
+                </div>
+              )}
               <h4 className="reader-hud-title">
                 {chapterInfo?.name}
               </h4>

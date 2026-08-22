@@ -296,6 +296,18 @@ body {
   white-space: nowrap;
 }
 
+.reader-hud-manga {
+  font-size: 0.75rem;
+  font-weight: 700;
+  opacity: 0.85;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--retro-pink);
+}
+
 .reader-hud-badge {
   font-size: 0.55rem;
   transform: none;
@@ -846,6 +858,11 @@ body {
 
   .reader-hud-title {
     font-size: 0.85rem !important;
+    max-width: 120px;
+  }
+
+  .reader-hud-manga {
+    font-size: 0.65rem !important;
     max-width: 120px;
   }
 

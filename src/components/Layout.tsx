@@ -1,5 +1,5 @@
 import React from 'react';
-import { BookOpen, Compass, Settings, Sun, Moon } from 'lucide-react';
+import { BookOpen, Compass, Clock, Settings, Sun, Moon } from 'lucide-react';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -62,6 +62,22 @@ export const Layout: React.FC<LayoutProps> = ({
             </button>
 
             <button
+              className={`nav-tab ${activeTab === 'history' ? 'active' : ''}`}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--text-color)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}
+              onClick={() => setActiveTab('history')}
+            >
+              <Clock size={20} />
+              History
+            </button>
+
+            <button
               className={`nav-tab ${activeTab === 'settings' ? 'active' : ''}`}
               style={{
                 background: 'none',
@@ -103,14 +119,21 @@ export const Layout: React.FC<LayoutProps> = ({
           <BookOpen size={20} />
           <span>Library</span>
         </button>
-        <button 
+        <button
           className={`bottom-nav-btn ${activeTab === 'browse' ? 'active' : ''}`}
           onClick={() => setActiveTab('browse')}
         >
           <Compass size={20} />
           <span>Browse</span>
         </button>
-        <button 
+        <button
+          className={`bottom-nav-btn ${activeTab === 'history' ? 'active' : ''}`}
+          onClick={() => setActiveTab('history')}
+        >
+          <Clock size={20} />
+          <span>History</span>
+        </button>
+        <button
           className={`bottom-nav-btn ${activeTab === 'settings' ? 'active' : ''}`}
           onClick={() => setActiveTab('settings')}
         >

@@ -5,11 +5,12 @@ import { BrowsePage } from './pages/BrowsePage';
 import { MangaDetailPage } from './pages/MangaDetailPage';
 import { ReaderPage } from './pages/ReaderPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { HistoryPage } from './pages/HistoryPage';
 import { LoginPage } from './pages/LoginPage';
 import { auth } from './services/auth';
 import { api } from './services/api';
 
-type ActivePage = 'library' | 'browse' | 'settings' | 'manga-detail' | 'reader';
+type ActivePage = 'library' | 'browse' | 'settings' | 'manga-detail' | 'reader' | 'history';
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -18,6 +19,7 @@ export default function App() {
 
   // Detail selection
   const [selectedMangaId, setSelectedMangaId] = useState<number | null>(null);
+  const [detailBackPage, setDetailBackPage] = useState<ActivePage>('library');
 
   // Reader selection
   const [readerMangaId, setReaderMangaId] = useState<number | null>(null);
@@ -82,6 +84,7 @@ export default function App() {
 
   const handleMangaSelect = (mangaId: number) => {
     setSelectedMangaId(mangaId);
+    setDetailBackPage(activePage);
     setActivePage('manga-detail');
   };
 
@@ -97,11 +100,18 @@ export default function App() {
         return <LibraryPage onMangaSelect={handleMangaSelect} />;
       case 'browse':
         return <BrowsePage onMangaSelect={handleMangaSelect} />;
+      case 'history':
+        return (
+          <HistoryPage
+            onMangaSelect={handleMangaSelect}
+            onChapterSelect={handleChapterSelect}
+          />
+        );
       case 'manga-detail':
         return selectedMangaId ? (
           <MangaDetailPage
             mangaId={selectedMangaId}
-            onBack={() => setActivePage('library')}
+            onBack={() => setActivePage(detailBackPage)}
             onChapterSelect={handleChapterSelect}
           />
         ) : (
