@@ -42,10 +42,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
   const loadSettingsAndStatus = async () => {
     setLoading(true);
     try {
-      // Check server health
-      const isDev = window.location.port === '5173' || window.location.port === '5174';
-      const serverOrigin = isDev ? 'http://localhost:4567' : window.location.origin;
-      const res = await fetch(`${serverOrigin}/api/v1/meta`);
+      const res = await fetch(`${SERVER_ORIGIN}/api/v1/meta`);
       if (res.ok) {
         const data = await res.json();
         setServerVersion(data.version || 'v0.6.x');

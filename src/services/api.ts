@@ -125,6 +125,7 @@ export const syncUserDataToServer = async (): Promise<void> => {
     settings: localStorage.getItem(`kuroyomi_user_${key}_settings`),
     installed_extensions: localStorage.getItem(`kuroyomi_user_${key}_installed_extensions`),
     manga_categories: localStorage.getItem(`kuroyomi_user_${key}_manga_categories`),
+    history: localStorage.getItem(`kuroyomi_user_${key}_history`),
   };
   try {
     await fetch(`${BASE_URL}/kuroyomi/user/${key}/data`, {

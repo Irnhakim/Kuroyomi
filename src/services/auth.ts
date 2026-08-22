@@ -191,6 +191,7 @@ export const auth = {
         if (data.settings) localStorage.setItem(`kuroyomi_user_${key}_settings`, data.settings);
         if (data.installed_extensions) localStorage.setItem(`kuroyomi_user_${key}_installed_extensions`, data.installed_extensions);
         if (data.manga_categories) localStorage.setItem(`kuroyomi_user_${key}_manga_categories`, data.manga_categories);
+        if (data.history) localStorage.setItem(`kuroyomi_user_${key}_history`, data.history);
       }
     } catch (e) {
       console.warn("Failed to sync user data from server during login", e);
