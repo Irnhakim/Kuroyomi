@@ -218,10 +218,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
           textAlign: 'center',
           marginTop: '1.5rem',
           borderTop: '2px dashed var(--border-color)',
-          paddingTop: '1rem',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '1rem'
+          paddingTop: '1rem'
         }}>
           <button
             onClick={() => {
@@ -243,70 +240,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
               ? t('login.link.register')
               : t('login.link.login')}
           </button>
-
-          {/* Dynamic Server URL Configuration */}
-          <div style={{ marginTop: '0.5rem', textAlign: 'left' }}>
-            <details>
-              <summary style={{
-                cursor: 'pointer',
-                fontWeight: 800,
-                fontSize: '0.85rem',
-                color: 'var(--muted-text)',
-                textAlign: 'center',
-                outline: 'none',
-                userSelect: 'none'
-              }}>
-                🔧 Configure Server URL
-              </summary>
-              <div style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <label style={{ fontSize: '0.8rem', fontWeight: 800, textTransform: 'uppercase' }}>
-                  Suwayomi Server URL
-                </label>
-                <input
-                  type="text"
-                  defaultValue={localStorage.getItem('suwayomi_server_url') || ''}
-                  id="login_server_url_input"
-                  placeholder="https://suwayomi.yourdomain.com"
-                  style={{
-                    width: '100%',
-                    padding: '0.5rem',
-                    border: '2px solid var(--border-color)',
-                    borderRadius: '6px',
-                    backgroundColor: 'var(--bg-color)',
-                    color: 'var(--text-color)',
-                    fontWeight: 700,
-                    fontSize: '0.85rem',
-                    boxSizing: 'border-box'
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    const input = document.getElementById('login_server_url_input') as HTMLInputElement;
-                    if (input) {
-                      const url = input.value.trim();
-                      if (url) {
-                        localStorage.setItem('suwayomi_server_url', url);
-                      } else {
-                        localStorage.removeItem('suwayomi_server_url');
-                      }
-                      window.location.reload();
-                    }
-                  }}
-                  className="comic-btn comic-btn-yellow"
-                  style={{
-                    padding: '0.4rem',
-                    fontSize: '0.8rem',
-                    justifyContent: 'center',
-                    boxShadow: '2px 2px 0px var(--border-color)',
-                    transform: 'none'
-                  }}
-                >
-                  Save & Connect
-                </button>
-              </div>
-            </details>
-          </div>
         </div>
       </div>
     </div>
