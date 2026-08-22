@@ -43,4 +43,5 @@ server/*.log
 .freebuff
 .freebuff/* 
 
-
+#jar server
+server.jar

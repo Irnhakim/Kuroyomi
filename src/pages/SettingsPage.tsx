@@ -111,9 +111,9 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
       const repos = await api.getExtensionRepos();
       setRepoUrls(repos);
       setNewRepoUrl('');
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to add extension store", err);
-      alert("Failed to add repository. Make sure the URL is a valid index.json or index.pb path.");
+      alert(err.message || "Failed to add repository. Make sure the URL is a valid index.json or index.pb path.");
     } finally {
       setActionLoading(false);
     }
@@ -126,9 +126,9 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
       await api.removeExtensionStore(url);
       const repos = await api.getExtensionRepos();
       setRepoUrls(repos);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to remove extension store", err);
-      alert("Failed to remove repository.");
+      alert(err.message || "Failed to remove repository.");
     } finally {
       setActionLoading(false);
     }

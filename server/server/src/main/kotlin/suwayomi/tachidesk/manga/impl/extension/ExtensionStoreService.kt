@@ -78,7 +78,7 @@ object ExtensionStoreService {
                         }
                     }
 
-                if (networkStore is NetworkLegacyExtensionRepo && networkStore.indexV2 != null) {
+                if (networkStore is NetworkLegacyExtensionRepo && networkStore.indexV2 != null && networkStore.indexV2 != indexUrl && networkStore.indexV2 != updatedIndexUrl) {
                     return fetch(networkStore.indexV2)
                 }
 
