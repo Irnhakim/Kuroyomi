@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import type { Extension, Source, Manga } from '../services/api';
-import { Compass, Cpu, Plus, Trash2, Search, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Compass, Cpu, Plus, Trash2, Search, ArrowLeft, ArrowRight, Sliders } from 'lucide-react';
 
 interface BrowsePageProps {
   onMangaSelect: (mangaId: number) => void;
@@ -12,7 +12,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
   const [extensions, setExtensions] = useState<Extension[]>([]);
   const [sources, setSources] = useState<Source[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
   // Selection / Catalog browsing states
   const [selectedSource, setSelectedSource] = useState<Source | null>(null);
   const [browseMode, setBrowseMode] = useState<'popular' | 'latest' | 'search'>('popular');
@@ -22,6 +22,10 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
   const [hasNextPage, setHasNextPage] = useState(false);
   const [catalogLoading, setCatalogLoading] = useState(false);
   const [catalogError, setCatalogError] = useState<string | null>(null);
+
+  // Source filters states
+  const [filters, setFilters] = useState<any[]>([]);
+  const [showFilterPanel, setShowFilterPanel] = useState(false);
 
   // Extension search and filtering states
   const [extSearchQuery, setExtSearchQuery] = useState('');
@@ -56,6 +60,72 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
     loadInitialData();
   }, []);
 
+  // Compile filters state to Suwayomi API format
+  const compileFiltersPayload = () => {
+    const payload: any[] = [];
+    filters.forEach((f, idx) => {
+      if (f.type === 'CheckBox') {
+        payload.push({ position: idx, state: String(f.filter.state) });
+      } else if (f.type === 'Select' || f.type === 'TriState') {
+        payload.push({ position: idx, state: String(f.filter.state) });
+      } else if (f.type === 'Text') {
+        payload.push({ position: idx, state: f.filter.state || '' });
+      } else if (f.type === 'Sort') {
+        payload.push({ position: idx, state: JSON.stringify(f.filter.state) });
+      } else if (f.type === 'Group') {
+        if (Array.isArray(f.filter.state)) {
+          f.filter.state.forEach((child: any, childIdx: number) => {
+            const childStateStr = String(child.filter.state);
+            payload.push({
+              position: idx,
+              state: JSON.stringify({
+                position: childIdx,
+                state: childStateStr
+              })
+            });
+          });
+        }
+      }
+    });
+    return payload;
+  };
+
+  const updateFilterValue = (index: number, newValue: any) => {
+    setFilters(prev => prev.map((f, i) => {
+      if (i !== index) return f;
+      return {
+        ...f,
+        filter: {
+          ...f.filter,
+          state: newValue
+        }
+      };
+    }));
+  };
+
+  const updateGroupChildValue = (groupIndex: number, childIndex: number, newValue: any) => {
+    setFilters(prev => prev.map((f, i) => {
+      if (i !== groupIndex) return f;
+      const newGroupState = f.filter.state.map((child: any, cIdx: number) => {
+        if (cIdx !== childIndex) return child;
+        return {
+          ...child,
+          filter: {
+            ...child.filter,
+            state: newValue
+          }
+        };
+      });
+      return {
+        ...f,
+        filter: {
+          ...f.filter,
+          state: newGroupState
+        }
+      };
+    }));
+  };
+
   // Browse manga from a specific source
   const loadSourceCatalog = async (page = 1, append = false) => {
     if (!selectedSource) return;
@@ -68,7 +138,8 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
       } else if (browseMode === 'latest') {
         result = await api.getSourceLatest(selectedSource.id, page);
       } else {
-        result = await api.searchSource(selectedSource.id, searchQuery, page);
+        const activeFilters = compileFiltersPayload();
+        result = await api.searchSourceWithFilters(selectedSource.id, searchQuery, page, activeFilters);
       }
 
       if (append) {
@@ -87,11 +158,29 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
     }
   };
 
+  const loadFilters = async (sourceId: string, reset = false) => {
+    try {
+      const data = await api.getSourceFilters(sourceId, reset);
+      setFilters(data);
+    } catch (e) {
+      console.error("Failed to load source filters:", e);
+      setFilters([]);
+    }
+  };
+
   useEffect(() => {
     if (selectedSource) {
+      loadFilters(selectedSource.id, false);
+      setShowFilterPanel(false);
       loadSourceCatalog(1, false);
     }
-  }, [selectedSource, browseMode]);
+  }, [selectedSource]);
+
+  useEffect(() => {
+    if (selectedSource && (browseMode === 'popular' || browseMode === 'latest')) {
+      loadSourceCatalog(1, false);
+    }
+  }, [browseMode]);
 
   const handleInstallExtension = async (pkgName: string) => {
     try {
@@ -143,7 +232,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
         </div>
 
         {/* Catalog Control Bar */}
-        <div className="catalog-control-bar">
+        <div className="catalog-control-bar" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
           {/* Mode Toggles */}
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <button
@@ -164,28 +253,265 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
             )}
           </div>
 
-          {/* Catalog Search Input */}
-          <form onSubmit={handleSearchSubmit} className="catalog-search-form">
-            <input
-              type="text"
-              placeholder="Search source catalog..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              style={{
-                border: 'none',
-                background: 'transparent',
-                color: 'var(--text-color)',
-                outline: 'none',
-                fontWeight: 600,
-                width: '100%',
-                fontFamily: 'inherit'
-              }}
-            />
-            <button type="submit" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.25rem' }}>
-              <Search size={18} color="var(--text-color)" />
-            </button>
-          </form>
+          {/* Catalog Search Input and Filter Button */}
+          <div style={{ display: 'flex', gap: '0.5rem', flex: 1, minWidth: '280px' }}>
+            <form onSubmit={handleSearchSubmit} className="catalog-search-form" style={{ flex: 1, margin: 0 }}>
+              <input
+                type="text"
+                placeholder="Search source catalog..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{
+                  border: 'none',
+                  background: 'transparent',
+                  color: 'var(--text-color)',
+                  outline: 'none',
+                  fontWeight: 600,
+                  width: '100%',
+                  fontFamily: 'inherit'
+                }}
+              />
+              <button type="submit" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.25rem' }}>
+                <Search size={18} color="var(--text-color)" />
+              </button>
+            </form>
+
+            {filters.length > 0 && (
+              <button
+                className={`comic-btn ${showFilterPanel ? 'comic-btn-yellow' : 'comic-btn-white'}`}
+                style={{ padding: '0.5rem 0.75rem' }}
+                onClick={() => setShowFilterPanel(prev => !prev)}
+                title="Toggle Filters"
+              >
+                <Sliders size={18} />
+                <span className="desktop-only-text" style={{ fontSize: '0.85rem', marginLeft: '0.25rem' }}>Filters</span>
+              </button>
+            )}
+          </div>
         </div>
+
+        {/* Filters Panel */}
+        {showFilterPanel && filters.length > 0 && (
+          <div className="comic-box" style={{ padding: '1.5rem', marginBottom: '2rem', backgroundColor: 'var(--bg-card)' }}>
+            <h3 style={{ margin: '0 0 1rem 0', fontWeight: 900, textTransform: 'uppercase', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Sliders size={20} />
+              Search Filters
+            </h3>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+              {filters.map((f, idx) => {
+                // Render filter inputs based on their type
+                if (f.type === 'CheckBox') {
+                  return (
+                    <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <input
+                        type="checkbox"
+                        id={`filter-${idx}`}
+                        checked={!!f.filter.state}
+                        onChange={(e) => updateFilterValue(idx, e.target.checked)}
+                        style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                      />
+                      <label htmlFor={`filter-${idx}`} style={{ fontWeight: 700, cursor: 'pointer', fontSize: '0.9rem' }}>
+                        {f.name}
+                      </label>
+                    </div>
+                  );
+                }
+
+                if (f.type === 'Select') {
+                  const values = f.filter.values || [];
+                  return (
+                    <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                      <label style={{ fontWeight: 800, fontSize: '0.85rem', color: 'var(--muted-text)' }}>{f.name}</label>
+                      <select
+                        value={f.filter.state}
+                        onChange={(e) => updateFilterValue(idx, Number(e.target.value))}
+                        className="comic-btn"
+                        style={{ padding: '0.4rem', fontSize: '0.85rem', width: '100%', textAlign: 'left', borderRadius: '4px', textTransform: 'none' }}
+                      >
+                        {values.map((v: string, vIdx: number) => (
+                          <option key={vIdx} value={vIdx}>{v}</option>
+                        ))}
+                      </select>
+                    </div>
+                  );
+                }
+
+                if (f.type === 'TriState') {
+                  // state: 0 = IGNORE, 1 = INCLUDE, 2 = EXCLUDE
+                  const stateVal = f.filter.state;
+                  let colorClass = 'comic-btn-white';
+                  let labelSuffix = ' (Ignore)';
+                  if (stateVal === 1) {
+                    colorClass = 'comic-btn-teal';
+                    labelSuffix = ' (Include)';
+                  } else if (stateVal === 2) {
+                    colorClass = 'comic-btn-pink';
+                    labelSuffix = ' (Exclude)';
+                  }
+
+                  const cycleTriState = () => {
+                    const next = (stateVal + 1) % 3;
+                    updateFilterValue(idx, next);
+                  };
+
+                  return (
+                    <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                      <label style={{ fontWeight: 800, fontSize: '0.85rem', color: 'var(--muted-text)' }}>{f.name}</label>
+                      <button
+                        type="button"
+                        className={`comic-btn ${colorClass}`}
+                        style={{ padding: '0.4rem', fontSize: '0.85rem', width: '100%', textTransform: 'none', justifyContent: 'center' }}
+                        onClick={cycleTriState}
+                      >
+                        {f.name}{labelSuffix}
+                      </button>
+                    </div>
+                  );
+                }
+
+                if (f.type === 'Text') {
+                  return (
+                    <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                      <label style={{ fontWeight: 800, fontSize: '0.85rem', color: 'var(--muted-text)' }}>{f.name}</label>
+                      <input
+                        type="text"
+                        value={f.filter.state || ''}
+                        onChange={(e) => updateFilterValue(idx, e.target.value)}
+                        placeholder={`Enter ${f.name.toLowerCase()}...`}
+                        style={{
+                          padding: '0.4rem 0.6rem',
+                          fontSize: '0.85rem',
+                          border: '2px solid var(--border-color)',
+                          borderRadius: '4px',
+                          outline: 'none',
+                          fontWeight: 600,
+                          backgroundColor: 'var(--bg-body)',
+                          color: 'var(--text-color)'
+                        }}
+                      />
+                    </div>
+                  );
+                }
+
+                if (f.type === 'Sort') {
+                  // state: { selection: number, ascending: boolean }
+                  const stateVal = f.filter.state || { selection: 0, ascending: false };
+                  const values = f.filter.values || [];
+                  return (
+                    <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                      <label style={{ fontWeight: 800, fontSize: '0.85rem', color: 'var(--muted-text)' }}>{f.name}</label>
+                      <div style={{ display: 'flex', gap: '0.25rem' }}>
+                        <select
+                          value={stateVal.selection}
+                          onChange={(e) => updateFilterValue(idx, { ...stateVal, selection: Number(e.target.value) })}
+                          className="comic-btn"
+                          style={{ padding: '0.4rem', fontSize: '0.85rem', flex: 1, textTransform: 'none', borderRadius: '4px' }}
+                        >
+                          {values.map((v: string, vIdx: number) => (
+                            <option key={vIdx} value={vIdx}>{v}</option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          className="comic-btn comic-btn-white"
+                          style={{ padding: '0.4rem 0.6rem' }}
+                          onClick={() => updateFilterValue(idx, { ...stateVal, ascending: !stateVal.ascending })}
+                        >
+                          {stateVal.ascending ? '▲' : '▼'}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                }
+
+                if (f.type === 'Group') {
+                  // Group represents nesting. state: array of child filters
+                  const children = f.filter.state || [];
+                  return (
+                    <div key={idx} style={{ gridColumn: '1 / -1', border: '2px solid var(--border-color)', padding: '0.75rem', borderRadius: '6px', backgroundColor: 'var(--bg-body)' }}>
+                      <span style={{ fontWeight: 900, fontSize: '0.9rem', display: 'block', marginBottom: '0.5rem', textTransform: 'uppercase' }}>
+                        {f.name}
+                      </span>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.75rem' }}>
+                        {children.map((child: any, cIdx: number) => {
+                          const childId = `filter-${idx}-${cIdx}`;
+                          // Group children are usually TriState or Checkbox in Suwayomi
+                          // Let's handle TriState and Checkbox
+                          if (child.type === 'TriState') {
+                            const cState = child.filter.state;
+                            let cColor = 'comic-btn-white';
+                            let cLabel = 'Ignore';
+                            if (cState === 1) {
+                              cColor = 'comic-btn-teal';
+                              cLabel = 'Include';
+                            } else if (cState === 2) {
+                              cColor = 'comic-btn-pink';
+                              cLabel = 'Exclude';
+                            }
+                            return (
+                              <button
+                                key={cIdx}
+                                type="button"
+                                className={`comic-btn ${cColor}`}
+                                style={{ padding: '0.3rem 0.5rem', fontSize: '0.8rem', textTransform: 'none', justifyContent: 'center' }}
+                                onClick={() => {
+                                  const next = (cState + 1) % 3;
+                                  updateGroupChildValue(idx, cIdx, next);
+                                }}
+                              >
+                                {child.name}: {cLabel}
+                              </button>
+                            );
+                          }
+                          // Fallback to Checkbox
+                          return (
+                            <div key={cIdx} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                              <input
+                                type="checkbox"
+                                id={childId}
+                                checked={!!child.filter.state}
+                                onChange={(e) => updateGroupChildValue(idx, cIdx, e.target.checked)}
+                                style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                              />
+                              <label htmlFor={childId} style={{ fontWeight: 700, cursor: 'pointer', fontSize: '0.8rem' }}>
+                                {child.name}
+                              </label>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                }
+
+                return null;
+              })}
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                className="comic-btn comic-btn-white"
+                onClick={() => loadFilters(selectedSource.id, true)}
+                style={{ padding: '0.4rem 1rem', fontSize: '0.85rem' }}
+              >
+                Reset Filters
+              </button>
+              <button
+                type="button"
+                className="comic-btn comic-btn-teal"
+                onClick={() => {
+                  setBrowseMode('search');
+                  loadSourceCatalog(1, false);
+                }}
+                style={{ padding: '0.4rem 1.5rem', fontSize: '0.85rem', fontWeight: 900 }}
+              >
+                Apply & Search
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Manga Catalog Grid */}
         {catalogLoading && catalogManga.length === 0 ? (

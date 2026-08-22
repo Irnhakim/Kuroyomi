@@ -128,7 +128,10 @@ export const syncUserDataToServer = async (): Promise<void> => {
 
 export const api = {
   // Asset URLs directly connecting to Suwayomi REST endpoints
-  getMangaThumbnailUrl: (manga: Manga) => `${BASE_URL}/manga/${manga.id}/thumbnail`,
+  getMangaThumbnailUrl: (mangaIdOrManga: number | Manga) => {
+    const id = typeof mangaIdOrManga === 'number' ? mangaIdOrManga : mangaIdOrManga.id;
+    return `${BASE_URL}/manga/${id}/thumbnail`;
+  },
   getExtensionIconUrl: (pkgName: string) => `${BASE_URL}/extension/icon/${pkgName}`,
   getSourceIconUrl: (source: Source) => {
     if (source.id === '0' || source.name.toLowerCase() === 'local source') {
@@ -327,6 +330,48 @@ export const api = {
     const mangas: Manga[] = data.mangaList || data.mangas || (Array.isArray(data) ? data : []);
 
     // Overlay user library status
+    const prefix = getUserPrefix();
+    const listJson = localStorage.getItem(`${prefix}_library`);
+    const list: Manga[] = listJson ? JSON.parse(listJson) : [];
+    const libraryIds = new Set(list.map(m => m.id));
+
+    const mapped = mangas.map(m => ({
+      ...m,
+      inLibrary: libraryIds.has(m.id)
+    }));
+
+    return {
+      mangas: mapped,
+      hasNextPage: data.hasNextPage ?? false,
+    };
+  },
+
+  getSourceFilters: async (sourceId: string, reset = false): Promise<any[]> => {
+    const res = await fetch(`${BASE_URL}/source/${sourceId}/filters?reset=${reset}`);
+    if (!res.ok) throw new Error(`Failed to fetch source filters (${res.status})`);
+    return res.json();
+  },
+
+  searchSourceWithFilters: async (sourceId: string, query: string, pageNum: number, filters: any[]): Promise<{ mangas: Manga[]; hasNextPage: boolean }> => {
+    const res = await fetch(`${BASE_URL}/source/${sourceId}/search/${pageNum}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        searchTerm: query || null,
+        filter: filters
+      })
+    });
+    if (!res.ok) {
+      let msg = `Gagal mencari dengan filter (${res.status})`;
+      try {
+        const text = await res.text();
+        if (text) msg = text;
+      } catch (_) {}
+      throw new Error(msg);
+    }
+    const data = await res.json();
+    const mangas: Manga[] = data.mangaList || data.mangas || (Array.isArray(data) ? data : []);
+
     const prefix = getUserPrefix();
     const listJson = localStorage.getItem(`${prefix}_library`);
     const list: Manga[] = listJson ? JSON.parse(listJson) : [];
