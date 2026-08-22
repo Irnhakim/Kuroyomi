@@ -1,61 +1,117 @@
-# Kuroyomi
+<p align="center">
+  <img src="public/logo.svg" alt="Kuroyomi Logo" width="320" />
+</p>
 
-Kuroyomi is a lightweight, responsive, and retro-styled comic/manga reader web client. It interfaces directly with a local **Suwayomi-Server** (or compatible Tachiyomi/Mihon-based server APIs) to fetch, track, and read manga using native web technologies.
+<p align="center">
+  <strong>Web-based manga reader client built for Suwayomi-Server</strong>
+</p>
 
-## Features
+---
 
-- **Multi-User Isolation:** Multi-user logins with separate libraries, reading history, and progress tracking saved locally and synced with the backend.
-- **Custom Localization (i18n):** Native, zero-dependency lightweight localization system supporting both **English** and **Indonesian**.
-- **Role-Based Access Control:** Restricted access to administrative settings (like "Kuroyomi Server Status" and "Extension Repositories") to the `admin` account only.
-- **Dual Reading Modes:**
-  - **Webtoon Mode:** Continuous vertical scroll with intersection observers tracking page progress dynamically.
-  - **Single Page Mode:** Page-by-page rendering with arrow key navigation.
-- **Default Application Configurations:**
-  - **Theme:** Dark Mode (Tokyo Night Day / Tokyo Night Classic themes supported).
-  - **Reading Mode:** Webtoon / vertical scroll default.
-  - **Language:** English default.
-- **Library Categories:** Organize manga into categories (like *Membaca* / *Selesai*) with customizable sorting and category deletion.
-- **Image Prefetching:** Automatic background loading of upcoming pages to minimize server spikes and delay.
+Kuroyomi is a lightweight, responsive, and retro-themed web client for manga readers. It integrates directly with your self-hosted [Suwayomi-Server](https://github.com/Suwayomi/Suwayomi-Server) backend, using its GraphQL and REST APIs to manage your libraries, extensions, reading history, and progress.
 
-## Tech Stack
+Designed with a neo-brutalist Tokyo Night color scheme, it scales dynamically from small mobile viewports to large desktop monitors.
 
-- **Frontend:** React, TypeScript, Vite
-- **Styling:** CSS Custom Properties (Variables) for retro comic theme styling and layouts
-- **Icons:** Lucide React
-- **API Integration:** REST API & GraphQL client querying local Suwayomi endpoints
+## Core Features
+
+- **Direct Suwayomi Integration:** Serves as a full replacement for the default web UI. Directly loaded and served by your Kotlin backend.
+- **Dynamic Multi-User Support:** User accounts with isolated library categories, reading history, and custom configurations.
+- **Multi-Repository Extension Manager:** List, add, and remove multiple extension sources (e.g. Keiyoushi) through the admin panel. Handles network timeouts gracefully via offline fallbacks.
+- **Two Reading Engines:**
+  - *Webtoon Mode:* Vertical continuous scroll with page-change detection via intersection observers.
+  - *Single Page Mode:* Left-to-right keyboard-controlled page swapper.
+- **Lightweight Design:** Responsive, low-contrast Tokyo Night themes (Day and Classic Night styles) that load fast and reduce eye strain.
+- **Preloading Engine:** Pre-fetches upcoming images in the background to prevent loading gaps during fast reading.
+
+---
+
+## Technical Architecture
+
+```
+┌──────────────────┐      Vite Dev / Nginx
+│  Kuroyomi Client │  ◄───────────────────────►  Web Browser
+└────────┬─────────┘                             (Port 5173 / 4567)
+         │
+         │ REST & GraphQL (CORS-safe dynamic routing)
+         ▼
+┌──────────────────┐
+│ Suwayomi-Server  │  ◄──► Local database & cache directory
+└──────────────────┘
+```
+
+---
 
 ## Getting Started
 
 ### Prerequisites
-
-1. Ensure **Suwayomi-Server** is running on your machine or network (default port `4567`).
-2. Node.js (v18 or higher recommended).
+- **Node.js** (v18 or higher)
+- **Java Runtime Environment (JRE 17+)** (needed to run the Suwayomi backend)
 
 ### Installation
-
-1. Clone the repository:
+1. Clone this repository to your workspace:
    ```bash
-   git clone https://github.com/yourusername/kuroyomi.git
-   cd kuroyomi
+   git clone https://github.com/Irnhakim/Kuroyomi.git
+   cd Kuroyomi
    ```
 
-2. Install dependencies:
+2. Install the node modules:
    ```bash
    npm install
    ```
 
-3. Start the development server:
-   ```bash
-   npm run dev
+### Local Development
+To run both Vite's hot-reload server and the Kotlin Suwayomi server concurrently:
+```bash
+npm run dev
+```
+Once initialized:
+- Open your browser at `http://localhost:5173` (Vite dev server with Hot Module Replacement).
+- The Suwayomi-Server backend runs on `http://localhost:4567`.
+
+---
+
+## Production Deployment (CasaOS / Linux VPS)
+
+To deploy Kuroyomi efficiently on low-resource hardware (e.g., CasaOS with 2GB RAM) without Docker, you can run it as a single process managed by **PM2**.
+
+### 1. Build the production bundle (Lokal)
+Compile your TypeScript and bundle static assets into the `dist/` directory:
+```bash
+npm run build
+```
+
+### 2. Compile the backend Jar (Lokal)
+Kombilasi source code Kotlin backend menjadi file `.jar` mandiri:
+```bash
+cd server
+# Windows:
+.\gradlew.bat server:shadowJar
+# Linux/macOS:
+chmod +x gradlew && ./gradlew server:shadowJar
+```
+This produces the artifact under `server/server/build/libs/server-<version>-all.jar`.
+
+### 3. Deploy to Server
+1. Create a directory on your Linux server (e.g., `/var/www/kuroyomi`).
+2. Upload the `dist/` folder and the compiled `server.jar` to this directory.
+   ```text
+   /var/www/kuroyomi/
+     ├── server.jar
+     └── dist/
    ```
 
-4. Build the application for production:
-   ```bash
-   npm run build
-   ```
+### 4. Run with PM2
+Launch the backend using PM2 with maximum JVM RAM limits to keep it lightweight (~250MB RAM):
+```bash
+cd /var/www/kuroyomi
+pm2 start "java -Xmx256m -Xms128m -jar server.jar" --name "kuroyomi"
+```
 
-## Configuration
+Access the unified application directly in your browser at `http://<YOUR-SERVER-IP>:4567`.
 
-- By default, the application runs on port `5173` or `5174` and communicates with the backend Suwayomi server at `http://localhost:4567`.
-- Go to the **Settings** tab to change the application language, default reading modes, themes, or manage your account password.
-- Log in as the `admin` user to manage extension repositories (e.g. adding the Keiyoushi repository) and view server connection parameters.
+---
+
+## Development Customizations
+
+- **API Endpoints:** Managed dynamically in [api.ts](src/services/api.ts). Base hosts are dynamically bound to the current window location to prevent cross-origin CORS errors.
+- **Custom Coloring:** Theme stylesheets are located in [index.css](src/index.css) using CSS variable overrides (`--bg-color`, `--text-color`, etc.).
