@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import type { Manga, Chapter, HistoryItem } from '../services/api';
 import { ArrowLeft, Heart, HeartOff, Eye, EyeOff, Play, Bookmark } from 'lucide-react';
+import { useTranslation } from '../services/i18n';
 
 interface MangaDetailPageProps {
   mangaId: number;
@@ -14,6 +15,7 @@ export const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
   onBack,
   onChapterSelect,
 }) => {
+  const { t } = useTranslation();
   const [manga, setManga] = useState<Manga | null>(null);
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [loading, setLoading] = useState(true);
@@ -90,7 +92,7 @@ export const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
     return (
       <div style={{ textAlign: 'center', padding: '5rem 0' }}>
         <div className="comic-box" style={{ display: 'inline-block', backgroundColor: 'var(--retro-yellow)' }}>
-          <h3 style={{ margin: 0, fontWeight: 900 }}>RETRIEVING COMIC DETAILS...</h3>
+          <h3 style={{ margin: 0, fontWeight: 900 }}>{t('detail.state.loading')}</h3>
         </div>
       </div>
     );
@@ -198,7 +200,7 @@ export const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                 onClick={() => onChapterSelect(manga.id, recentHistory.chapterId)}
               >
                 <Play size={18} />
-                Resume ({recentHistory.chapterName})
+                {t('detail.btn.resume')} ({recentHistory.chapterName})
               </button>
             ) : chapters.length > 0 ? (
               <button
@@ -211,7 +213,7 @@ export const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                 }}
               >
                 <Play size={18} />
-                Start Reading
+                {t('detail.btn.start')}
               </button>
             ) : null}
 
@@ -226,7 +228,7 @@ export const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
               disabled={updatingLibrary}
             >
               {inLibrary ? <HeartOff size={18} /> : <Heart size={18} />}
-              {inLibrary ? 'Remove from Library' : 'Add to Library'}
+              {inLibrary ? t('detail.btn.in_library') : t('detail.btn.add_library')}
             </button>
           </div>
         </div>

@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { api } from '../services/api';
 import { ArrowLeft, ChevronLeft, ChevronRight, LayoutList, BookOpen } from 'lucide-react';
+import { useTranslation } from '../services/i18n';
 
 interface ReaderPageProps {
   mangaId: number;
@@ -15,6 +16,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
   onBack,
   onChapterChange
 }) => {
+  const { t } = useTranslation();
   const [chapterInfo, setChapterInfo] = useState<any>(null);
   const [chapters, setChapters] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -292,7 +294,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
     return (
       <div className="reader-container" style={{ justifyContent: 'center', height: '100vh', padding: 0 }}>
         <div className="comic-box" style={{ backgroundColor: 'var(--retro-yellow)' }}>
-          <h3 style={{ margin: 0, fontWeight: 900 }}>LOADING MANGA PAGES...</h3>
+          <h3 style={{ margin: 0, fontWeight: 900 }}>{t('reader.state.loading')}</h3>
         </div>
       </div>
     );
@@ -302,9 +304,9 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
     return (
       <div className="reader-container" style={{ justifyContent: 'center', height: '100vh', padding: 0 }}>
         <div className="comic-box" style={{ backgroundColor: 'var(--retro-pink)', color: '#fff', textAlign: 'center' }}>
-          <h3 style={{ margin: 0, fontWeight: 900 }}>NO PAGES DETECTED</h3>
+          <h3 style={{ margin: 0, fontWeight: 900 }}>{t('reader.state.no_pages')}</h3>
           <p style={{ margin: '0.5rem 0', fontWeight: 600 }}>This chapter might not be loaded or parsed yet.</p>
-          <button className="comic-btn comic-btn-white" onClick={onBack}>Go Back</button>
+          <button className="comic-btn comic-btn-white" onClick={onBack}>{t('reader.btn.back')}</button>
         </div>
       </div>
     );
@@ -321,7 +323,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
               onClick={onBack}
             >
               <ArrowLeft size={16} />
-              <span>Exit</span>
+              <span>{t('reader.btn.back')}</span>
             </button>
             <div className="reader-hud-info" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
               {mangaDetail?.title && (
@@ -345,7 +347,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
               title="Single Page Mode"
             >
               <BookOpen size={16} />
-              <span>Single</span>
+              <span>{t('reader.btn.paged')}</span>
             </button>
             <button
               className={`comic-btn reader-hud-btn ${readingMode === 'webtoon' ? 'comic-btn-yellow' : 'comic-btn-white'}`}
@@ -353,7 +355,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
               title="Webtoon Mode"
             >
               <LayoutList size={16} />
-              <span>Scroll</span>
+              <span>{t('reader.btn.webtoon')}</span>
             </button>
           </div>
         </div>

@@ -2,12 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import type { Extension, Source, Manga } from '../services/api';
 import { Compass, Cpu, Plus, Trash2, Search, ArrowLeft, ArrowRight, Sliders } from 'lucide-react';
+import { useTranslation } from '../services/i18n';
 
 interface BrowsePageProps {
   onMangaSelect: (mangaId: number) => void;
 }
 
 export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
+  const { t } = useTranslation();
   const [activeSubTab, setActiveSubTab] = useState<'sources' | 'extensions'>('sources');
   const [extensions, setExtensions] = useState<Extension[]>([]);
   const [sources, setSources] = useState<Source[]>([]);
@@ -642,10 +644,10 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
     <div>
       <div style={{ marginBottom: '2rem' }}>
         <h1 style={{ fontSize: '3rem', margin: 0, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-1px' }}>
-          Browse <span style={{ background: 'var(--retro-teal)', color: '#1a1a1a', padding: '0 0.5rem', display: 'inline-block', transform: 'rotate(1.5deg)' }}>Catalogs</span>
+          {t('browse.title')} <span style={{ background: 'var(--retro-teal)', color: '#1a1a1a', padding: '0 0.5rem', display: 'inline-block', transform: 'rotate(1.5deg)' }}>Catalogs</span>
         </h1>
         <p style={{ margin: '0.5rem 0 0 0', fontWeight: 500, color: 'var(--muted-text)' }}>
-          Discover new series from online manga sources.
+          {t('browse.subtitle')}
         </p>
       </div>
 
@@ -657,7 +659,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
           onClick={() => setActiveSubTab('sources')}
         >
           <Compass size={18} />
-          Sources ({sources.length})
+          {t('browse.sources')} ({sources.length})
         </button>
         <button
           className={`nav-tab ${activeSubTab === 'extensions' ? 'active' : ''}`}
@@ -665,7 +667,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
           onClick={() => setActiveSubTab('extensions')}
         >
           <Cpu size={18} />
-          Extensions ({extensions.length})
+          {t('browse.extensions')} ({extensions.length})
         </button>
       </div>
 
@@ -766,7 +768,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
               <Search size={18} style={{ marginRight: '0.5rem', color: 'var(--muted-text)' }} />
               <input
                 type="text"
-                placeholder="Search extensions (e.g. mangadex)..."
+                placeholder={t('browse.search.manga')}
                 value={extSearchQuery}
                 onChange={(e) => setExtSearchQuery(e.target.value)}
                 style={{
@@ -867,7 +869,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
                     onClick={() => handleUninstallExtension(ext.pkgName)}
                   >
                     <Trash2 size={16} />
-                    <span>Uninstall</span>
+                    <span>{t('browse.btn.uninstall')}</span>
                   </button>
                 ) : (
                   <button
@@ -875,7 +877,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
                     onClick={() => handleInstallExtension(ext.pkgName)}
                   >
                     <Plus size={16} />
-                    <span>Install</span>
+                    <span>{t('browse.btn.install')}</span>
                   </button>
                 )}
               </div>

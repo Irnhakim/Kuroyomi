@@ -635,7 +635,8 @@ export const api = {
     }
 
     const localReaderMode = localStorage.getItem('readerMode') || 'webtoon';
-    const localTheme = localStorage.getItem('theme') || 'light';
+    const localTheme = localStorage.getItem('theme') || 'dark';
+    const localLang = localStorage.getItem('lang') || 'en';
 
     let extensionRepoUrls: string[] = [];
     try {
@@ -656,6 +657,7 @@ export const api = {
     const defaultSettings = {
       readerMode: localReaderMode,
       theme: localTheme,
+      lang: localLang,
       extensionRepoUrls
     };
 
@@ -671,6 +673,7 @@ export const api = {
 
     if (settings.readerMode) localStorage.setItem('readerMode', settings.readerMode);
     if (settings.theme) localStorage.setItem('theme', settings.theme);
+    if (settings.lang) localStorage.setItem('lang', settings.lang);
     await syncUserDataToServer();
   },
 

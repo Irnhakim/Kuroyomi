@@ -15,7 +15,7 @@ type ActivePage = 'library' | 'browse' | 'settings' | 'manga-detail' | 'reader' 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [activePage, setActivePage] = useState<ActivePage>('library');
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
 
   // Detail selection
   const [selectedMangaId, setSelectedMangaId] = useState<number | null>(null);
@@ -42,8 +42,7 @@ export default function App() {
       setTheme(savedTheme);
       document.documentElement.setAttribute('data-theme', savedTheme);
     } else {
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      const initialTheme = prefersDark ? 'dark' : 'light';
+      const initialTheme = 'dark';
       setTheme(initialTheme);
       document.documentElement.setAttribute('data-theme', initialTheme);
     }
@@ -52,7 +51,7 @@ export default function App() {
   const applyUserTheme = async () => {
     try {
       const configs = await api.getSettings();
-      const userTheme = (configs.theme as 'light' | 'dark') || 'light';
+      const userTheme = (configs.theme as 'light' | 'dark') || 'dark';
       setTheme(userTheme);
       document.documentElement.setAttribute('data-theme', userTheme);
     } catch (e) {

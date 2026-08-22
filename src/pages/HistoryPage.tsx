@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import type { HistoryItem } from '../services/api';
 import { Trash2, Clock, BookOpen } from 'lucide-react';
+import { useTranslation } from '../services/i18n';
 
 interface HistoryPageProps {
   onMangaSelect: (mangaId: number) => void;
@@ -12,6 +13,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
   onMangaSelect,
   onChapterSelect
 }) => {
+  const { t } = useTranslation();
   const [historyItems, setHistoryItems] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -64,10 +66,10 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
       <div className="catalog-control-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ minWidth: 0, flex: 1 }}>
           <h1 className="manga-detail-title" style={{ fontSize: '2rem', margin: 0 }}>
-            Reading History
+            {t('history.title')}
           </h1>
           <p style={{ margin: '0.25rem 0 0 0', fontWeight: 600, color: 'var(--muted-text)' }}>
-            List of series you recently read, synchronized locally.
+            {t('history.subtitle')}
           </p>
         </div>
         {historyItems.length > 0 && (
@@ -89,9 +91,9 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
       ) : historyItems.length === 0 ? (
         <div className="speech-bubble" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '3rem', textAlign: 'center' }}>
           <Clock size={48} style={{ color: 'var(--muted-text)', marginBottom: '1rem' }} />
-          <h3 style={{ margin: 0, fontWeight: 900 }}>No Reading History</h3>
+          <h3 style={{ margin: 0, fontWeight: 900 }}>{t('history.title')}</h3>
           <p style={{ margin: '0.5rem 0 0 0', fontWeight: 600, color: 'var(--muted-text)' }}>
-            Manga chapters you read will show up here. Go read some!
+            {t('history.empty')}
           </p>
         </div>
       ) : (
@@ -179,7 +181,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
                       title="Continue Reading"
                     >
                       <BookOpen size={14} />
-                      <span className="desktop-only-text" style={{ fontSize: '0.7rem' }}>Resume</span>
+                      <span className="desktop-only-text" style={{ fontSize: '0.7rem' }}>{t('history.btn.resume')}</span>
                     </button>
                   )}
                   <button

@@ -2,12 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import type { Manga, Category } from '../services/api';
 import { RefreshCw, AlertCircle, Search } from 'lucide-react';
+import { useTranslation } from '../services/i18n';
 
 interface LibraryPageProps {
   onMangaSelect: (mangaId: number) => void;
 }
 
 export const LibraryPage: React.FC<LibraryPageProps> = ({ onMangaSelect }) => {
+  const { t } = useTranslation();
   const [mangas, setMangas] = useState<Manga[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<number>(-1); // -1 is All / Default
@@ -43,7 +45,7 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({ onMangaSelect }) => {
     loadLibrary();
   }, [selectedCategory]);
 
-  const filteredMangas = mangas.filter(m => 
+  const filteredMangas = mangas.filter(m =>
     m.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     m.author?.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -54,16 +56,16 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({ onMangaSelect }) => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h1 style={{ fontSize: '3rem', margin: 0, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-1px' }}>
-            My <span style={{ background: 'var(--retro-pink)', color: '#fff', padding: '0 0.5rem', display: 'inline-block', transform: 'rotate(-2deg)' }}>Library</span>
+            My <span style={{ background: 'var(--retro-pink)', color: '#fff', padding: '0 0.5rem', display: 'inline-block', transform: 'rotate(-2deg)' }}>{t('library.title')}</span>
           </h1>
           <p style={{ margin: '0.5rem 0 0 0', fontWeight: 500, color: 'var(--muted-text)' }}>
-            Your personal comic vault, synchronized locally.
+            {t('library.subtitle')}
           </p>
         </div>
-        
+
         <button className="comic-btn comic-btn-teal" onClick={loadLibrary} disabled={loading}>
           <RefreshCw className={loading ? 'spin-anim' : ''} size={18} />
-          {loading ? 'Refreshing...' : 'Refresh Library'}
+          {loading ? t('library.refreshing') : t('library.refresh')}
         </button>
       </div>
 
@@ -79,7 +81,7 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({ onMangaSelect }) => {
           }}
           onClick={() => setSelectedCategory(-1)}
         >
-          All Manga
+          {t('library.all')}
         </button>
         {categories.map((cat) => (
           <button
@@ -102,7 +104,7 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({ onMangaSelect }) => {
           <Search size={18} style={{ marginRight: '0.5rem', color: 'var(--muted-text)' }} />
           <input
             type="text"
-            placeholder="Search library..."
+            placeholder={t('library.search')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{
@@ -123,23 +125,23 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({ onMangaSelect }) => {
       {loading ? (
         <div style={{ textAlign: 'center', padding: '5rem 0' }}>
           <div className="comic-box" style={{ display: 'inline-block', backgroundColor: 'var(--retro-yellow)' }}>
-            <h3 style={{ margin: 0, fontWeight: 900 }}>LOADING VAULT...</h3>
+            <h3 style={{ margin: 0, fontWeight: 900 }}>{t('library.loading')}</h3>
           </div>
         </div>
       ) : error ? (
         <div className="comic-box" style={{ backgroundColor: 'var(--retro-pink)', color: '#fff', display: 'flex', gap: '1rem', alignItems: 'center' }}>
           <AlertCircle size={32} />
           <div>
-            <h3 style={{ margin: 0, fontWeight: 900 }}>ERROR DETECTED!</h3>
+            <h3 style={{ margin: 0, fontWeight: 900 }}>{t('library.error')}</h3>
             <p style={{ margin: '0.25rem 0 0 0', fontWeight: 600 }}>{error}</p>
           </div>
         </div>
       ) : filteredMangas.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '4rem 0' }}>
           <div className="speech-bubble" style={{ display: 'inline-block', maxWidth: '400px', textAlign: 'left' }}>
-            <h3 style={{ margin: '0 0 0.5rem 0', fontWeight: 900, textTransform: 'uppercase' }}>Library Empty!</h3>
+            <h3 style={{ margin: '0 0 0.5rem 0', fontWeight: 900, textTransform: 'uppercase' }}>{t('library.title')}</h3>
             <p style={{ margin: 0, fontWeight: 500, lineHeight: 1.4 }}>
-              {searchQuery ? "No comic matches your search query!" : "You don't have any manga in this category. Go to the 'Browse' tab to search online sources and add them to your library!"}
+              {searchQuery ? t('library.empty.search') : t('library.empty.desc')}
             </p>
           </div>
         </div>
@@ -192,7 +194,7 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({ onMangaSelect }) => {
                   {manga.status === 'COMPLETED' && (
                     <div style={{ position: 'absolute', top: '8px', right: '8px', zIndex: 10 }}>
                       <span className="comic-sticker sticker-teal" style={{ fontSize: '0.6rem', padding: '0.15rem 0.4rem' }}>
-                        DONE
+                        {t('library.manga.done')}
                       </span>
                     </div>
                   )}
@@ -222,7 +224,7 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({ onMangaSelect }) => {
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap'
                   }}>
-                    {manga.author || 'Unknown Author'}
+                    {manga.author || t('library.manga.unknown_author')}
                   </p>
                 </div>
               </div>

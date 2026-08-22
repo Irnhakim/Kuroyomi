@@ -1,5 +1,6 @@
 import React from 'react';
 import { BookOpen, Compass, Clock, Settings, Sun, Moon } from 'lucide-react';
+import { useTranslation } from '../services/i18n';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -16,6 +17,8 @@ export const Layout: React.FC<LayoutProps> = ({
   theme,
   toggleTheme,
 }) => {
+  const { t } = useTranslation();
+
   return (
     <div className="app-container">
       {/* Header */}
@@ -42,7 +45,7 @@ export const Layout: React.FC<LayoutProps> = ({
               onClick={() => setActiveTab('library')}
             >
               <BookOpen size={20} />
-              Library
+              {t('nav.library')}
             </button>
 
             <button
@@ -58,7 +61,7 @@ export const Layout: React.FC<LayoutProps> = ({
               onClick={() => setActiveTab('browse')}
             >
               <Compass size={20} />
-              Browse
+              {t('nav.browse')}
             </button>
 
             <button
@@ -74,7 +77,7 @@ export const Layout: React.FC<LayoutProps> = ({
               onClick={() => setActiveTab('history')}
             >
               <Clock size={20} />
-              History
+              {t('nav.history')}
             </button>
 
             <button
@@ -90,7 +93,7 @@ export const Layout: React.FC<LayoutProps> = ({
               onClick={() => setActiveTab('settings')}
             >
               <Settings size={20} />
-              Settings
+              {t('nav.settings')}
             </button>
           </nav>
 
@@ -98,7 +101,7 @@ export const Layout: React.FC<LayoutProps> = ({
           <button
             className="comic-btn comic-btn-yellow theme-toggle"
             onClick={toggleTheme}
-            title={theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
+            title={theme === 'light' ? t('theme.toggle.dark') : t('theme.toggle.light')}
           >
             {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
           </button>
@@ -112,33 +115,33 @@ export const Layout: React.FC<LayoutProps> = ({
 
       {/* Mobile Bottom Navigation */}
       <nav className="bottom-nav">
-        <button 
+        <button
           className={`bottom-nav-btn ${activeTab === 'library' ? 'active' : ''}`}
           onClick={() => setActiveTab('library')}
         >
           <BookOpen size={20} />
-          <span>Library</span>
+          <span>{t('nav.library')}</span>
         </button>
         <button
           className={`bottom-nav-btn ${activeTab === 'browse' ? 'active' : ''}`}
           onClick={() => setActiveTab('browse')}
         >
           <Compass size={20} />
-          <span>Browse</span>
+          <span>{t('nav.browse')}</span>
         </button>
         <button
           className={`bottom-nav-btn ${activeTab === 'history' ? 'active' : ''}`}
           onClick={() => setActiveTab('history')}
         >
           <Clock size={20} />
-          <span>History</span>
+          <span>{t('nav.history')}</span>
         </button>
         <button
           className={`bottom-nav-btn ${activeTab === 'settings' ? 'active' : ''}`}
           onClick={() => setActiveTab('settings')}
         >
           <Settings size={20} />
-          <span>Settings</span>
+          <span>{t('nav.settings')}</span>
         </button>
       </nav>
 
@@ -151,7 +154,7 @@ export const Layout: React.FC<LayoutProps> = ({
         marginTop: 'auto'
       }}>
         <p style={{ margin: 0, fontWeight: 800, fontSize: '0.9rem', color: 'var(--text-color)' }}>
-          KUROYOMI © 2026 • Powered by Suwayomi Server
+          {t('footer.text')}
         </p>
       </footer>
     </div>

@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { auth } from '../services/auth';
 import { LogIn, UserPlus, AlertCircle, CheckCircle } from 'lucide-react';
+import { useTranslation } from '../services/i18n';
 
 interface LoginPageProps {
   onLoginSuccess: (username: string) => void;
 }
 
 export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
+  const { t } = useTranslation();
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -21,7 +23,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
 
     const trimmedUser = username.trim();
     if (!trimmedUser || !password) {
-      setError('Harap isi semua kolom!');
+      setError(t('login.error.empty'));
       return;
     }
 
@@ -30,18 +32,18 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
     try {
       if (mode === 'login') {
         const user = await auth.login(trimmedUser, password);
-        setSuccess(`Selamat datang kembali, ${user.username}!`);
+        setSuccess(t('login.success.login', { username: user.username }));
         setTimeout(() => {
           onLoginSuccess(user.username);
         }, 1000);
       } else {
         await auth.register(trimmedUser, password);
-        setSuccess('Registrasi berhasil! Silakan masuk.');
+        setSuccess(t('login.success.register'));
         setMode('login');
         setPassword('');
       }
     } catch (err: any) {
-      setError(err.message || 'Terjadi kesalahan.');
+      setError(err.message || 'Error occurred.');
     } finally {
       setLoading(false);
     }
@@ -71,7 +73,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
             textTransform: 'uppercase',
             letterSpacing: '-1px'
           }}>
-            {mode === 'login' ? 'Selamat ' : 'Gabung '}
+            {mode === 'login' ? t('login.welcome') + ' ' : t('login.join') + ' '}
             <span style={{
               background: 'var(--retro-purple)',
               color: '#fff',
@@ -79,13 +81,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
               display: 'inline-block',
               transform: 'rotate(-2deg)'
             }}>
-              {mode === 'login' ? 'Datang' : 'Kuroyomi'}
+              {mode === 'login' ? t('login.title.login') : t('login.title.register')}
             </span>
           </h2>
           <p style={{ margin: '0.5rem 0 0 0', fontWeight: 600, color: 'var(--muted-text)' }}>
             {mode === 'login'
-              ? 'Masuk ke perpustakaan komik pribadimu.'
-              : 'Buat akun baru untuk mulai membaca.'}
+              ? t('login.desc.login')
+              : t('login.desc.register')}
           </p>
         </div>
 
@@ -140,7 +142,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="Masukkan username..."
+              placeholder="Username..."
               required
               disabled={loading}
               style={{
@@ -204,10 +206,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
           >
             {mode === 'login' ? <LogIn size={18} /> : <UserPlus size={18} />}
             {loading
-              ? 'Memproses...'
+              ? t('login.btn.processing')
               : mode === 'login'
-              ? 'MASUK (LOGIN)'
-              : 'DAFTAR (REGISTER)'}
+              ? t('login.btn.login')
+              : t('login.btn.register')}
           </button>
         </form>
 
@@ -235,8 +237,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
             }}
           >
             {mode === 'login'
-              ? 'Belum punya akun? Daftar sekarang!'
-              : 'Sudah punya akun? Masuk di sini!'}
+              ? t('login.link.register')
+              : t('login.link.login')}
           </button>
         </div>
       </div>
