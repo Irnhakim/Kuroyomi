@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { api } from '../services/api';
+import { api, SERVER_ORIGIN } from '../services/api';
 import { auth } from '../services/auth';
 import { RefreshCw, Save, CheckCircle, Trash2, Plus, LogOut, Key, ShieldAlert } from 'lucide-react';
 import { useTranslation } from '../services/i18n';
@@ -595,7 +595,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
                     <input
                       type="text"
                       id="status_server_url_input"
-                      defaultValue={localStorage.getItem('suwayomi_server_url') || `${window.location.protocol}//${window.location.hostname}:4567`}
+                      defaultValue={localStorage.getItem('suwayomi_server_url') || SERVER_ORIGIN}
                       placeholder="http://localhost:4567"
                       style={{
                         flex: 1,
@@ -615,8 +615,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
                         const input = document.getElementById('status_server_url_input') as HTMLInputElement;
                         if (input) {
                           const url = input.value.trim();
-                          const defaultUrl = `${window.location.protocol}//${window.location.hostname}:4567`;
-                          if (url && url !== defaultUrl) {
+                          if (url && url !== SERVER_ORIGIN) {
                             localStorage.setItem('suwayomi_server_url', url);
                           } else {
                             localStorage.removeItem('suwayomi_server_url');
