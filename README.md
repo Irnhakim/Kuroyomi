@@ -10,9 +10,20 @@
 
 # About Kuroyomi
 
-Kuroyomi is a lightweight, responsive, and retro-themed web client for manga readers. It integrates directly with your self-hosted [Suwayomi-Server](https://github.com/Suwayomi/Suwayomi-Server) backend, using its GraphQL and REST APIs to manage your libraries, extensions, reading history, and progress.
+**Kuroyomi** is a lightweight, responsive, and retro-themed web client for manga readers, designed to integrate seamlessly with your self-hosted [Suwayomi-Server](https://github.com/Suwayomi/Suwayomi-Server) backend. 
 
-Designed with a neo-brutalist Tokyo Night color scheme, it scales dynamically from small mobile viewports to large desktop monitors.
+### The Name
+The name is derived from the combination of two Japanese words:
+* **Kuro (黒 / くろ):** Meaning *Black* or *Dark*.
+* **Yomi (読み / よみ):** Meaning *Reading* or *Reading style*.
+
+This name reflects the project's focus: providing a comfortable night-reading experience using an low-contrast Tokyo Night color scheme.
+
+### The Vision
+Kuroyomi serves as a complete replacement UI for Suwayomi-Server. It focuses on:
+* **Low Memory Footprint:** Extremely lightweight runtime, optimized for self-hosting on low-power devices like CasaOS and TV boxes (running under 2GB RAM).
+* **Responsive Interfaces:** Scales dynamically from small mobile phone viewports to large desktop monitors.
+* **Persistent Synchronization:** Saves all categories, libraries, reading progress, and history directly to the server database for seamless reading continuation when switching between devices.
 
 ## Core Features
 
@@ -117,3 +128,15 @@ Access the unified application directly in your browser at `http://<YOUR-SERVER-
 
 - **API Endpoints:** Managed dynamically in [api.ts](src/services/api.ts). Base hosts are dynamically bound to the current window location to prevent cross-origin CORS errors.
 - **Custom Coloring:** Theme stylesheets are located in [index.css](src/index.css) using CSS variable overrides (`--bg-color`, `--text-color`, etc.).
+
+---
+
+## Credits
+
+Developed and maintained by [Irnhakim](https://github.com/Irnhakim).
+
+## Support & Donations
+
+If you find Kuroyomi helpful, consider supporting the development:
+* **Saweria:** [https://saweria.co/irnhakim](https://saweria.co/irnhakim)
+* **Buy Me a Coffee:** [buymeacoffee.com/irnhakim](https://buymeacoffee.com/irnhakim)
