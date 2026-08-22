@@ -638,27 +638,11 @@ export const api = {
     const localTheme = localStorage.getItem('theme') || 'dark';
     const localLang = localStorage.getItem('lang') || 'en';
 
-    let extensionRepoUrls: string[] = [];
-    try {
-      const data = await graphqlRequest(`
-        query {
-          extensionStores {
-            nodes {
-              indexUrl
-            }
-          }
-        }
-      `);
-      extensionRepoUrls = (data?.extensionStores?.nodes || []).map((n: any) => n.indexUrl);
-    } catch (e) {
-      console.warn("Failed to load repo settings from GraphQL", e);
-    }
-
     const defaultSettings = {
       readerMode: localReaderMode,
       theme: localTheme,
       lang: localLang,
-      extensionRepoUrls
+      extensionRepoUrls: []
     };
 
     localStorage.setItem(`${prefix}_settings`, JSON.stringify(defaultSettings));
@@ -675,6 +659,24 @@ export const api = {
     if (settings.theme) localStorage.setItem('theme', settings.theme);
     if (settings.lang) localStorage.setItem('lang', settings.lang);
     await syncUserDataToServer();
+  },
+
+  getExtensionRepos: async (): Promise<string[]> => {
+    try {
+      const data = await graphqlRequest(`
+        query {
+          extensionStores {
+            nodes {
+              indexUrl
+            }
+          }
+        }
+      `);
+      return (data?.extensionStores?.nodes || []).map((n: any) => n.indexUrl);
+    } catch (e) {
+      console.warn("Failed to load repo settings from GraphQL", e);
+      return [];
+    }
   },
 
   addExtensionStore: async (url: string): Promise<void> => {

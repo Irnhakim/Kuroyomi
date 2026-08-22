@@ -56,7 +56,10 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
         setReaderMode(configs.readerMode || 'webtoon');
         setTheme(configs.theme || 'dark');
         setLang(configs.lang || 'en');
-        setRepoUrls(configs.extensionRepoUrls || []);
+
+        // Fetch extension repositories directly from GraphQL
+        const repos = await api.getExtensionRepos();
+        setRepoUrls(repos);
       } else {
         setStatus('offline');
       }
@@ -105,7 +108,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
     setActionLoading(true);
     try {
       await api.addExtensionStore(newRepoUrl.trim());
-      setRepoUrls(prev => [...prev, newRepoUrl.trim()]);
+      const repos = await api.getExtensionRepos();
+      setRepoUrls(repos);
       setNewRepoUrl('');
     } catch (err) {
       console.error("Failed to add extension store", err);
@@ -120,7 +124,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
     setActionLoading(true);
     try {
       await api.removeExtensionStore(url);
-      setRepoUrls(prev => prev.filter(item => item !== url));
+      const repos = await api.getExtensionRepos();
+      setRepoUrls(repos);
     } catch (err) {
       console.error("Failed to remove extension store", err);
       alert("Failed to remove repository.");
