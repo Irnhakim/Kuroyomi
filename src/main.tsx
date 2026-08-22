@@ -4,27 +4,16 @@ import './index.css'
 import App from './App.tsx'
 import { LanguageProvider } from './services/i18n.tsx'
 
+// Disable and unregister active service workers to clear browser cache and avoid intercepting requests
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
-      .then(reg => {
-        console.log('Service Worker registered successfully:', reg.scope);
-        
-        // Listen for new service worker installation
-        reg.addEventListener('updatefound', () => {
-          const newWorker = reg.installing;
-          if (newWorker) {
-            newWorker.addEventListener('statechange', () => {
-              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                // Auto reload page when new service worker activates
-                console.log('New update available! Reloading page to apply...');
-                window.location.reload();
-              }
-            });
-          }
-        });
-      })
-      .catch(err => console.warn('Service Worker registration failed:', err));
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    for (const registration of registrations) {
+      registration.unregister()
+        .then(success => {
+          if (success) console.log('Active Service Worker unregistered successfully');
+        })
+        .catch(err => console.warn('Failed to unregister Service Worker:', err));
+    }
   });
 }
 
