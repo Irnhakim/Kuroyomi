@@ -2,19 +2,23 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { auth } from '../services/auth';
 import { RefreshCw, Save, CheckCircle, Trash2, Plus, LogOut, Key, ShieldAlert } from 'lucide-react';
+import { useTranslation } from '../services/i18n';
+import type { Language } from '../services/i18n';
 
 interface SettingsPageProps {
   onLogout: () => void;
 }
 
 export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
+  const { t, setLanguage } = useTranslation();
   const [serverVersion, setServerVersion] = useState<string>('Unknown');
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<'online' | 'offline'>('offline');
 
   // Settings states
-  const [readerMode, setReaderMode] = useState<string>('paged-ltr');
-  const [theme, setTheme] = useState<string>('light');
+  const [readerMode, setReaderMode] = useState<string>('webtoon');
+  const [theme, setTheme] = useState<string>('dark');
+  const [lang, setLang] = useState<string>('en');
   const [repoUrls, setRepoUrls] = useState<string[]>([]);
   const [newRepoUrl, setNewRepoUrl] = useState<string>('');
 
@@ -49,8 +53,9 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
 
         // Fetch all configs from server
         const configs = await api.getSettings();
-        setReaderMode(configs.readerMode || 'paged-ltr');
-        setTheme(configs.theme || 'light');
+        setReaderMode(configs.readerMode || 'webtoon');
+        setTheme(configs.theme || 'dark');
+        setLang(configs.lang || 'en');
         setRepoUrls(configs.extensionRepoUrls || []);
       } else {
         setStatus('offline');
@@ -73,12 +78,16 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
     try {
       await api.updateSettings({
         readerMode,
-        theme
+        theme,
+        lang
       });
 
       // Instantly apply theme in DOM
       document.documentElement.setAttribute('data-theme', theme);
       localStorage.setItem('theme', theme);
+
+      // Instantly update translation context language
+      setLanguage(lang as Language);
 
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
@@ -121,7 +130,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
   };
 
   const handleLogout = () => {
-    if (confirm("Apakah Anda yakin ingin keluar?")) {
+    if (confirm(t('settings.account.logout_confirm'))) {
       auth.logout();
       onLogout();
     }
@@ -139,7 +148,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
 
     try {
       await auth.changePassword(oldPassword, newPassword);
-      setPassSuccess('Password berhasil diubah!');
+      setPassSuccess(t('settings.password.success'));
       setOldPassword('');
       setNewPassword('');
       setConfirmPassword('');
@@ -152,13 +161,13 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
     e.preventDefault();
     setDeleteError(null);
 
-    if (!confirm("Tindakan ini permanen. Semua data library dan riwayat Anda akan terhapus. Lanjutkan hapus akun?")) {
+    if (!confirm(t('settings.danger.alert_confirm'))) {
       return;
     }
 
     try {
       await api.deleteUserAccount(deleteConfirmPassword);
-      alert('Akun Anda berhasil dihapus.');
+      alert(t('settings.danger.success'));
       onLogout();
     } catch (err: any) {
       setDeleteError(err.message || 'Gagal menghapus akun.');
@@ -169,10 +178,10 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
     <div>
       <div style={{ marginBottom: '2.5rem' }}>
         <h1 style={{ fontSize: '3rem', margin: 0, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-1px' }}>
-          App <span style={{ background: 'var(--retro-purple)', color: '#fff', padding: '0 0.5rem', display: 'inline-block', transform: 'rotate(-1.5deg)' }}>Settings</span>
+          App <span style={{ background: 'var(--retro-purple)', color: '#fff', padding: '0 0.5rem', display: 'inline-block', transform: 'rotate(-1.5deg)' }}>{t('settings.title')}</span>
         </h1>
         <p style={{ margin: '0.5rem 0 0 0', fontWeight: 500, color: 'var(--muted-text)' }}>
-          Manage your server connection, user account, reader defaults, and source repositories.
+          {t('settings.subtitle')}
         </p>
       </div>
 
@@ -184,17 +193,17 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
           <div className="comic-box" style={{ borderColor: 'var(--retro-purple)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
               <h2 style={{ margin: 0, fontWeight: 900, textTransform: 'uppercase', fontSize: '1.4rem' }}>
-                Kelola Akun ({currentUser})
+                {t('settings.account.title')} ({currentUser})
               </h2>
               <button className="comic-btn comic-btn-pink" style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }} onClick={handleLogout}>
-                <LogOut size={16} /> Log Out
+                <LogOut size={16} /> {t('settings.account.logout')}
               </button>
             </div>
 
             {/* Change password form */}
             <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', borderBottom: '2px dashed var(--border-color)', paddingBottom: '1.5rem', marginBottom: '1.5rem' }}>
               <h3 style={{ margin: '0 0 0.5rem 0', fontWeight: 800, fontSize: '1rem', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Key size={18} /> Ubah Password
+                <Key size={18} /> {t('settings.password.title')}
               </h3>
 
               {passError && (
@@ -211,7 +220,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
 
               <div className="settings-password-grid" style={{ display: 'grid', gap: '1rem' }}>
                 <div>
-                  <label style={{ display: 'block', fontWeight: 800, marginBottom: '0.25rem', fontSize: '0.8rem', textTransform: 'uppercase' }}>Password Lama</label>
+                  <label style={{ display: 'block', fontWeight: 800, marginBottom: '0.25rem', fontSize: '0.8rem', textTransform: 'uppercase' }}>{t('settings.password.label.old')}</label>
                   <input
                     type="password"
                     value={oldPassword}
@@ -230,7 +239,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
                   />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontWeight: 800, marginBottom: '0.25rem', fontSize: '0.8rem', textTransform: 'uppercase' }}>Password Baru</label>
+                  <label style={{ display: 'block', fontWeight: 800, marginBottom: '0.25rem', fontSize: '0.8rem', textTransform: 'uppercase' }}>{t('settings.password.label.new')}</label>
                   <input
                     type="password"
                     value={newPassword}
@@ -249,7 +258,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
                   />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontWeight: 800, marginBottom: '0.25rem', fontSize: '0.8rem', textTransform: 'uppercase' }}>Konfirmasi Password Baru</label>
+                  <label style={{ display: 'block', fontWeight: 800, marginBottom: '0.25rem', fontSize: '0.8rem', textTransform: 'uppercase' }}>{t('settings.password.label.confirm')}</label>
                   <input
                     type="password"
                     value={confirmPassword}
@@ -270,14 +279,14 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
               </div>
 
               <button type="submit" className="comic-btn comic-btn-purple" style={{ alignSelf: 'flex-start', marginTop: '0.5rem', padding: '0.5rem 1rem', fontSize: '0.9rem' }}>
-                Simpan Password Baru
+                {t('settings.password.btn.save')}
               </button>
             </form>
 
             {/* Danger Zone: Delete Account */}
             <div>
               <h3 style={{ margin: '0 0 0.5rem 0', fontWeight: 800, fontSize: '1rem', color: 'var(--retro-pink)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <ShieldAlert size={18} /> Zona Bahaya (Danger Zone)
+                <ShieldAlert size={18} /> {t('settings.danger.title')}
               </h3>
 
               {!showDeleteConfirm ? (
@@ -294,16 +303,16 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
                     boxShadow: 'none'
                   }}
                 >
-                  Hapus Akun Ini
+                  {t('settings.danger.btn.delete')}
                 </button>
               ) : (
                 <form onSubmit={handleDeleteAccount} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.5rem' }}>
                   <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 700, color: 'var(--retro-pink)' }}>
-                    PERINGATAN: Menghapus akun akan membuang semua library, riwayat, dan data lokal secara permanen!
+                    {t('settings.danger.warn')}
                   </p>
                   <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
                     <div style={{ flex: 1, minWidth: '200px' }}>
-                      <label style={{ display: 'block', fontWeight: 800, marginBottom: '0.25rem', fontSize: '0.8rem' }}>Masukkan Password untuk Konfirmasi</label>
+                      <label style={{ display: 'block', fontWeight: 800, marginBottom: '0.25rem', fontSize: '0.8rem' }}>{t('settings.danger.confirm_placeholder')}</label>
                       <input
                         type="password"
                         value={deleteConfirmPassword}
@@ -323,7 +332,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
                     </div>
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
                       <button type="submit" className="comic-btn comic-btn-pink" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
-                        Konfirmasi Hapus Akun
+                        {t('settings.danger.btn.confirm_delete')}
                       </button>
                       <button
                         type="button"
@@ -335,7 +344,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
                           setDeleteError(null);
                         }}
                       >
-                        Batal
+                        {t('settings.danger.btn.cancel')}
                       </button>
                     </div>
                   </div>
@@ -352,14 +361,40 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
           {/* General settings box */}
           <div className="comic-box">
             <h2 style={{ margin: '0 0 1.5rem 0', fontWeight: 900, textTransform: 'uppercase', fontSize: '1.4rem' }}>
-              Reading & General Settings
+              {t('settings.general.title')}
             </h2>
 
             <form onSubmit={handleSaveGeneralSettings} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              {/* Language */}
+              <div>
+                <label style={{ display: 'block', fontWeight: 800, marginBottom: '0.5rem', textTransform: 'uppercase', fontSize: '0.9rem' }}>
+                  {t('settings.general.lang')}
+                </label>
+                <select
+                  value={lang}
+                  onChange={(e) => setLang(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '3px solid var(--border-color)',
+                    borderRadius: '8px',
+                    backgroundColor: 'var(--bg-card)',
+                    color: 'var(--text-color)',
+                    fontFamily: 'inherit',
+                    fontWeight: 700,
+                    outline: 'none',
+                    boxShadow: '3px 3px 0px var(--border-color)'
+                  }}
+                >
+                  <option value="en">English</option>
+                  <option value="id">Indonesia</option>
+                </select>
+              </div>
+
               {/* Reading Mode */}
               <div>
                 <label style={{ display: 'block', fontWeight: 800, marginBottom: '0.5rem', textTransform: 'uppercase', fontSize: '0.9rem' }}>
-                  Mode Baca Default
+                  {t('settings.general.mode')}
                 </label>
                 <select
                   value={readerMode}
@@ -377,15 +412,15 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
                     boxShadow: '3px 3px 0px var(--border-color)'
                   }}
                 >
-                  <option value="paged-ltr">Single Page (Halaman demi Halaman)</option>
-                  <option value="webtoon">Webtoon (Scroll Vertikal)</option>
+                  <option value="paged-ltr">{t('settings.general.mode.paged')}</option>
+                  <option value="webtoon">{t('settings.general.mode.webtoon')}</option>
                 </select>
               </div>
 
               {/* Theme */}
               <div>
                 <label style={{ display: 'block', fontWeight: 800, marginBottom: '0.5rem', textTransform: 'uppercase', fontSize: '0.9rem' }}>
-                  Tema Aplikasi (Theme)
+                  {t('settings.general.theme')}
                 </label>
                 <select
                   value={theme}
@@ -403,8 +438,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
                     boxShadow: '3px 3px 0px var(--border-color)'
                   }}
                 >
-                  <option value="light">Light Mode (Tokyo Night Day)</option>
-                  <option value="dark">Dark Mode (Tokyo Night Classic)</option>
+                  <option value="light">{t('settings.general.theme.light')}</option>
+                  <option value="dark">{t('settings.general.theme.dark')}</option>
                 </select>
               </div>
 
@@ -412,12 +447,12 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '1rem' }}>
                 <button type="submit" className="comic-btn comic-btn-pink" disabled={saving}>
                   <Save size={18} />
-                  {saving ? 'Saving...' : 'Save Configurations'}
+                  {saving ? 'Saving...' : t('settings.general.btn.save')}
                 </button>
 
                 {saveSuccess && (
                   <span className="comic-sticker sticker-teal" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', padding: '0.4rem 0.8rem', transform: 'none' }}>
-                    <CheckCircle size={16} /> Saved Successfully!
+                    <CheckCircle size={16} /> {t('settings.general.success')}
                   </span>
                 )}
               </div>
@@ -526,7 +561,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
           {currentUser?.toLowerCase() === 'admin' && (
             <div className="comic-box">
               <h2 style={{ margin: '0 0 1rem 0', fontWeight: 900, textTransform: 'uppercase', fontSize: '1.4rem' }}>
-                Kuroyomi Server
+                {t('settings.server.title')}
               </h2>
 
               <div style={{
@@ -549,7 +584,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
                 }} />
                 <div>
                   <p style={{ margin: 0, fontWeight: 800, textTransform: 'uppercase' }}>
-                    Status: {status === 'online' ? 'ONLINE' : 'OFFLINE'}
+                    {t('settings.server.status')}: {status === 'online' ? 'ONLINE' : 'OFFLINE'}
                   </p>
                   <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--muted-text)', fontWeight: 700 }}>
                     http://localhost:4567
@@ -566,7 +601,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
 
               <button className="comic-btn comic-btn-yellow" style={{ marginTop: '1rem' }} onClick={loadSettingsAndStatus} disabled={loading}>
                 <RefreshCw size={16} />
-                Refresh Status
+                {t('settings.server.refresh')}
               </button>
             </div>
           )}
@@ -574,15 +609,15 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
           {/* About box */}
           <div className="comic-box" style={{ transform: 'rotate(0.5deg)' }}>
             <h2 style={{ margin: '0 0 1rem 0', fontWeight: 900, textTransform: 'uppercase', fontSize: '1.4rem' }}>
-              About Kuroyomi
+              {t('settings.about.title')}
             </h2>
             <p style={{ margin: '0 0 1rem 0', lineHeight: 1.5, fontWeight: 500 }}>
-              Kuroyomi is a native web client for manga readers, executing sources directly inside a local Node.js environment without heavy containers.
+              {t('settings.about.desc')}
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <span style={{ fontWeight: 700 }}>• 100% Free and Open Source</span>
-              <span style={{ fontWeight: 700 }}>• Local native execution</span>
-              <span style={{ fontWeight: 700 }}>• Webtoon and Single-Page Reader</span>
+              <span style={{ fontWeight: 700 }}>{t('settings.about.bullet1')}</span>
+              <span style={{ fontWeight: 700 }}>{t('settings.about.bullet2')}</span>
+              <span style={{ fontWeight: 700 }}>{t('settings.about.bullet3')}</span>
             </div>
           </div>
         </div>

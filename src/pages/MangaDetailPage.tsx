@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import type { Manga, Chapter, HistoryItem } from '../services/api';
-import { ArrowLeft, Heart, HeartOff, Eye, EyeOff, Play, Bookmark } from 'lucide-react';
+import { ArrowLeft, Heart, HeartOff, Eye, EyeOff, Play } from 'lucide-react';
 import { useTranslation } from '../services/i18n';
 
 interface MangaDetailPageProps {

@@ -425,7 +425,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
             onClick={() => navigateToChapterOffset('prev')}
           >
             <ChevronLeft size={16} />
-            <span>Prev</span>
+            <span>{t('reader.btn.prev')}</span>
           </button>
 
           {readingMode === 'single' && (
@@ -452,7 +452,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
             className="comic-btn comic-btn-yellow reader-hud-btn"
             onClick={() => navigateToChapterOffset('next')}
           >
-            <span>Next</span>
+            <span>{t('reader.btn.next')}</span>
             <ChevronRight size={16} />
           </button>
         </div>
