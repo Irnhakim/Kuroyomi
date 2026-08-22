@@ -85,11 +85,7 @@ class ApplicationDirs(
         get() = serverConfig.downloadsPath.value.ifBlank { "$dataRoot/downloads" }
     val localMangaRoot
         get() = serverConfig.localSourcePath.value.ifBlank { "$dataRoot/local" }
-    val webUIRoot = listOf(
-        File("../../dist"),
-        File("../dist"),
-        File("dist")
-    ).firstOrNull { it.exists() }?.absolutePath ?: File("../../dist").absolutePath
+    val webUIRoot = "$dataRoot/webUI"
     val webUIServe = "$tempRoot/webUI-serve"
     val automatedBackupRoot
         get() = serverConfig.backupPath.value.ifBlank { "$dataRoot/backups" }

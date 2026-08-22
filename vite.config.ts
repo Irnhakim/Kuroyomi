@@ -6,5 +6,15 @@ export default defineConfig({
   plugins: [react()],
   optimizeDeps: {
     entries: ['index.html']
+  },
+  server: {
+    watch: {
+      ignored: [
+        '**/server.jar',
+        '**/server/**',
+        '**/.gradle/**',
+        '**/build/**'
+      ]
+    }
   }
 })

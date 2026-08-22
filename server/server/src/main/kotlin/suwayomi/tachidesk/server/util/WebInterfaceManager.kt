@@ -179,13 +179,14 @@ object WebInterfaceManager {
         config.staticFiles.add { staticFiles ->
             if (ServerSubpath.isDefined()) staticFiles.hostedPath = ServerSubpath.normalized()
             // Use canonical path to avoid Jetty alias issues
-            staticFiles.directory = File(applicationDirs.webUIRoot).canonicalPath
+            staticFiles.directory = File(applicationDirs.webUIServe).canonicalPath
             staticFiles.location = Location.EXTERNAL
             staticFiles.aliasCheck = AliasCheck { _, _ -> true }
         }
 
         serveWebUI = {
-            config.spaRoot.addFile(ServerSubpath.asRootPath(), "${applicationDirs.webUIRoot}/index.html", Location.EXTERNAL)
+            val updatedServableRoot = createServableRoot()
+            config.spaRoot.addFile(ServerSubpath.asRootPath(), "$updatedServableRoot/index.html", Location.EXTERNAL)
 
             logger.info {
                 "Serving SPA files for ${serverConfig.webUIFlavor.value}" +
@@ -299,8 +300,10 @@ object WebInterfaceManager {
     }
 
     suspend fun setupWebUI() {
-        serveWebUI()
-        return
+        if (serverConfig.webUIFlavor.value == WebUIFlavor.CUSTOM) {
+            serveWebUI()
+            return
+        }
 
         val servedFlavor = getServedWebUIFlavor()
 
