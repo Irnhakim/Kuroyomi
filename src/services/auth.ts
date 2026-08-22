@@ -3,9 +3,7 @@ export interface User {
   createdAt: string;
 }
 
-const isDev = window.location.port === '5173' || window.location.port === '5174';
-const SERVER_ORIGIN = isDev ? `${window.location.protocol}//${window.location.hostname}:4567` : window.location.origin;
-const BASE_URL = `${SERVER_ORIGIN}/api/v1`;
+import { BASE_URL } from './api';
 
 // Simple native SHA-256 hashing helper with pure JS fallback for non-secure contexts (e.g. HTTP on local network IP)
 async function sha256(text: string): Promise<string> {

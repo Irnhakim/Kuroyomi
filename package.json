@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "concurrently \"vite\" \"vite build --watch\" \"cd server && .\\gradlew.bat server:run\"",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && node scripts/update-sw-version.js",
     "lint": "oxlint",
     "preview": "vite preview"
   },

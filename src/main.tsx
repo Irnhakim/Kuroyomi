@@ -7,7 +7,23 @@ import { LanguageProvider } from './services/i18n.tsx'
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
-      .then(reg => console.log('Service Worker registered successfully:', reg.scope))
+      .then(reg => {
+        console.log('Service Worker registered successfully:', reg.scope);
+        
+        // Listen for new service worker installation
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          if (newWorker) {
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                // Auto reload page when new service worker activates
+                console.log('New update available! Reloading page to apply...');
+                window.location.reload();
+              }
+            });
+          }
+        });
+      })
       .catch(err => console.warn('Service Worker registration failed:', err));
   });
 }

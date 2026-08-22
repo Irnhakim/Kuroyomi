@@ -5,7 +5,13 @@ const getStoredServerUrl = () => {
 };
 
 const isDev = window.location.port === '5173' || window.location.port === '5174';
-const DEFAULT_ORIGIN = isDev ? `${window.location.protocol}//${window.location.hostname}:4567` : window.location.origin;
+let DEFAULT_ORIGIN = isDev ? `${window.location.protocol}//${window.location.hostname}:4567` : window.location.origin;
+
+// Auto-detect production domain for irnhakim setup
+if (window.location.hostname === 'komik.irnhakim.my.id') {
+  DEFAULT_ORIGIN = 'https://suwayomi.irnhakim.my.id';
+}
+
 const SERVER_ORIGIN = getStoredServerUrl() || DEFAULT_ORIGIN;
 
 export const BASE_URL = `${SERVER_ORIGIN}/api/v1`;
