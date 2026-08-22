@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../services/api';
-import type { Manga, Chapter } from '../services/api';
-import { ArrowLeft, Heart, HeartOff, Eye, EyeOff } from 'lucide-react';
+import type { Manga, Chapter, HistoryItem } from '../services/api';
+import { ArrowLeft, Heart, HeartOff, Eye, EyeOff, Play, Bookmark } from 'lucide-react';
 
 interface MangaDetailPageProps {
   mangaId: number;
@@ -20,6 +20,7 @@ export const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [inLibrary, setInLibrary] = useState(false);
   const [updatingLibrary, setUpdatingLibrary] = useState(false);
+  const [recentHistory, setRecentHistory] = useState<HistoryItem | null>(null);
 
   const loadMangaDetails = async () => {
     setLoading(true);
@@ -34,6 +35,11 @@ export const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
       const chapterList = await api.getMangaChapters(mangaId);
       // Sort chapters by source order (usually higher is newer or reverse, we can keep the raw API order or sort them)
       setChapters(chapterList);
+
+      // Fetch history for this manga
+      const historyList = await api.getHistory();
+      const matchedHistory = historyList.find(h => h.mangaId === mangaId);
+      setRecentHistory(matchedHistory || null);
     } catch (err) {
       console.error(err);
       setError('Failed to load manga details. Please verify Suwayomi-Server status.');
@@ -183,19 +189,46 @@ export const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
             </p>
           </div>
 
-          {/* Library Toggle Action */}
-          <button
-            className={`comic-btn ${inLibrary ? 'comic-btn-white' : 'comic-btn-pink'} manga-detail-lib-btn`}
-            style={{
-              borderColor: inLibrary ? 'var(--retro-pink)' : 'var(--border-color)',
-              color: inLibrary ? 'var(--retro-pink)' : '#fff'
-            }}
-            onClick={toggleLibraryStatus}
-            disabled={updatingLibrary}
-          >
-            {inLibrary ? <HeartOff size={18} /> : <Heart size={18} />}
-            {inLibrary ? 'Remove from Library' : 'Add to Library'}
-          </button>
+          {/* Library and Reading Actions */}
+          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+            {recentHistory ? (
+              <button
+                className="comic-btn comic-btn-teal"
+                style={{ fontWeight: 900 }}
+                onClick={() => onChapterSelect(manga.id, recentHistory.chapterId)}
+              >
+                <Play size={18} />
+                Resume ({recentHistory.chapterName})
+              </button>
+            ) : chapters.length > 0 ? (
+              <button
+                className="comic-btn comic-btn-yellow"
+                style={{ fontWeight: 900 }}
+                onClick={() => {
+                  const sorted = [...chapters].sort((a, b) => a.chapterNumber - b.chapterNumber);
+                  const startId = sorted[0]?.id;
+                  if (startId) onChapterSelect(manga.id, startId);
+                }}
+              >
+                <Play size={18} />
+                Start Reading
+              </button>
+            ) : null}
+
+            <button
+              className={`comic-btn ${inLibrary ? 'comic-btn-white' : 'comic-btn-pink'} manga-detail-lib-btn`}
+              style={{
+                borderColor: inLibrary ? 'var(--retro-pink)' : 'var(--border-color)',
+                color: inLibrary ? 'var(--retro-pink)' : '#fff',
+                margin: 0
+              }}
+              onClick={toggleLibraryStatus}
+              disabled={updatingLibrary}
+            >
+              {inLibrary ? <HeartOff size={18} /> : <Heart size={18} />}
+              {inLibrary ? 'Remove from Library' : 'Add to Library'}
+            </button>
+          </div>
         </div>
       </div>
 
