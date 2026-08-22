@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import type { HistoryItem } from '../services/api';
-import { Trash2, Clock, AlertCircle, BookOpen } from 'lucide-react';
+import { Trash2, Clock, BookOpen } from 'lucide-react';
 
 interface HistoryPageProps {
   onMangaSelect: (mangaId: number) => void;
