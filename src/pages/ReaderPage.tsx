@@ -130,6 +130,18 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
     }
   }, [currentPage, chapterInfo, mangaDetail, mangaId, chapterId]);
 
+  // Prefetch next pages in the background to offload server spike and improve client speed
+  useEffect(() => {
+    if (!chapterInfo) return;
+    const nextPagesToPrefetch = [currentPage + 1, currentPage + 2, currentPage + 3];
+    nextPagesToPrefetch.forEach(nextIdx => {
+      if (nextIdx < chapterInfo.pageCount && !failedPages[nextIdx]) {
+        const img = new Image();
+        img.src = api.getPageImageUrl(mangaId, chapterId, nextIdx);
+      }
+    });
+  }, [currentPage, chapterInfo, mangaId, chapterId, failedPages]);
+
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
