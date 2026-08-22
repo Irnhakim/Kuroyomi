@@ -1,10 +1,22 @@
 <p align="center">
-  <img src="public/logo.svg" alt="Kuroyomi Logo" width="320" />
+  <img src="public/logo.png" alt="Kuroyomi Logo" width="320" />
 </p>
 
 <p align="center">
   <strong>Web-based manga reader client built for Suwayomi-Server</strong>
 </p>
+
+---
+
+# Tentang Kuroyomi (About Kuroyomi)
+
+**Kuroyomi** berasal dari gabungan dua kata bahasa Jepang:
+- **Kuro (黒 / くろ):** Berarti *Hitam* atau *Gelap*.
+- **Yomi (読み / よみ):** Berarti *Membaca* atau *Pembacaan*.
+
+Nama ini melambangkan kenyamanan membaca manga favorit di malam hari (*night reading*) dengan skema warna gelap yang estetis (Tokyo Night). 
+
+Proyek ini dibuat sebagai alternatif antarmuka web (Web UI client) untuk **Suwayomi-Server** yang berfokus pada kecepatan muat halaman, efisiensi konsumsi RAM di server mini, serta responsivitas penuh saat diakses melalui browser smartphone.
 
 ---
 
