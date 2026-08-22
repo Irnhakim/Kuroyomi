@@ -8,17 +8,7 @@
 
 ---
 
-# Tentang Kuroyomi (About Kuroyomi)
-
-**Kuroyomi** berasal dari gabungan dua kata bahasa Jepang:
-- **Kuro (黒 / くろ):** Berarti *Hitam* atau *Gelap*.
-- **Yomi (読み / よみ):** Berarti *Membaca* atau *Pembacaan*.
-
-Nama ini melambangkan kenyamanan membaca manga favorit di malam hari (*night reading*) dengan skema warna gelap yang estetis (Tokyo Night). 
-
-Proyek ini dibuat sebagai alternatif antarmuka web (Web UI client) untuk **Suwayomi-Server** yang berfokus pada kecepatan muat halaman, efisiensi konsumsi RAM di server mini, serta responsivitas penuh saat diakses melalui browser smartphone.
-
----
+# About Kuroyomi
 
 Kuroyomi is a lightweight, responsive, and retro-themed web client for manga readers. It integrates directly with your self-hosted [Suwayomi-Server](https://github.com/Suwayomi/Suwayomi-Server) backend, using its GraphQL and REST APIs to manage your libraries, extensions, reading history, and progress.
 
