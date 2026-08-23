@@ -329,7 +329,7 @@ export const api = {
   },
 
   searchSource: async (sourceId: string, query: string, pageNum: number): Promise<{ mangas: Manga[]; hasNextPage: boolean }> => {
-    const res = await fetch(`${BASE_URL}/source/${sourceId}/search?query=${encodeURIComponent(query)}&pageNum=${pageNum}`);
+    const res = await fetch(`${BASE_URL}/source/${sourceId}/search?searchTerm=${encodeURIComponent(query)}&pageNum=${pageNum}`);
     if (!res.ok) {
       let msg = `Gagal mencari catalog (${res.status})`;
       try {
