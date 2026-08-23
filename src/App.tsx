@@ -14,16 +14,31 @@ type ActivePage = 'library' | 'browse' | 'settings' | 'manga-detail' | 'reader' 
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [activePage, setActivePage] = useState<ActivePage>('library');
+  const [activePage, setActivePage] = useState<ActivePage>(() => {
+    const saved = sessionStorage.getItem('kuroyomi_active_page');
+    return (saved as ActivePage) || 'library';
+  });
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
 
   // Detail selection
-  const [selectedMangaId, setSelectedMangaId] = useState<number | null>(null);
-  const [detailBackPage, setDetailBackPage] = useState<ActivePage>('library');
+  const [selectedMangaId, setSelectedMangaId] = useState<number | null>(() => {
+    const saved = sessionStorage.getItem('kuroyomi_selected_manga_id');
+    return saved ? parseInt(saved, 10) : null;
+  });
+  const [detailBackPage, setDetailBackPage] = useState<ActivePage>(() => {
+    const saved = sessionStorage.getItem('kuroyomi_detail_back_page');
+    return (saved as ActivePage) || 'library';
+  });
 
   // Reader selection
-  const [readerMangaId, setReaderMangaId] = useState<number | null>(null);
-  const [readerChapterId, setReaderChapterId] = useState<number | null>(null);
+  const [readerMangaId, setReaderMangaId] = useState<number | null>(() => {
+    const saved = sessionStorage.getItem('kuroyomi_reader_manga_id');
+    return saved ? parseInt(saved, 10) : null;
+  });
+  const [readerChapterId, setReaderChapterId] = useState<number | null>(() => {
+    const saved = sessionStorage.getItem('kuroyomi_reader_chapter_id');
+    return saved ? parseInt(saved, 10) : null;
+  });
 
   // Check login session on mount
   useEffect(() => {
@@ -35,6 +50,38 @@ export default function App() {
       applyDefaultTheme();
     }
   }, [isLoggedIn]);
+
+  useEffect(() => {
+    sessionStorage.setItem('kuroyomi_active_page', activePage);
+  }, [activePage]);
+
+  useEffect(() => {
+    if (selectedMangaId !== null) {
+      sessionStorage.setItem('kuroyomi_selected_manga_id', selectedMangaId.toString());
+    } else {
+      sessionStorage.removeItem('kuroyomi_selected_manga_id');
+    }
+  }, [selectedMangaId]);
+
+  useEffect(() => {
+    sessionStorage.setItem('kuroyomi_detail_back_page', detailBackPage);
+  }, [detailBackPage]);
+
+  useEffect(() => {
+    if (readerMangaId !== null) {
+      sessionStorage.setItem('kuroyomi_reader_manga_id', readerMangaId.toString());
+    } else {
+      sessionStorage.removeItem('kuroyomi_reader_manga_id');
+    }
+  }, [readerMangaId]);
+
+  useEffect(() => {
+    if (readerChapterId !== null) {
+      sessionStorage.setItem('kuroyomi_reader_chapter_id', readerChapterId.toString());
+    } else {
+      sessionStorage.removeItem('kuroyomi_reader_chapter_id');
+    }
+  }, [readerChapterId]);
 
   const applyDefaultTheme = () => {
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
@@ -79,6 +126,11 @@ export default function App() {
   const handleLogout = () => {
     setIsLoggedIn(false);
     setActivePage('library');
+    sessionStorage.removeItem('kuroyomi_active_page');
+    sessionStorage.removeItem('kuroyomi_selected_manga_id');
+    sessionStorage.removeItem('kuroyomi_detail_back_page');
+    sessionStorage.removeItem('kuroyomi_reader_manga_id');
+    sessionStorage.removeItem('kuroyomi_reader_chapter_id');
   };
 
   const handleMangaSelect = (mangaId: number) => {
