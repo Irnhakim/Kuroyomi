@@ -35,6 +35,8 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
   const [loadingNext, setLoadingNext] = useState(false);
 
   const loadingNextRef = useRef(false);
+  const loadedChapterIdsRef = useRef<Set<number>>(new Set());
+  const lastSavedPageRef = useRef<string>('');
   const containerRef = useRef<HTMLDivElement>(null);
 
   const activeChapter = loadedChapters.find(c => c.id === chapterId) || loadedChapters[0];
@@ -115,6 +117,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
       setLoadedChapters([
         { id: chapterId, name: info.name, pageCount: info.pageCount }
       ]);
+      loadedChapterIdsRef.current = new Set([chapterId]);
 
       if (info.lastPageRead && info.lastPageRead > 0) {
         setCurrentPage(Math.min(info.lastPageRead, info.pageCount - 1));
@@ -141,13 +144,16 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
       const active = loadedChapters.find(ch => ch.id === chapterId);
       if (active) {
         setLoadedChapters([active]);
+        loadedChapterIdsRef.current = new Set([active.id]);
       }
     }
   }, [readingMode]);
 
-  // Save to reading history
+  // Save to reading history - debounced to prevent server spam on scroll
   useEffect(() => {
-    if (activeChapter && mangaDetail) {
+    if (!activeChapter || !mangaDetail) return;
+
+    const timer = setTimeout(() => {
       api.saveHistory({
         mangaId,
         mangaTitle: mangaDetail.title,
@@ -157,7 +163,9 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
         currentPage,
         pageCount: activeChapter.pageCount
       }).catch(err => console.error("Error saving history:", err));
-    }
+    }, 3000);
+
+    return () => clearTimeout(timer);
   }, [currentPage, activeChapter, mangaDetail, mangaId, chapterId]);
 
   // Prefetch next pages in the background to offload server spike and improve client speed
@@ -189,13 +197,13 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [currentPage, activeChapter, readingMode]);
 
-  // Webtoon scroll progress tracking
+  // Webtoon scroll progress tracking - tight rootMargin ensures only one page is matched at a time
   useEffect(() => {
     if (readingMode !== 'webtoon' || loadedChapters.length === 0) return;
 
     const observerOptions = {
       root: null,
-      rootMargin: '-20% 0px -20% 0px',
+      rootMargin: '-45% 0px -45% 0px',
       threshold: 0
     };
 
@@ -228,10 +236,15 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
     };
   }, [readingMode, loadedChapters, chapterId]);
 
-  // Save progress
+  // Save progress - deduplicated via ref to prevent redundant requests
   const saveProgress = async (chId: number, pageIdx: number) => {
+    const pageKey = `${chId}_${pageIdx}`;
+    if (lastSavedPageRef.current === pageKey) return;
+
     const ch = loadedChapters.find(c => c.id === chId);
     if (!ch) return;
+
+    lastSavedPageRef.current = pageKey;
     try {
       await api.updateProgress(mangaId, chId, pageIdx);
       const isLastPage = pageIdx === ch.pageCount - 1;
@@ -240,6 +253,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
       }
     } catch (e) {
       console.error(e);
+      lastSavedPageRef.current = ''; // Reset on error to allow retries
     }
   };
 
@@ -256,6 +270,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
     let targetIndex = direction === 'next' ? currentIndex + 1 : currentIndex - 1;
     if (targetIndex >= 0 && targetIndex < sorted.length) {
       setLoadedChapters([]); // Force reset to show loader when manually shifting
+      loadedChapterIdsRef.current = new Set();
       onChapterChange(sorted[targetIndex].id);
     } else {
       alert(direction === 'next' ? "You've reached the last chapter!" : "You are on the first chapter!");
@@ -302,16 +317,18 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
     if (nextIndex >= sorted.length) return;
 
     const nextCh = sorted[nextIndex];
-    if (loadedChapters.some(c => c.id === nextCh.id)) return;
+    if (loadedChapterIdsRef.current.has(nextCh.id)) return;
 
     loadingNextRef.current = true;
     setLoadingNext(true);
     try {
       const nextInfo = await api.getChapterDetails(mangaId, nextCh.id);
-      setLoadedChapters(prev => [
-        ...prev,
-        { id: nextCh.id, name: nextInfo.name, pageCount: nextInfo.pageCount }
-      ]);
+      loadedChapterIdsRef.current = new Set([nextCh.id]);
+      lastSavedPageRef.current = '';
+      setCurrentPage(0);
+      setLoadedChapters([{ id: nextCh.id, name: nextInfo.name, pageCount: nextInfo.pageCount }]);
+      onChapterChange(nextCh.id);
+      window.scrollTo(0, 0);
     } catch (e) {
       console.error("Failed to load next chapter:", e);
     } finally {
