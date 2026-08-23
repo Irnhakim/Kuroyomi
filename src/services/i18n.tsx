@@ -43,6 +43,20 @@ const translations: Record<Language, Record<string, string>> = {
     'library.empty.desc': "You don't have any manga in this category. Go to the 'Browse' tab to search online sources and add them to your library!",
     'library.manga.done': 'DONE',
     'library.manga.unknown_author': 'Unknown Author',
+    'category.reading': 'Reading',
+    'category.completed': 'Completed',
+    'library.sort': 'Sort',
+    'library.sort.direction': 'Direction',
+    'library.sort.asc': 'Ascending',
+    'library.sort.desc': 'Descending',
+    'library.sort.unread': 'Unread chapters',
+    'library.sort.total': 'Total chapters',
+    'library.sort.az': 'A-Z',
+    'library.sort.added': 'Recently added',
+    'library.sort.read': 'Recently read',
+    'library.sort.fetched': 'Latest fetched chapter',
+    'library.sort.uploaded': 'Latest uploaded chapter',
+    'library.sort.random': 'Random',
 
     // Browse
     'browse.title': 'Browse',
@@ -172,6 +186,20 @@ const translations: Record<Language, Record<string, string>> = {
     'library.empty.desc': "Anda tidak memiliki manga di kategori ini. Buka tab 'Jelajahi' untuk mencari sumber online dan tambahkan ke perpustakaan Anda!",
     'library.manga.done': 'SELESAI',
     'library.manga.unknown_author': 'Penulis Tidak Diketahui',
+    'category.reading': 'Membaca',
+    'category.completed': 'Selesai',
+    'library.sort': 'Urutkan',
+    'library.sort.direction': 'Arah',
+    'library.sort.asc': 'Meningkat (Asc)',
+    'library.sort.desc': 'Menurun (Desc)',
+    'library.sort.unread': 'Bab belum dibaca',
+    'library.sort.total': 'Total bab',
+    'library.sort.az': 'A-Z',
+    'library.sort.added': 'Baru ditambahkan',
+    'library.sort.read': 'Terakhir dibaca',
+    'library.sort.fetched': 'Bab terbaru diambil',
+    'library.sort.uploaded': 'Bab terbaru diunggah',
+    'library.sort.random': 'Acak',
 
     // Browse
     'browse.title': 'Jelajahi',
@@ -286,14 +314,14 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         if (configs.lang === 'en' || configs.lang === 'id') {
           setLanguageState(configs.lang);
         }
-      }).catch(() => {});
+      }).catch(() => { });
     }
   }, []);
 
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
     localStorage.setItem('lang', lang);
-    api.updateSettings({ lang }).catch(() => {});
+    api.updateSettings({ lang }).catch(() => { });
   };
 
   const t = (key: string, replacements?: Record<string, string>): string => {

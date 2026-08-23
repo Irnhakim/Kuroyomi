@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { api } from '../services/api';
-import type { Manga, Category } from '../services/api';
-import { RefreshCw, AlertCircle, Search } from 'lucide-react';
+import type { Manga, Category, Chapter, HistoryItem } from '../services/api';
+import { RefreshCw, AlertCircle, Search, ArrowUpDown, ArrowUp, ArrowDown, Circle } from 'lucide-react';
 import { useTranslation } from '../services/i18n';
 
 interface LibraryPageProps {
@@ -17,6 +17,35 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({ onMangaSelect }) => {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Sort & Filter states
+  const [sortBy, setSortBy] = useState<'unread' | 'total' | 'az' | 'added' | 'read' | 'fetched' | 'uploaded' | 'random'>(() => {
+    return (localStorage.getItem('kuroyomi_library_sort_by') as any) || 'added';
+  });
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(() => {
+    return (localStorage.getItem('kuroyomi_library_sort_dir') as any) || 'desc';
+  });
+  const [showSortMenu, setShowSortMenu] = useState(false);
+  const [chaptersData, setChaptersData] = useState<Record<number, Chapter[]>>({});
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+
+  // Persist sort settings
+  useEffect(() => {
+    localStorage.setItem('kuroyomi_library_sort_by', sortBy);
+  }, [sortBy]);
+
+  useEffect(() => {
+    localStorage.setItem('kuroyomi_library_sort_dir', sortDirection);
+  }, [sortDirection]);
+
+  // Generate stable random order values
+  const randomOrderMap = useMemo(() => {
+    const map: Record<number, number> = {};
+    mangas.forEach((manga) => {
+      map[manga.id] = Math.random();
+    });
+    return map;
+  }, [mangas.length]);
+
   const loadLibrary = async () => {
     setLoading(true);
     setError(null);
@@ -24,6 +53,14 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({ onMangaSelect }) => {
       // Fetch categories
       const cats = await api.getCategories();
       setCategories(cats);
+
+      // Fetch history
+      try {
+        const hist = await api.getHistory();
+        setHistory(hist);
+      } catch (e) {
+        console.error('Failed to load history', e);
+      }
 
       // Fetch library manga
       let list: Manga[] = [];
@@ -45,10 +82,116 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({ onMangaSelect }) => {
     loadLibrary();
   }, [selectedCategory]);
 
+  // Fetch chapters for all library mangas in background
+  useEffect(() => {
+    if (mangas.length === 0) return;
+
+    let active = true;
+    const fetchAllChapters = async () => {
+      const missingIds = mangas.map(m => m.id).filter(id => !chaptersData[id]);
+      if (missingIds.length === 0) return;
+
+      const results = await Promise.all(
+        missingIds.map(async (id) => {
+          try {
+            const chs = await api.getMangaChapters(id);
+            return { id, chs };
+          } catch (e) {
+            console.error(`Failed to fetch chapters for manga ${id}`, e);
+            return { id, chs: [] };
+          }
+        })
+      );
+
+      if (!active) return;
+      setChaptersData(prev => {
+        const next = { ...prev };
+        results.forEach(({ id, chs }) => {
+          next[id] = chs;
+        });
+        return next;
+      });
+    };
+
+    fetchAllChapters();
+    return () => {
+      active = false;
+    };
+  }, [mangas]);
+
   const filteredMangas = mangas.filter(m =>
     m.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     m.author?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const sortedMangas = useMemo(() => {
+    const listCopy = [...filteredMangas];
+
+    const getReadAt = (mangaId: number) => {
+      const item = history.find(h => h.mangaId === mangaId);
+      return item ? item.readAt : 0;
+    };
+
+    const getTotalChapters = (mangaId: number) => {
+      return (chaptersData[mangaId] || []).length;
+    };
+
+    const getUnreadChapters = (mangaId: number) => {
+      return (chaptersData[mangaId] || []).filter(c => !c.read).length;
+    };
+
+    const getLatestUploaded = (mangaId: number) => {
+      const chs = chaptersData[mangaId] || [];
+      if (chs.length === 0) return 0;
+      return Math.max(...chs.map(c => c.dateUpload || 0));
+    };
+
+    const getLatestFetched = (mangaId: number) => {
+      const chs = chaptersData[mangaId] || [];
+      return chs[0]?.dateUpload || 0;
+    };
+
+    listCopy.sort((a, b) => {
+      let comparison = 0;
+
+      switch (sortBy) {
+        case 'unread':
+          comparison = getUnreadChapters(a.id) - getUnreadChapters(b.id);
+          break;
+        case 'total':
+          comparison = getTotalChapters(a.id) - getTotalChapters(b.id);
+          break;
+        case 'az':
+          comparison = a.title.localeCompare(b.title);
+          break;
+        case 'added':
+          comparison = mangas.findIndex(m => m.id === a.id) - mangas.findIndex(m => m.id === b.id);
+          break;
+        case 'read':
+          comparison = getReadAt(a.id) - getReadAt(b.id);
+          break;
+        case 'fetched':
+          comparison = getLatestFetched(a.id) - getLatestFetched(b.id);
+          break;
+        case 'uploaded':
+          comparison = getLatestUploaded(a.id) - getLatestUploaded(b.id);
+          break;
+        case 'random':
+          comparison = (randomOrderMap[a.id] || 0) - (randomOrderMap[b.id] || 0);
+          break;
+        default:
+          comparison = 0;
+      }
+
+      if (comparison === 0 && sortBy !== 'az') {
+        comparison = a.title.localeCompare(b.title);
+      }
+
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
+
+    return listCopy;
+  }, [filteredMangas, sortBy, sortDirection, chaptersData, history, randomOrderMap, mangas]);
 
   return (
     <div>
@@ -83,21 +226,47 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({ onMangaSelect }) => {
         >
           {t('library.all')}
         </button>
-        {categories.map((cat) => (
-          <button
-            key={cat.id}
-            className="comic-btn"
-            style={{
-              backgroundColor: selectedCategory === cat.id ? 'var(--retro-purple)' : 'var(--bg-card)',
-              color: selectedCategory === cat.id ? '#fff' : 'var(--text-color)',
-              padding: '0.5rem 1rem',
-              fontSize: '0.9rem'
-            }}
-            onClick={() => setSelectedCategory(cat.id)}
-          >
-            {cat.name}
-          </button>
-        ))}
+        {categories.map((cat) => {
+          const lowerName = cat.name.toLowerCase();
+          const displayName =
+            lowerName === 'membaca' || lowerName === 'reading' ? t('category.reading') :
+            lowerName === 'selesai' || lowerName === 'completed' ? t('category.completed') :
+            cat.name;
+          return (
+            <button
+              key={cat.id}
+              className="comic-btn"
+              style={{
+                backgroundColor: selectedCategory === cat.id ? 'var(--retro-purple)' : 'var(--bg-card)',
+                color: selectedCategory === cat.id ? '#fff' : 'var(--text-color)',
+                padding: '0.5rem 1rem',
+                fontSize: '0.9rem'
+              }}
+              onClick={() => setSelectedCategory(cat.id)}
+            >
+              {displayName}
+            </button>
+          );
+        })}
+
+        {/* Sort & Filter Button */}
+        <button
+          className="comic-btn"
+          style={{
+            backgroundColor: showSortMenu ? 'var(--retro-yellow)' : 'var(--bg-card)',
+            color: showSortMenu ? '#000' : 'var(--text-color)',
+            padding: '0.5rem 1rem',
+            fontSize: '0.9rem',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            cursor: 'pointer'
+          }}
+          onClick={() => setShowSortMenu(!showSortMenu)}
+        >
+          <ArrowUpDown size={16} />
+          {t('library.sort')}
+        </button>
 
         {/* Search Bar */}
         <div className="search-bar-wrap">
@@ -121,6 +290,94 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({ onMangaSelect }) => {
         </div>
       </div>
 
+      {/* Sort Options Panel */}
+      {showSortMenu && (
+        <div className="comic-box" style={{
+          backgroundColor: 'var(--bg-card)',
+          padding: '1.25rem',
+          marginBottom: '2rem',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1rem'
+        }}>
+          {/* Header & Direction */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px dashed var(--border-color)', paddingBottom: '0.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+            <h4 style={{ margin: 0, fontWeight: 900, textTransform: 'uppercase', fontSize: '1rem', color: 'var(--text-color)' }}>
+              {t('library.sort')}
+            </h4>
+
+            {/* Sort Direction Toggle */}
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--muted-text)', marginRight: '0.25rem' }}>
+                {t('library.sort.direction')}:
+              </span>
+              <button
+                className={`comic-btn ${sortDirection === 'asc' ? 'comic-btn-teal' : ''}`}
+                style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem', cursor: 'pointer' }}
+                onClick={() => setSortDirection('asc')}
+              >
+                {t('library.sort.asc')}
+              </button>
+              <button
+                className={`comic-btn ${sortDirection === 'desc' ? 'comic-btn-teal' : ''}`}
+                style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem', cursor: 'pointer' }}
+                onClick={() => setSortDirection('desc')}
+              >
+                {t('library.sort.desc')}
+              </button>
+            </div>
+          </div>
+
+          {/* Sort Options Grid */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+            gap: '0.75rem'
+          }}>
+            {[
+              { type: 'unread', label: t('library.sort.unread') },
+              { type: 'total', label: t('library.sort.total') },
+              { type: 'az', label: t('library.sort.az') },
+              { type: 'added', label: t('library.sort.added') },
+              { type: 'read', label: t('library.sort.read') },
+              { type: 'fetched', label: t('library.sort.fetched') },
+              { type: 'uploaded', label: t('library.sort.uploaded') },
+              { type: 'random', label: t('library.sort.random') }
+            ].map((option) => (
+              <label
+                key={option.type}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  fontWeight: 700,
+                  fontSize: '0.9rem',
+                  cursor: 'pointer',
+                  padding: '0.35rem 0.5rem',
+                  borderRadius: '6px',
+                  border: sortBy === option.type ? '2px solid var(--border-color)' : '2px solid transparent',
+                  backgroundColor: sortBy === option.type ? 'var(--bg-body)' : 'transparent',
+                  color: 'var(--text-color)',
+                  userSelect: 'none'
+                }}
+              >
+                <input
+                  type="radio"
+                  name="library-sort"
+                  checked={sortBy === option.type}
+                  onChange={() => setSortBy(option.type as any)}
+                  style={{
+                    cursor: 'pointer',
+                    accentColor: 'var(--retro-purple)'
+                  }}
+                />
+                {option.label}
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Main Library View */}
       {loading ? (
         <div style={{ textAlign: 'center', padding: '5rem 0' }}>
@@ -136,7 +393,7 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({ onMangaSelect }) => {
             <p style={{ margin: '0.25rem 0 0 0', fontWeight: 600 }}>{error}</p>
           </div>
         </div>
-      ) : filteredMangas.length === 0 ? (
+      ) : sortedMangas.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '4rem 0' }}>
           <div className="speech-bubble" style={{ display: 'inline-block', maxWidth: '400px', textAlign: 'left' }}>
             <h3 style={{ margin: '0 0 0.5rem 0', fontWeight: 900, textTransform: 'uppercase' }}>{t('library.title')}</h3>
@@ -147,7 +404,7 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({ onMangaSelect }) => {
         </div>
       ) : (
         <div className="comic-grid">
-          {filteredMangas.map((manga, idx) => {
+          {sortedMangas.map((manga, idx) => {
             // Apply slight random rotation for playful cartoonist layout
             const rotation = (idx % 3 === 0) ? '-1.5deg' : (idx % 3 === 1) ? '1deg' : '-0.5deg';
             return (
