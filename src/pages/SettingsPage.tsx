@@ -39,6 +39,30 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
+  // User management (admin only)
+  const [allUsers, setAllUsers] = useState<Array<{ username: string; createdAt: string; lastOnline?: string }>>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+
+  const handleAdminDeleteUser = async (targetUsername: string) => {
+    if (targetUsername.toLowerCase() === 'admin') {
+      alert('Cannot delete admin account!');
+      return;
+    }
+    if (!confirm(`Are you sure you want to delete user "${targetUsername}" and all of their data?`)) {
+      return;
+    }
+    setUsersLoading(true);
+    try {
+      await auth.adminDeleteUser(targetUsername);
+      const updatedList = await auth.getAllUsers();
+      setAllUsers(updatedList);
+    } catch (e: any) {
+      alert(e.message || 'Failed to delete user');
+    } finally {
+      setUsersLoading(false);
+    }
+  };
+
   const loadSettingsAndStatus = async () => {
     setLoading(true);
     try {
@@ -69,6 +93,9 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
 
   useEffect(() => {
     loadSettingsAndStatus();
+    if (currentUser?.toLowerCase() === 'admin') {
+      auth.getAllUsers().then(setAllUsers).catch(console.error);
+    }
   }, []);
 
   const handleSaveGeneralSettings = async (e: React.FormEvent) => {
@@ -642,6 +669,81 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
                   {t('settings.server.refresh')}
                 </button>
               </div>
+            </div>
+          )}
+
+          {/* About box */}
+          {currentUser?.toLowerCase() === 'admin' && (
+            <div className="comic-box">
+              <h2 style={{ margin: '0 0 1rem 0', fontWeight: 900, textTransform: 'uppercase', fontSize: '1.4rem' }}>
+                User Management ({allUsers.length})
+              </h2>
+              {usersLoading ? (
+                <p style={{ fontStyle: 'italic', fontWeight: 600, color: 'var(--muted-text)', margin: 0 }}>
+                  Loading users...
+                </p>
+              ) : allUsers.length === 0 ? (
+                <p style={{ fontStyle: 'italic', fontWeight: 600, color: 'var(--muted-text)', margin: 0 }}>
+                  No other users registered.
+                </p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  {allUsers.map((u, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '0.75rem 1rem',
+                        border: '2px solid var(--border-color)',
+                        borderRadius: '8px',
+                        backgroundColor: 'var(--bg-color)',
+                        boxShadow: '2px 2px 0px var(--border-color)'
+                      }}
+                    >
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+                        <span style={{ fontWeight: 850, fontSize: '1rem' }}>
+                          {u.username}
+                        </span>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.05rem' }}>
+                          {u.createdAt && (
+                            <span style={{ fontSize: '0.75rem', fontWeight: 650, color: 'var(--muted-text)' }}>
+                              Created: {new Date(u.createdAt).toLocaleDateString()}
+                            </span>
+                          )}
+                          {u.lastOnline ? (
+                            <span style={{ fontSize: '0.75rem', fontWeight: 650, color: 'var(--retro-teal)' }}>
+                              Last Online: {new Date(u.lastOnline).toLocaleString()}
+                            </span>
+                          ) : (
+                            <span style={{ fontSize: '0.75rem', fontWeight: 650, color: 'var(--muted-text)', fontStyle: 'italic' }}>
+                              Last Online: Never
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      {u.username.toLowerCase() !== 'admin' && (
+                        <button
+                          className="comic-btn"
+                          onClick={() => handleAdminDeleteUser(u.username)}
+                          style={{
+                            padding: '0.4rem 0.6rem',
+                            backgroundColor: 'var(--retro-pink)',
+                            color: '#fff',
+                            border: '2px solid var(--border-color)',
+                            transform: 'none',
+                            boxShadow: 'none'
+                          }}
+                          title="Delete User"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 

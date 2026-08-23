@@ -15,7 +15,7 @@ if (window.location.hostname === 'komik.irnhakim.my.id') {
 export const SERVER_ORIGIN = getStoredServerUrl() || DEFAULT_ORIGIN;
 
 export const BASE_URL = `${SERVER_ORIGIN}/api/v1`;
-export const GRAPHQL_URL = `${SERVER_ORIGIN}/graphql`;
+export const GRAPHQL_URL = `${SERVER_ORIGIN}/api/graphql`;
 
 export interface Extension {
   name: string;

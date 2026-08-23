@@ -179,8 +179,20 @@ export const auth = {
       throw new Error('Username atau password salah!');
     }
 
-    // 2. Fetch user's data from server and save to localStorage
+    // Update lastOnline timestamp
+    users[key].lastOnline = new Date().toISOString();
     localStorage.setItem('kuroyomi_users', JSON.stringify(users));
+    try {
+      await fetch(`${BASE_URL}/kuroyomi/users`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(users)
+      });
+    } catch (e) {
+      console.warn("Failed to sync lastOnline to server", e);
+    }
+
+    // 2. Fetch user's data from server and save to localStorage
     try {
       const resData = await fetch(`${BASE_URL}/kuroyomi/user/${key}/data`);
       if (resData.ok) {
@@ -312,5 +324,55 @@ export const auth = {
     const usersJson = localStorage.getItem('kuroyomi_users');
     const users = usersJson ? JSON.parse(usersJson) : {};
     return Object.values(users).map((u: any) => u.username);
+  },
+
+  // Get all users with metadata (admin only)
+  getAllUsers: async (): Promise<Array<{ username: string; createdAt: string; lastOnline?: string }>> => {
+    let users: Record<string, any> = {};
+    try {
+      const res = await fetch(`${BASE_URL}/kuroyomi/users`);
+      if (res.ok) users = await res.json();
+    } catch (e) {
+      const local = localStorage.getItem('kuroyomi_users');
+      if (local) users = JSON.parse(local);
+    }
+    return Object.values(users).map((u: any) => ({
+      username: u.username,
+      createdAt: u.createdAt || '',
+      lastOnline: u.lastOnline || ''
+    }));
+  },
+
+  // Delete any user account (admin only — caller must verify they are admin)
+  adminDeleteUser: async (targetUsername: string): Promise<void> => {
+    const key = targetUsername.toLowerCase();
+    let users: Record<string, any> = {};
+    try {
+      const res = await fetch(`${BASE_URL}/kuroyomi/users`);
+      if (res.ok) users = await res.json();
+    } catch (e) {
+      const local = localStorage.getItem('kuroyomi_users');
+      if (local) users = JSON.parse(local);
+    }
+    if (!users[key]) throw new Error(`User "${targetUsername}" tidak ditemukan.`);
+    delete users[key];
+    localStorage.setItem('kuroyomi_users', JSON.stringify(users));
+    // Cleanup user data keys from localStorage
+    const dataKeys = ['library','progress','categories','settings','installed_extensions','manga_categories','history'];
+    dataKeys.forEach(k => localStorage.removeItem(`kuroyomi_user_${key}_${k}`));
+    try {
+      await fetch(`${BASE_URL}/kuroyomi/users`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(users)
+      });
+      await fetch(`${BASE_URL}/kuroyomi/user/${key}/data`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      });
+    } catch (e) {
+      console.warn('Failed to sync user deletion to server', e);
+    }
   }
 };
