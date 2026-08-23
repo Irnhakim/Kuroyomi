@@ -294,87 +294,63 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({ onMangaSelect }) => {
       {showSortMenu && (
         <div className="comic-box" style={{
           backgroundColor: 'var(--bg-card)',
-          padding: '1.25rem',
+          padding: '1rem',
           marginBottom: '2rem',
           display: 'flex',
           flexDirection: 'column',
-          gap: '1rem'
+          gap: '0.25rem',
+          maxWidth: '320px',
+          boxSizing: 'border-box'
         }}>
-          {/* Header & Direction */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px dashed var(--border-color)', paddingBottom: '0.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-            <h4 style={{ margin: 0, fontWeight: 900, textTransform: 'uppercase', fontSize: '1rem', color: 'var(--text-color)' }}>
-              {t('library.sort')}
-            </h4>
-
-            {/* Sort Direction Toggle */}
-            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-              <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--muted-text)', marginRight: '0.25rem' }}>
-                {t('library.sort.direction')}:
-              </span>
-              <button
-                className={`comic-btn ${sortDirection === 'asc' ? 'comic-btn-teal' : ''}`}
-                style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem', cursor: 'pointer' }}
-                onClick={() => setSortDirection('asc')}
-              >
-                {t('library.sort.asc')}
-              </button>
-              <button
-                className={`comic-btn ${sortDirection === 'desc' ? 'comic-btn-teal' : ''}`}
-                style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem', cursor: 'pointer' }}
-                onClick={() => setSortDirection('desc')}
-              >
-                {t('library.sort.desc')}
-              </button>
-            </div>
-          </div>
-
-          {/* Sort Options Grid */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-            gap: '0.75rem'
-          }}>
-            {[
-              { type: 'unread', label: t('library.sort.unread') },
-              { type: 'total', label: t('library.sort.total') },
-              { type: 'az', label: t('library.sort.az') },
-              { type: 'added', label: t('library.sort.added') },
-              { type: 'read', label: t('library.sort.read') },
-              { type: 'fetched', label: t('library.sort.fetched') },
-              { type: 'uploaded', label: t('library.sort.uploaded') },
-              { type: 'random', label: t('library.sort.random') }
-            ].map((option) => (
-              <label
+          {[
+            { type: 'unread', label: t('library.sort.unread') },
+            { type: 'total', label: t('library.sort.total') },
+            { type: 'az', label: t('library.sort.az') },
+            { type: 'added', label: t('library.sort.added') },
+            { type: 'read', label: t('library.sort.read') },
+            { type: 'fetched', label: t('library.sort.fetched') },
+            { type: 'uploaded', label: t('library.sort.uploaded') },
+            { type: 'random', label: t('library.sort.random') }
+          ].map((option) => {
+            const isActive = sortBy === option.type;
+            return (
+              <div
                 key={option.type}
+                onClick={() => {
+                  if (isActive) {
+                    setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+                  } else {
+                    setSortBy(option.type as any);
+                  }
+                }}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '0.5rem',
-                  fontWeight: 700,
-                  fontSize: '0.9rem',
+                  gap: '0.75rem',
+                  fontWeight: 500,
+                  fontSize: '0.95rem',
                   cursor: 'pointer',
-                  padding: '0.35rem 0.5rem',
+                  padding: '0.5rem 0.75rem',
                   borderRadius: '6px',
-                  border: sortBy === option.type ? '2px solid var(--border-color)' : '2px solid transparent',
-                  backgroundColor: sortBy === option.type ? 'var(--bg-body)' : 'transparent',
                   color: 'var(--text-color)',
-                  userSelect: 'none'
+                  userSelect: 'none',
+                  transition: 'background-color 0.2s'
                 }}
+                className="sort-option-item"
               >
-                <input
-                  type="radio"
-                  name="library-sort"
-                  checked={sortBy === option.type}
-                  onChange={() => setSortBy(option.type as any)}
-                  style={{
-                    cursor: 'pointer',
-                    accentColor: 'var(--retro-purple)'
-                  }}
-                />
-                {option.label}
-              </label>
-            ))}
-          </div>
+                {isActive ? (
+                  sortDirection === 'asc' ? (
+                    <ArrowUp size={20} style={{ color: 'var(--retro-purple)' }} />
+                  ) : (
+                    <ArrowDown size={20} style={{ color: 'var(--retro-purple)' }} />
+                  )
+                ) : (
+                  <Circle size={20} style={{ color: 'var(--muted-text)', opacity: 0.6 }} />
+                )}
+                <span>{option.label}</span>
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -498,6 +474,9 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({ onMangaSelect }) => {
         }
         .spin-anim {
           animation: spin 1s linear infinite;
+        }
+        .sort-option-item:hover {
+          background-color: var(--bg-body) !important;
         }
       `}</style>
     </div>
