@@ -1,8 +1,199 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import type { Extension, Source, Manga } from '../services/api';
-import { Compass, Cpu, Plus, Trash2, Search, ArrowLeft, ArrowRight, Sliders } from 'lucide-react';
+import { Compass, Cpu, Plus, Trash2, Search, ArrowLeft, ArrowRight, Sliders, Globe } from 'lucide-react';
 import { useTranslation } from '../services/i18n';
+
+// Global Search Result Row Component
+interface GlobalSearchResultRowProps {
+  source: Source;
+  query: string;
+  onMangaSelect: (mangaId: number) => void;
+  onExplore: (source: Source) => void;
+}
+
+const GlobalSearchResultRow: React.FC<GlobalSearchResultRowProps> = ({ source, query, onMangaSelect, onExplore }) => {
+  const [mangas, setMangas] = useState<Manga[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    setLoading(true);
+    setError(null);
+
+    api.searchSource(source.id, query, 1)
+      .then(result => {
+        if (isMounted) {
+          setMangas(result.mangas || []);
+          setLoading(false);
+        }
+      })
+      .catch(err => {
+        if (isMounted) {
+          console.error(`Search failed for source ${source.name}:`, err);
+          setError(err.message || String(err));
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [source.id, query]);
+
+  if (loading) {
+    return (
+      <div className="comic-box" style={{ padding: '1rem', marginBottom: '1.5rem', opacity: 0.7 }}>
+        <h3 style={{ margin: 0, fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <span style={{
+            display: 'inline-block',
+            width: '14px',
+            height: '14px',
+            border: '2px solid var(--text-color)',
+            borderTopColor: 'transparent',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite'
+          }} />
+          Searching on {source.name}...
+        </h3>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="comic-box" style={{ padding: '1rem', marginBottom: '1.5rem', borderColor: 'var(--retro-pink)' }}>
+        <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--retro-pink)' }}>
+          {source.name} - Error
+        </h3>
+        <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.85rem' }}>{error}</p>
+      </div>
+    );
+  }
+
+  if (mangas.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="comic-box" style={{ padding: '1.25rem', marginBottom: '1.5rem', backgroundColor: 'var(--bg-card)' }}>
+      {/* Source Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          {/* Source Icon */}
+          <div style={{
+            width: '32px',
+            height: '32px',
+            borderRadius: '4px',
+            border: '2px solid var(--border-color)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: '#fff',
+            overflow: 'hidden'
+          }}>
+            <img
+              src={api.getSourceIconUrl(source)}
+              alt={source.name}
+              style={{ width: '80%', height: '80%', objectFit: 'contain' }}
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = '/logo.svg';
+              }}
+            />
+          </div>
+          <div>
+            <h3 style={{ margin: 0, fontWeight: 900, fontSize: '1.2rem', textTransform: 'uppercase' }}>{source.name}</h3>
+            <span className="comic-sticker sticker-teal" style={{ fontSize: '0.6rem', padding: '0.1rem 0.3rem', marginTop: '0.2rem' }}>
+              {source.lang.toUpperCase()}
+            </span>
+          </div>
+        </div>
+
+        <button
+          className="comic-btn comic-btn-white"
+          style={{ padding: '0.3rem 0.75rem', fontSize: '0.8rem' }}
+          onClick={() => onExplore(source)}
+        >
+          Explore
+        </button>
+      </div>
+
+      {/* Manga Results */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
+        gap: '1rem'
+      }}>
+        {mangas.slice(0, 6).map((manga, idx) => {
+          const rotation = (idx % 3 === 0) ? '-1deg' : (idx % 3 === 1) ? '1deg' : '0deg';
+          return (
+            <div
+              key={`${manga.id}-${idx}`}
+              className="comic-box comic-box-interactive"
+              style={{
+                padding: '0.5rem',
+                display: 'flex',
+                flexDirection: 'column',
+                transform: `rotate(${rotation})`,
+                cursor: 'pointer'
+              }}
+              onClick={() => onMangaSelect(manga.id)}
+            >
+              <div style={{
+                position: 'relative',
+                width: '100%',
+                paddingBottom: '140%',
+                overflow: 'hidden',
+                borderRadius: '4px',
+                border: '2px solid var(--border-color)',
+                backgroundColor: '#eee'
+              }}>
+                <img
+                  src={api.getMangaThumbnailUrl(manga)}
+                  alt={manga.title}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover'
+                  }}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = '/logo.svg';
+                  }}
+                />
+                {manga.inLibrary && (
+                  <div style={{ position: 'absolute', top: '4px', left: '4px', zIndex: 10 }}>
+                    <span className="comic-sticker sticker-pink" style={{ fontSize: '0.5rem', padding: '0.1rem 0.25rem' }}>
+                      IN LIB
+                    </span>
+                  </div>
+                )}
+              </div>
+              <div style={{ marginTop: '0.5rem' }}>
+                <h4 style={{
+                  margin: 0,
+                  fontWeight: 900,
+                  fontSize: '0.85rem',
+                  lineHeight: 1.2,
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden',
+                  height: '2rem'
+                }}>
+                  {manga.title}
+                </h4>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
 
 interface BrowsePageProps {
   onMangaSelect: (mangaId: number) => void;
@@ -11,9 +202,15 @@ interface BrowsePageProps {
 export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
   const { t } = useTranslation();
   const [activeSubTab, setActiveSubTab] = useState<'sources' | 'extensions'>('sources');
-  const [extensions, setExtensions] = useState<Extension[]>([]);
-  const [sources, setSources] = useState<Source[]>([]);
+  const [rawExtensions, setRawExtensions] = useState<Extension[]>([]);
+  const [rawSources, setRawSources] = useState<Source[]>([]);
+  const [allowedLanguages, setAllowedLanguages] = useState<string[]>([]);
+  const [showLangModal, setShowLangModal] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // Global search states
+  const [globalSearchInput, setGlobalSearchInput] = useState('');
+  const [globalSearchQuery, setGlobalSearchQuery] = useState('');
 
   // Selection / Catalog browsing states
   const [selectedSource, setSelectedSource] = useState<Source | null>(null);
@@ -33,8 +230,16 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
   const [extSearchQuery, setExtSearchQuery] = useState('');
   const [selectedLang, setSelectedLang] = useState('all');
 
+  // Derived filtered extensions and sources based on allowed languages
+  const extensions = rawExtensions.filter(ext => allowedLanguages.includes(ext.lang));
+  const sources = rawSources.filter(source =>
+    source.id === '0' ||
+    source.name.toLowerCase() === 'local source' ||
+    allowedLanguages.includes(source.lang)
+  );
+
   const filteredExtensions = extensions.filter(ext => {
-    const matchesSearch = ext.name.toLowerCase().includes(extSearchQuery.toLowerCase()) || 
+    const matchesSearch = ext.name.toLowerCase().includes(extSearchQuery.toLowerCase()) ||
                           ext.pkgName.toLowerCase().includes(extSearchQuery.toLowerCase());
     const matchesLang = selectedLang === 'all' || ext.lang === selectedLang;
     return matchesSearch && matchesLang;
@@ -45,12 +250,26 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
   const loadInitialData = async () => {
     setLoading(true);
     try {
-      const [exts, srcs] = await Promise.all([
+      const [exts, srcs, settings] = await Promise.all([
         api.getExtensions(),
-        api.getSources()
+        api.getSources(),
+        api.getSettings()
       ]);
-      setExtensions(exts);
-      setSources(srcs);
+      setRawExtensions(exts);
+      setRawSources(srcs);
+
+      const allLangs = Array.from(new Set(exts.map(e => e.lang))).sort();
+      let savedLangs: string[] = [];
+      if (settings.allowedLanguages) {
+        try {
+          savedLangs = JSON.parse(settings.allowedLanguages);
+        } catch (_) {}
+      }
+
+      if (!savedLangs || savedLangs.length === 0) {
+        savedLangs = allLangs;
+      }
+      setAllowedLanguages(savedLangs);
     } catch (e) {
       console.error("Failed to fetch browse data", e);
     } finally {
@@ -61,6 +280,48 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
   useEffect(() => {
     loadInitialData();
   }, []);
+
+  const handleToggleLanguage = (langCode: string) => {
+    setAllowedLanguages(prev => {
+      let next;
+      if (prev.includes(langCode)) {
+        if (prev.length <= 1) return prev;
+        next = prev.filter(l => l !== langCode);
+      } else {
+        next = [...prev, langCode];
+      }
+      api.updateSettings({ allowedLanguages: JSON.stringify(next) }).catch(console.error);
+      return next;
+    });
+  };
+
+  const handleSelectAllLanguages = () => {
+    const allLangs = Array.from(new Set(rawExtensions.map(e => e.lang))).sort();
+    setAllowedLanguages(allLangs);
+    api.updateSettings({ allowedLanguages: JSON.stringify(allLangs) }).catch(console.error);
+  };
+
+  const handleDeselectAllLanguages = () => {
+    const appLang = localStorage.getItem('lang') || 'en';
+    const defaultLang = allowedLanguages.includes(appLang) ? [appLang] : [allowedLanguages[0] || 'en'];
+    setAllowedLanguages(defaultLang);
+    api.updateSettings({ allowedLanguages: JSON.stringify(defaultLang) }).catch(console.error);
+  };
+
+  const handleGlobalSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (globalSearchInput.trim()) {
+      setGlobalSearchQuery(globalSearchInput.trim());
+    }
+  };
+
+  const handleExploreSourceWithQuery = (source: Source, query: string) => {
+    setGlobalSearchQuery('');
+    setGlobalSearchInput('');
+    setBrowseMode('search');
+    setSearchQuery(query);
+    setSelectedSource(source);
+  };
 
   // Compile filters state to Suwayomi API format
   const compileFiltersPayload = () => {
@@ -651,23 +912,34 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
         </p>
       </div>
 
-      {/* Sub tabs */}
-      <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', borderBottom: '3px solid var(--border-color)', paddingBottom: '0.5rem' }}>
+      {/* Sub tabs & Language Button */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', marginBottom: '2rem', borderBottom: '3px solid var(--border-color)', paddingBottom: '0.5rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '1rem' }}>
+          <button
+            className={`nav-tab ${activeSubTab === 'sources' ? 'active' : ''}`}
+            style={{ background: 'none', border: 'none', color: 'var(--text-color)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+            onClick={() => { setActiveSubTab('sources'); setGlobalSearchQuery(''); setGlobalSearchInput(''); }}
+          >
+            <Compass size={18} />
+            {t('browse.sources')} ({sources.length})
+          </button>
+          <button
+            className={`nav-tab ${activeSubTab === 'extensions' ? 'active' : ''}`}
+            style={{ background: 'none', border: 'none', color: 'var(--text-color)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+            onClick={() => { setActiveSubTab('extensions'); setGlobalSearchQuery(''); setGlobalSearchInput(''); }}
+          >
+            <Cpu size={18} />
+            {t('browse.extensions')} ({extensions.length})
+          </button>
+        </div>
+
         <button
-          className={`nav-tab ${activeSubTab === 'sources' ? 'active' : ''}`}
-          style={{ background: 'none', border: 'none', color: 'var(--text-color)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-          onClick={() => setActiveSubTab('sources')}
+          className="comic-btn comic-btn-yellow"
+          style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem' }}
+          onClick={() => setShowLangModal(true)}
         >
-          <Compass size={18} />
-          {t('browse.sources')} ({sources.length})
-        </button>
-        <button
-          className={`nav-tab ${activeSubTab === 'extensions' ? 'active' : ''}`}
-          style={{ background: 'none', border: 'none', color: 'var(--text-color)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-          onClick={() => setActiveSubTab('extensions')}
-        >
-          <Cpu size={18} />
-          {t('browse.extensions')} ({extensions.length})
+          <Globe size={16} />
+          <span>Languages ({allowedLanguages.length})</span>
         </button>
       </div>
 
@@ -677,9 +949,72 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
             <h3 style={{ margin: 0, fontWeight: 900 }}>CONNECTING TO BACKEND...</h3>
           </div>
         </div>
+      ) : globalSearchQuery ? (
+        /* GLOBAL SEARCH VIEW */
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
+            <button className="comic-btn comic-btn-white" onClick={() => { setGlobalSearchQuery(''); setGlobalSearchInput(''); }}>
+              <ArrowLeft size={18} />
+              Back to Sources
+            </button>
+            <div>
+              <h1 style={{ fontSize: '2rem', margin: 0, fontWeight: 900, textTransform: 'uppercase' }}>
+                Global Search
+              </h1>
+              <p style={{ margin: '0.25rem 0 0 0', fontWeight: 600, color: 'var(--muted-text)' }}>
+                Results for "{globalSearchQuery}"
+              </p>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {sources.filter(s => s.id !== '0' && s.name.toLowerCase() !== 'local source').length === 0 ? (
+              <div className="speech-bubble">
+                <h3 style={{ margin: 0 }}>No active sources for global search</h3>
+                <p style={{ margin: '0.5rem 0 0 0' }}>Make sure you have enabled some languages and installed extensions.</p>
+              </div>
+            ) : (
+              sources.filter(s => s.id !== '0' && s.name.toLowerCase() !== 'local source').map(source => (
+                <GlobalSearchResultRow
+                  key={source.id}
+                  source={source}
+                  query={globalSearchQuery}
+                  onMangaSelect={onMangaSelect}
+                  onExplore={(src) => handleExploreSourceWithQuery(src, globalSearchQuery)}
+                />
+              ))
+            )}
+          </div>
+        </div>
       ) : activeSubTab === 'sources' ? (
         /* SOURCES VIEW */
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {/* Global Search Bar */}
+          <form onSubmit={handleGlobalSearchSubmit} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', width: '100%' }}>
+            <div className="search-bar-wrap" style={{ display: 'flex', alignItems: 'center', flex: 1, maxWidth: '100%', margin: 0 }}>
+              <Search size={18} style={{ marginRight: '0.5rem', color: 'var(--muted-text)' }} />
+              <input
+                type="text"
+                placeholder="Search manga globally across all installed sources..."
+                value={globalSearchInput}
+                onChange={(e) => setGlobalSearchInput(e.target.value)}
+                style={{
+                  border: 'none',
+                  background: 'transparent',
+                  color: 'var(--text-color)',
+                  outline: 'none',
+                  fontWeight: 700,
+                  fontSize: '0.95rem',
+                  width: '100%',
+                  fontFamily: 'inherit'
+                }}
+              />
+            </div>
+            <button type="submit" className="comic-btn comic-btn-teal" style={{ padding: '0.5rem 1.5rem' }}>
+              Search
+            </button>
+          </form>
+
           {sources.length === 0 ? (
             <div className="speech-bubble">
               <h3 style={{ margin: 0 }}>No Sources Active</h3>
@@ -693,7 +1028,6 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
                 onClick={() => setSelectedSource(source)}
               >
                 <div className="source-info">
-                  {/* Source Icon */}
                   <div style={{
                     width: '40px',
                     height: '40px',
@@ -883,6 +1217,87 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
               </div>
             </div>
           ))}
+          </div>
+        </div>
+      )}
+
+      {/* Allowed Languages Modal */}
+      {showLangModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.6)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000,
+          padding: '1rem'
+        }} onClick={() => setShowLangModal(false)}>
+          <div className="comic-box" style={{
+            maxWidth: '500px',
+            width: '100%',
+            backgroundColor: 'var(--bg-card)',
+            padding: '2rem',
+            transform: 'rotate(-0.5deg)'
+          }} onClick={(e) => e.stopPropagation()}>
+            <h2 style={{ margin: '0 0 0.5rem 0', fontWeight: 900, textTransform: 'uppercase', fontSize: '1.75rem' }}>
+              Allowed Languages
+            </h2>
+            <p style={{ margin: '0 0 1.5rem 0', fontWeight: 700, color: 'var(--muted-text)' }}>
+              Select which languages to show for sources and extensions.
+            </p>
+
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
+              <button className="comic-btn comic-btn-white" style={{ padding: '0.3rem 0.75rem', fontSize: '0.8rem', flex: 1 }} onClick={handleSelectAllLanguages}>
+                Select All
+              </button>
+              <button className="comic-btn comic-btn-white" style={{ padding: '0.3rem 0.75rem', fontSize: '0.8rem', flex: 1 }} onClick={handleDeselectAllLanguages}>
+                Reset
+              </button>
+            </div>
+
+            <div style={{
+              maxHeight: '300px',
+              overflowY: 'auto',
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: '0.75rem',
+              border: '2px solid var(--border-color)',
+              padding: '1rem',
+              borderRadius: '8px',
+              backgroundColor: 'var(--bg-color)',
+              marginBottom: '2rem'
+            }}>
+              {Array.from(new Set(rawExtensions.map(e => e.lang))).sort().map(langCode => {
+                const isChecked = allowedLanguages.includes(langCode);
+                return (
+                  <div key={langCode} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <input
+                      type="checkbox"
+                      id={`lang-checkbox-${langCode}`}
+                      checked={isChecked}
+                      onChange={() => handleToggleLanguage(langCode)}
+                      style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                    />
+                    <label
+                      htmlFor={`lang-checkbox-${langCode}`}
+                      style={{ fontWeight: 800, fontSize: '0.95rem', cursor: 'pointer', textTransform: 'uppercase' }}
+                    >
+                      {langCode}
+                    </label>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button className="comic-btn comic-btn-pink" style={{ padding: '0.5rem 1.5rem' }} onClick={() => setShowLangModal(false)}>
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}
