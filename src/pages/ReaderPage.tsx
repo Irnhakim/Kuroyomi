@@ -323,12 +323,10 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
     setLoadingNext(true);
     try {
       const nextInfo = await api.getChapterDetails(mangaId, nextCh.id);
-      loadedChapterIdsRef.current = new Set([nextCh.id]);
-      lastSavedPageRef.current = '';
-      setCurrentPage(0);
-      setLoadedChapters([{ id: nextCh.id, name: nextInfo.name, pageCount: nextInfo.pageCount }]);
-      onChapterChange(nextCh.id);
-      window.scrollTo(0, 0);
+
+      // Append next chapter to loaded list (multi-chapter webtoon view)
+      loadedChapterIdsRef.current.add(nextCh.id);
+      setLoadedChapters(prev => [...prev, { id: nextCh.id, name: nextInfo.name, pageCount: nextInfo.pageCount }]);
     } catch (e) {
       console.error("Failed to load next chapter:", e);
     } finally {
