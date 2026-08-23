@@ -245,6 +245,9 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
     return matchesSearch && matchesLang;
   });
 
+  const installedExtensions = filteredExtensions.filter(ext => ext.status === 'INSTALLED');
+  const availableExtensions = filteredExtensions.filter(ext => ext.status !== 'INSTALLED');
+
   const languages = ['all', ...Array.from(new Set(extensions.map(e => e.lang))).sort()];
 
   const loadInitialData = async () => {
@@ -900,6 +903,78 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
     );
   }
 
+  const renderExtensionCard = (ext: Extension) => {
+    return (
+      <div
+        key={ext.pkgName}
+        className="comic-box extension-card"
+      >
+        {/* Icon */}
+        <div style={{
+          width: '50px',
+          height: '50px',
+          borderRadius: '8px',
+          border: '2px solid var(--border-color)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          backgroundColor: 'var(--bg-color)',
+          overflow: 'hidden',
+          flexShrink: 0
+        }}>
+          <img
+            src={api.getExtensionIconUrl(ext.pkgName)}
+            alt={ext.name}
+            style={{ width: '80%', height: '80%', objectFit: 'contain' }}
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = '/logo.svg';
+            }}
+          />
+        </div>
+
+        {/* Info */}
+        <div className="extension-info">
+          <h3 className="extension-title-wrap">
+            <span className="extension-title" title={ext.name}>{ext.name}</span>
+            <span className="comic-sticker sticker-teal" style={{ fontSize: '0.6rem' }}>
+              {ext.lang.toUpperCase()}
+            </span>
+            {ext.isNsfw && (
+              <span className="comic-sticker sticker-pink" style={{ fontSize: '0.6rem' }}>
+                18+
+              </span>
+            )}
+          </h3>
+          <p style={{ margin: '0.3rem 0 0 0', fontSize: '0.85rem', color: 'var(--muted-text)', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            v{ext.versionName} • {ext.pkgName.split('.').pop()}
+          </p>
+        </div>
+
+        {/* Install / Uninstall Button */}
+        <div>
+          {ext.status === 'INSTALLED' ? (
+            <button
+              className="comic-btn comic-btn-white ext-action-btn"
+              style={{ borderColor: 'var(--retro-pink)', color: 'var(--retro-pink)' }}
+              onClick={() => handleUninstallExtension(ext.pkgName)}
+            >
+              <Trash2 size={16} />
+              <span>{t('browse.btn.uninstall')}</span>
+            </button>
+          ) : (
+            <button
+              className="comic-btn comic-btn-yellow ext-action-btn"
+              onClick={() => handleInstallExtension(ext.pkgName)}
+            >
+              <Plus size={16} />
+              <span>{t('browse.btn.install')}</span>
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   // Base list of sources & extensions
   return (
     <div>
@@ -1148,75 +1223,34 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            {filteredExtensions.map((ext) => (
-            <div
-              key={ext.pkgName}
-              className="comic-box extension-card"
-            >
-              {/* Icon */}
-              <div style={{
-                width: '50px',
-                height: '50px',
-                borderRadius: '8px',
-                border: '2px solid var(--border-color)',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                backgroundColor: 'var(--bg-color)',
-                overflow: 'hidden',
-                flexShrink: 0
-              }}>
-                <img
-                  src={api.getExtensionIconUrl(ext.pkgName)}
-                  alt={ext.name}
-                  style={{ width: '80%', height: '80%', objectFit: 'contain' }}
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = '/logo.svg';
-                  }}
-                />
-              </div>
-
-              {/* Info */}
-              <div className="extension-info">
-                <h3 className="extension-title-wrap">
-                  <span className="extension-title" title={ext.name}>{ext.name}</span>
-                  <span className="comic-sticker sticker-teal" style={{ fontSize: '0.6rem' }}>
-                    {ext.lang.toUpperCase()}
-                  </span>
-                  {ext.isNsfw && (
-                    <span className="comic-sticker sticker-pink" style={{ fontSize: '0.6rem' }}>
-                      18+
-                    </span>
-                  )}
-                </h3>
-                <p style={{ margin: '0.3rem 0 0 0', fontSize: '0.85rem', color: 'var(--muted-text)', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  v{ext.versionName} • {ext.pkgName.split('.').pop()}
-                </p>
-              </div>
-
-              {/* Install / Uninstall Button */}
+            {installedExtensions.length > 0 && (
               <div>
-                {ext.status === 'INSTALLED' ? (
-                  <button
-                    className="comic-btn comic-btn-white ext-action-btn"
-                    style={{ borderColor: 'var(--retro-pink)', color: 'var(--retro-pink)' }}
-                    onClick={() => handleUninstallExtension(ext.pkgName)}
-                  >
-                    <Trash2 size={16} />
-                    <span>{t('browse.btn.uninstall')}</span>
-                  </button>
-                ) : (
-                  <button
-                    className="comic-btn comic-btn-yellow ext-action-btn"
-                    onClick={() => handleInstallExtension(ext.pkgName)}
-                  >
-                    <Plus size={16} />
-                    <span>{t('browse.btn.install')}</span>
-                  </button>
-                )}
+                <h3 style={{ margin: '1rem 0 0.75rem 0', fontWeight: 900, textTransform: 'uppercase', fontSize: '1.2rem', color: 'var(--text-color)' }}>
+                  {t('browse.installed')} ({installedExtensions.length})
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                  {installedExtensions.map(renderExtensionCard)}
+                </div>
               </div>
-            </div>
-          ))}
+            )}
+
+            {availableExtensions.length > 0 && (
+              <div>
+                <h3 style={{ margin: '1.5rem 0 0.75rem 0', fontWeight: 900, textTransform: 'uppercase', fontSize: '1.2rem', color: 'var(--text-color)' }}>
+                  {t('browse.available')} ({availableExtensions.length})
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                  {availableExtensions.map(renderExtensionCard)}
+                </div>
+              </div>
+            )}
+
+            {filteredExtensions.length === 0 && (
+              <div className="speech-bubble" style={{ marginTop: '1rem' }}>
+                <h3 style={{ margin: 0 }}>No extensions found</h3>
+                <p style={{ margin: '0.5rem 0 0 0' }}>Try changing the language filter or your search query.</p>
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -61,6 +61,8 @@ const translations: Record<Language, Record<string, string>> = {
     'browse.extensions': 'Extensions',
     'browse.sources': 'Sources',
     'browse.no_extensions': 'No extensions installed. Visit Settings to add repository URLs.',
+    'browse.installed': 'Installed',
+    'browse.available': 'Available',
 
     // History
     'history.title': 'History',
@@ -188,6 +190,8 @@ const translations: Record<Language, Record<string, string>> = {
     'browse.extensions': 'Ekstensi',
     'browse.sources': 'Sumber',
     'browse.no_extensions': 'Tidak ada ekstensi terpasang. Kunjungi Pengaturan untuk menambahkan URL repositori.',
+    'browse.installed': 'Terpasang',
+    'browse.available': 'Tersedia',
 
     // History
     'history.title': 'Riwayat',
