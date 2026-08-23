@@ -10,6 +10,12 @@ interface ReaderPageProps {
   onChapterChange: (id: number) => void;
 }
 
+interface LoadedChapter {
+  id: number;
+  name: string;
+  pageCount: number;
+}
+
 export const ReaderPage: React.FC<ReaderPageProps> = ({
   mangaId,
   chapterId,
@@ -17,36 +23,42 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
   onChapterChange
 }) => {
   const { t } = useTranslation();
-  const [chapterInfo, setChapterInfo] = useState<any>(null);
   const [chapters, setChapters] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
   const [readingMode, setReadingMode] = useState<'single' | 'webtoon'>('webtoon');
   const [mangaDetail, setMangaDetail] = useState<any>(null);
   const [hudVisible, setHudVisible] = useState(true);
-  const [failedPages, setFailedPages] = useState<Record<number, boolean>>({});
-  const [reloadKeys, setReloadKeys] = useState<Record<number, number>>({});
+  const [failedPages, setFailedPages] = useState<Record<string, boolean>>({});
+  const [reloadKeys, setReloadKeys] = useState<Record<string, number>>({});
+  const [loadedChapters, setLoadedChapters] = useState<LoadedChapter[]>([]);
+  const [loadingNext, setLoadingNext] = useState(false);
+
+  const loadingNextRef = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const getPageSrc = (idx: number) => {
-    const baseUrl = api.getPageImageUrl(mangaId, chapterId, idx);
-    const key = reloadKeys[idx] || 0;
+  const activeChapter = loadedChapters.find(c => c.id === chapterId) || loadedChapters[0];
+
+  const getPageSrc = (chId: number, idx: number) => {
+    const baseUrl = api.getPageImageUrl(mangaId, chId, idx);
+    const key = reloadKeys[`${chId}_${idx}`] || 0;
     return key > 0 ? `${baseUrl}?r=${key}` : baseUrl;
   };
 
-  const handleReloadPage = (idx: number) => {
+  const handleReloadPage = (chId: number, idx: number) => {
+    const pageKey = `${chId}_${idx}`;
     setFailedPages(prev => {
       const copy = { ...prev };
-      delete copy[idx];
+      delete copy[pageKey];
       return copy;
     });
     setReloadKeys(prev => ({
       ...prev,
-      [idx]: (prev[idx] || 0) + 1
+      [pageKey]: (prev[pageKey] || 0) + 1
     }));
   };
 
-  const renderErrorCard = (idx: number) => (
+  const renderErrorCard = (chId: number, idx: number) => (
     <div className="reader-error-placeholder comic-box" style={{
       display: 'flex',
       flexDirection: 'column',
@@ -72,7 +84,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
         style={{ position: 'relative', zIndex: 30 }}
         onClick={(e) => {
           e.stopPropagation();
-          handleReloadPage(idx);
+          handleReloadPage(chId, idx);
         }}
       >
         Retry Page
@@ -91,7 +103,6 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
         api.getSettings(),
         api.getMangaDetails(mangaId)
       ]);
-      setChapterInfo(info);
       setChapters(chaptersList);
       setMangaDetail(manga);
 
@@ -100,7 +111,11 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
       } else {
         setReadingMode('webtoon');
       }
-      
+
+      setLoadedChapters([
+        { id: chapterId, name: info.name, pageCount: info.pageCount }
+      ]);
+
       if (info.lastPageRead && info.lastPageRead > 0) {
         setCurrentPage(Math.min(info.lastPageRead, info.pageCount - 1));
       } else {
@@ -114,35 +129,51 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
   };
 
   useEffect(() => {
-    loadChapterAndPages();
+    const isAlreadyLoaded = loadedChapters.some(c => c.id === chapterId);
+    if (!isAlreadyLoaded) {
+      loadChapterAndPages();
+    }
   }, [chapterId]);
+
+  // Keep only active chapter if switching back to single page mode
+  useEffect(() => {
+    if (readingMode === 'single' && loadedChapters.length > 1) {
+      const active = loadedChapters.find(ch => ch.id === chapterId);
+      if (active) {
+        setLoadedChapters([active]);
+      }
+    }
+  }, [readingMode]);
 
   // Save to reading history
   useEffect(() => {
-    if (chapterInfo && mangaDetail) {
+    if (activeChapter && mangaDetail) {
       api.saveHistory({
         mangaId,
         mangaTitle: mangaDetail.title,
         mangaThumbnail: mangaDetail.thumbnailUrl,
         chapterId,
-        chapterName: chapterInfo.name,
+        chapterName: activeChapter.name,
         currentPage,
-        pageCount: chapterInfo.pageCount
+        pageCount: activeChapter.pageCount
       }).catch(err => console.error("Error saving history:", err));
     }
-  }, [currentPage, chapterInfo, mangaDetail, mangaId, chapterId]);
+  }, [currentPage, activeChapter, mangaDetail, mangaId, chapterId]);
 
   // Prefetch next pages in the background to offload server spike and improve client speed
   useEffect(() => {
-    if (!chapterInfo) return;
+    if (!activeChapter) return;
     const nextPagesToPrefetch = [currentPage + 1, currentPage + 2, currentPage + 3];
     nextPagesToPrefetch.forEach(nextIdx => {
-      if (nextIdx < chapterInfo.pageCount && !failedPages[nextIdx]) {
-        const img = new Image();
-        img.src = api.getPageImageUrl(mangaId, chapterId, nextIdx);
+      if (nextIdx < activeChapter.pageCount) {
+        const pageKey = `${chapterId}_${nextIdx}`;
+        if (!failedPages[pageKey]) {
+          const img = new Image();
+          img.src = api.getPageImageUrl(mangaId, chapterId, nextIdx);
+        }
       }
     });
-  }, [currentPage, chapterInfo, mangaId, chapterId, failedPages]);
+  }, [currentPage, activeChapter, mangaId, chapterId, failedPages]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -156,11 +187,11 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentPage, chapterInfo, readingMode]);
+  }, [currentPage, activeChapter, readingMode]);
 
   // Webtoon scroll progress tracking
   useEffect(() => {
-    if (readingMode !== 'webtoon' || !chapterInfo) return;
+    if (readingMode !== 'webtoon' || loadedChapters.length === 0) return;
 
     const observerOptions = {
       root: null,
@@ -172,10 +203,15 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
           const indexAttr = entry.target.getAttribute('data-page-index');
-          if (indexAttr !== null) {
+          const chIdAttr = entry.target.getAttribute('data-chapter-id');
+          if (indexAttr !== null && chIdAttr !== null) {
             const pageIdx = parseInt(indexAttr, 10);
+            const chId = parseInt(chIdAttr, 10);
             setCurrentPage(pageIdx);
-            saveProgress(pageIdx);
+            if (chId !== chapterId) {
+              onChapterChange(chId);
+            }
+            saveProgress(chId, pageIdx);
           }
         }
       });
@@ -190,16 +226,17 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
       clearTimeout(timer);
       observer.disconnect();
     };
-  }, [readingMode, chapterInfo, chapterId]);
+  }, [readingMode, loadedChapters, chapterId]);
 
   // Save progress
-  const saveProgress = async (pageIdx: number) => {
-    if (!chapterInfo) return;
+  const saveProgress = async (chId: number, pageIdx: number) => {
+    const ch = loadedChapters.find(c => c.id === chId);
+    if (!ch) return;
     try {
-      await api.updateProgress(mangaId, chapterId, pageIdx);
-      const isLastPage = pageIdx === chapterInfo.pageCount - 1;
+      await api.updateProgress(mangaId, chId, pageIdx);
+      const isLastPage = pageIdx === ch.pageCount - 1;
       if (isLastPage) {
-        await api.markChapterRead(mangaId, chapterId, true);
+        await api.markChapterRead(mangaId, chId, true);
       }
     } catch (e) {
       console.error(e);
@@ -209,15 +246,16 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
   // Navigate to adjacent chapters
   const navigateToChapterOffset = (direction: 'next' | 'prev') => {
     if (chapters.length === 0) return;
-    
+
     // Sort chapters by sourceOrder (lower sourceOrder means earlier in the book)
     const sorted = [...chapters].sort((a, b) => a.sourceOrder - b.sourceOrder);
     const currentIndex = sorted.findIndex(ch => ch.id === chapterId);
-    
+
     if (currentIndex === -1) return;
-    
+
     let targetIndex = direction === 'next' ? currentIndex + 1 : currentIndex - 1;
     if (targetIndex >= 0 && targetIndex < sorted.length) {
+      setLoadedChapters([]); // Force reset to show loader when manually shifting
       onChapterChange(sorted[targetIndex].id);
     } else {
       alert(direction === 'next' ? "You've reached the last chapter!" : "You are on the first chapter!");
@@ -225,11 +263,11 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
   };
 
   const handleNextPage = () => {
-    if (!chapterInfo) return;
-    if (currentPage < chapterInfo.pageCount - 1) {
+    if (!activeChapter) return;
+    if (currentPage < activeChapter.pageCount - 1) {
       const nextPage = currentPage + 1;
       setCurrentPage(nextPage);
-      saveProgress(nextPage);
+      saveProgress(chapterId, nextPage);
       window.scrollTo(0, 0);
     } else {
       navigateToChapterOffset('next');
@@ -240,7 +278,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
     if (currentPage > 0) {
       const prevPage = currentPage - 1;
       setCurrentPage(prevPage);
-      saveProgress(prevPage);
+      saveProgress(chapterId, prevPage);
       window.scrollTo(0, 0);
     } else {
       navigateToChapterOffset('prev');
@@ -251,12 +289,42 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
     setHudVisible(!hudVisible);
   };
 
+  const loadNextChapterIfNeeded = async () => {
+    if (loadingNextRef.current || chapters.length === 0 || loadedChapters.length === 0) return;
+
+    const lastLoadedCh = loadedChapters[loadedChapters.length - 1];
+    const sorted = [...chapters].sort((a, b) => a.sourceOrder - b.sourceOrder);
+    const currentIndex = sorted.findIndex(ch => ch.id === lastLoadedCh.id);
+
+    if (currentIndex === -1) return;
+
+    const nextIndex = currentIndex + 1;
+    if (nextIndex >= sorted.length) return;
+
+    const nextCh = sorted[nextIndex];
+    if (loadedChapters.some(c => c.id === nextCh.id)) return;
+
+    loadingNextRef.current = true;
+    setLoadingNext(true);
+    try {
+      const nextInfo = await api.getChapterDetails(mangaId, nextCh.id);
+      setLoadedChapters(prev => [
+        ...prev,
+        { id: nextCh.id, name: nextInfo.name, pageCount: nextInfo.pageCount }
+      ]);
+    } catch (e) {
+      console.error("Failed to load next chapter:", e);
+    } finally {
+      loadingNextRef.current = false;
+      setLoadingNext(false);
+    }
+  };
+
   // Webtoon scroll beyond bottom detection
   useEffect(() => {
-    if (readingMode !== 'webtoon') return;
+    if (readingMode !== 'webtoon' || chapters.length === 0 || loadedChapters.length === 0) return;
 
     let lastScrollTop = window.scrollY || document.documentElement.scrollTop;
-    let thresholdTriggered = false;
 
     const handleScroll = () => {
       const scrollTop = window.scrollY || document.documentElement.scrollTop;
@@ -271,24 +339,18 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
         });
       }
 
-      // Check if we are at the very bottom of the page
-      const isAtBottom = (scrollTop + windowHeight) >= (docHeight - 15); // 15px buffer
+      // Check if we are near the bottom of the page (within 1200px buffer)
+      const isNearBottom = (scrollTop + windowHeight) >= (docHeight - 1200);
 
-      if (isAtBottom && scrollTop > lastScrollTop) {
-        // User is at bottom and trying to scroll down further
-        if (!thresholdTriggered) {
-          thresholdTriggered = true;
-          navigateToChapterOffset('next');
-        }
-      } else {
-        thresholdTriggered = false;
+      if (isNearBottom) {
+        loadNextChapterIfNeeded();
       }
       lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
     };
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [readingMode, chapters, chapterId]);
+  }, [readingMode, chapters, loadedChapters, loadingNext]);
 
   if (loading) {
     return (
@@ -300,7 +362,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
     );
   }
 
-  if (!chapterInfo || chapterInfo.pageCount <= 0) {
+  if (loadedChapters.length === 0 || !activeChapter || activeChapter.pageCount <= 0) {
     return (
       <div className="reader-container" style={{ justifyContent: 'center', height: '100vh', padding: 0 }}>
         <div className="comic-box" style={{ backgroundColor: 'var(--retro-pink)', color: '#fff', textAlign: 'center' }}>
@@ -332,10 +394,10 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
                 </div>
               )}
               <h4 className="reader-hud-title">
-                {chapterInfo?.name}
+                {activeChapter?.name}
               </h4>
               <span className="comic-sticker sticker-purple reader-hud-badge">
-                PAGE {readingMode === 'single' ? `${currentPage + 1} / ${chapterInfo.pageCount}` : `LONG STRIP`}
+                PAGE {readingMode === 'single' ? `${currentPage + 1} / ${activeChapter.pageCount}` : `LONG STRIP`}
               </span>
             </div>
           </div>
@@ -374,16 +436,16 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
               onClick={handlePrevPage}
             />
 
-            {failedPages[currentPage] ? (
-              renderErrorCard(currentPage)
+            {failedPages[`${chapterId}_${currentPage}`] ? (
+              renderErrorCard(chapterId, currentPage)
             ) : (
               <img
-                src={getPageSrc(currentPage)}
+                src={getPageSrc(chapterId, currentPage)}
                 alt={`Page ${currentPage + 1}`}
                 className="reader-img"
                 style={{ userSelect: 'none' }}
                 onClick={toggleHud}
-                onError={() => setFailedPages(prev => ({ ...prev, [currentPage]: true }))}
+                onError={() => setFailedPages(prev => ({ ...prev, [`${chapterId}_${currentPage}`]: true }))}
               />
             )}
 
@@ -395,24 +457,62 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
         ) : (
           /* WEBTOON MODE */
           <div className="reader-webtoon-container" onClick={(e) => e.stopPropagation()}>
-            {Array.from({ length: chapterInfo.pageCount }).map((_, idx) => (
-              failedPages[idx] ? (
-                <div key={idx} style={{ minHeight: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  {renderErrorCard(idx)}
+            {loadedChapters.map((ch) => (
+              <div key={ch.id} className="reader-webtoon-chapter" data-chapter-id={ch.id}>
+                {/* Chapter title separator */}
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  padding: '2rem 0',
+                  backgroundColor: 'var(--bg-color)'
+                }}>
+                  <div className="comic-sticker sticker-purple" style={{
+                    transform: 'none',
+                    fontSize: '1rem',
+                    fontWeight: 900,
+                    padding: '0.5rem 1rem',
+                    boxShadow: '3px 3px 0 var(--border-color)',
+                    border: '3px solid var(--border-color)'
+                  }}>
+                    {ch.name}
+                  </div>
                 </div>
-              ) : (
-                <img
-                  key={idx}
-                  data-page-index={idx}
-                  src={getPageSrc(idx)}
-                  alt={`Page ${idx + 1}`}
-                  className="reader-webtoon-img reader-page-image"
-                  loading="lazy"
-                  onClick={toggleHud}
-                  onError={() => setFailedPages(prev => ({ ...prev, [idx]: true }))}
-                />
-              )
+
+                {Array.from({ length: ch.pageCount }).map((_, idx) => {
+                  const pageKey = `${ch.id}_${idx}`;
+                  return failedPages[pageKey] ? (
+                    <div key={pageKey} style={{ minHeight: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {renderErrorCard(ch.id, idx)}
+                    </div>
+                  ) : (
+                    <img
+                      key={pageKey}
+                      data-chapter-id={ch.id}
+                      data-page-index={idx}
+                      src={getPageSrc(ch.id, idx)}
+                      alt={`Page ${idx + 1}`}
+                      className="reader-webtoon-img reader-page-image"
+                      loading="lazy"
+                      onClick={toggleHud}
+                      onError={() => setFailedPages(prev => ({ ...prev, [pageKey]: true }))}
+                    />
+                  );
+                })}
+              </div>
             ))}
+
+            {loadingNext && (
+              <div style={{
+                display: 'flex',
+                justifyContent: 'center',
+                padding: '3rem 0',
+                backgroundColor: 'var(--bg-color)'
+              }}>
+                <div className="comic-box" style={{ backgroundColor: 'var(--retro-yellow)', padding: '0.75rem 1.5rem' }}>
+                  <h4 style={{ margin: 0, fontWeight: 900 }}>LOADING NEXT CHAPTER...</h4>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -437,7 +537,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
                 <ChevronLeft size={16} />
               </button>
               <span className="reader-hud-page-number">
-                {currentPage + 1} / {chapterInfo.pageCount}
+                {currentPage + 1} / {activeChapter.pageCount}
               </span>
               <button
                 className="comic-btn comic-btn-white reader-hud-page-btn"
@@ -461,7 +561,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
       {/* Permanent Page Counter */}
       {!hudVisible && (
         <div className="reader-permanent-counter">
-          {currentPage + 1} / {chapterInfo.pageCount}
+          {currentPage + 1} / {activeChapter.pageCount}
         </div>
       )}
     </div>
