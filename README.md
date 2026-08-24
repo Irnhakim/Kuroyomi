@@ -12,19 +12,6 @@
 
 **Kuroyomi** is a lightweight, responsive, and retro-themed web client for manga readers, designed to integrate seamlessly with your self-hosted [Suwayomi-Server](https://github.com/Suwayomi/Suwayomi-Server) backend. 
 
-### The Name
-The name is derived from the combination of two Japanese words:
-* **Kuro (黒 / くろ):** Meaning *Black* or *Dark*.
-* **Yomi (読み / よみ):** Meaning *Reading* or *Reading style*.
-
-This name reflects the project's focus: providing a comfortable night-reading experience using an low-contrast Tokyo Night color scheme.
-
-### The Vision
-Kuroyomi serves as a complete replacement UI for Suwayomi-Server. It focuses on:
-* **Low Memory Footprint:** Extremely lightweight runtime, optimized for self-hosting on low-power devices like CasaOS and TV boxes (running under 2GB RAM).
-* **Responsive Interfaces:** Scales dynamically from small mobile phone viewports to large desktop monitors.
-* **Persistent Synchronization:** Saves all categories, libraries, reading progress, and history directly to the server database for seamless reading continuation when switching between devices.
-
 ## Core Features
 
 - **Direct Suwayomi Integration:** Serves as a full replacement for the default web UI. Directly loaded and served by your Kotlin backend.
