@@ -648,7 +648,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
                         style={{ width: '18px', height: '18px', cursor: 'pointer' }}
                       />
                       <label htmlFor={`filter-${idx}`} style={{ fontWeight: 700, cursor: 'pointer', fontSize: '0.9rem' }}>
-                        {f.name}
+                        {f.filter.name || f.name}
                       </label>
                     </div>
                   );
@@ -658,7 +658,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
                   const values = f.filter.values || [];
                   return (
                     <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                      <label style={{ fontWeight: 800, fontSize: '0.85rem', color: 'var(--muted-text)' }}>{f.name}</label>
+                      <label style={{ fontWeight: 800, fontSize: '0.85rem', color: 'var(--muted-text)' }}>{f.filter.name || f.name}</label>
                       <select
                         value={f.filter.state}
                         onChange={(e) => updateFilterValue(idx, Number(e.target.value))}
@@ -693,14 +693,14 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
 
                   return (
                     <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                      <label style={{ fontWeight: 800, fontSize: '0.85rem', color: 'var(--muted-text)' }}>{f.name}</label>
+                      <label style={{ fontWeight: 800, fontSize: '0.85rem', color: 'var(--muted-text)' }}>{f.filter.name || f.name}</label>
                       <button
                         type="button"
                         className={`comic-btn ${colorClass}`}
                         style={{ padding: '0.4rem', fontSize: '0.85rem', width: '100%', textTransform: 'none', justifyContent: 'center' }}
                         onClick={cycleTriState}
                       >
-                        {f.name}{labelSuffix}
+                        {f.filter.name || f.name}{labelSuffix}
                       </button>
                     </div>
                   );
@@ -709,12 +709,12 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
                 if (f.type === 'Text') {
                   return (
                     <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                      <label style={{ fontWeight: 800, fontSize: '0.85rem', color: 'var(--muted-text)' }}>{f.name}</label>
+                      <label style={{ fontWeight: 800, fontSize: '0.85rem', color: 'var(--muted-text)' }}>{f.filter.name || f.name}</label>
                       <input
                         type="text"
                         value={f.filter.state || ''}
                         onChange={(e) => updateFilterValue(idx, e.target.value)}
-                        placeholder={`Enter ${f.name.toLowerCase()}...`}
+                        placeholder={`Enter ${(f.filter.name || f.name || '').toLowerCase()}...`}
                         style={{
                           padding: '0.4rem 0.6rem',
                           fontSize: '0.85rem',
@@ -736,7 +736,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
                   const values = f.filter.values || [];
                   return (
                     <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                      <label style={{ fontWeight: 800, fontSize: '0.85rem', color: 'var(--muted-text)' }}>{f.name}</label>
+                      <label style={{ fontWeight: 800, fontSize: '0.85rem', color: 'var(--muted-text)' }}>{f.filter.name || f.name}</label>
                       <div style={{ display: 'flex', gap: '0.25rem' }}>
                         <select
                           value={stateVal.selection}
@@ -767,7 +767,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
                   return (
                     <div key={idx} style={{ gridColumn: '1 / -1', border: '2px solid var(--border-color)', padding: '0.75rem', borderRadius: '6px', backgroundColor: 'var(--bg-body)' }}>
                       <span style={{ fontWeight: 900, fontSize: '0.9rem', display: 'block', marginBottom: '0.5rem', textTransform: 'uppercase' }}>
-                        {f.name}
+                        {f.filter.name || f.name}
                       </span>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.75rem' }}>
                         {children.map((child: any, cIdx: number) => {
@@ -796,7 +796,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
                                   updateGroupChildValue(idx, cIdx, next);
                                 }}
                               >
-                                {child.name}: {cLabel}
+                                {child.filter.name || child.name}: {cLabel}
                               </button>
                             );
                           }
@@ -811,7 +811,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
                                 style={{ width: '16px', height: '16px', cursor: 'pointer' }}
                               />
                               <label htmlFor={childId} style={{ fontWeight: 700, cursor: 'pointer', fontSize: '0.8rem' }}>
-                                {child.name}
+                                {child.filter.name || child.name}
                               </label>
                             </div>
                           );
