@@ -402,15 +402,16 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
   };
 
   // Browse manga from a specific source
-  const loadSourceCatalog = async (page = 1, append = false) => {
+  const loadSourceCatalog = async (page = 1, append = false, modeOverride?: 'popular' | 'latest' | 'search') => {
     if (!selectedSource) return;
     setCatalogLoading(true);
     setCatalogError(null);
     try {
+      const activeMode = modeOverride || browseMode;
       let result;
-      if (browseMode === 'popular') {
+      if (activeMode === 'popular') {
         result = await api.getSourcePopular(selectedSource.id, page);
-      } else if (browseMode === 'latest') {
+      } else if (activeMode === 'latest') {
         result = await api.getSourceLatest(selectedSource.id, page);
       } else {
         const activeFilters = compileFiltersPayload();
@@ -481,7 +482,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
     e.preventDefault();
     if (searchQuery.trim()) {
       setBrowseMode('search');
-      loadSourceCatalog(1, false);
+      loadSourceCatalog(1, false, 'search');
     }
   };
 
@@ -839,7 +840,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
                 className="comic-btn comic-btn-teal"
                 onClick={() => {
                   setBrowseMode('search');
-                  loadSourceCatalog(1, false);
+                  loadSourceCatalog(1, false, 'search');
                 }}
                 style={{ padding: '0.4rem 1.5rem', fontSize: '0.85rem', fontWeight: 900 }}
               >

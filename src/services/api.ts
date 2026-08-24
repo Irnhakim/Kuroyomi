@@ -365,14 +365,8 @@ export const api = {
   },
 
   searchSourceWithFilters: async (sourceId: string, query: string, pageNum: number, filters: any[]): Promise<{ mangas: Manga[]; hasNextPage: boolean }> => {
-    const res = await fetch(`${BASE_URL}/source/${sourceId}/search/${pageNum}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        searchTerm: query || null,
-        filter: filters
-      })
-    });
+    const filterString = encodeURIComponent(JSON.stringify(filters));
+    const res = await fetch(`${BASE_URL}/source/${sourceId}/search?searchTerm=${encodeURIComponent(query)}&pageNum=${pageNum}&filter=${filterString}`);
     if (!res.ok) {
       let msg = `Gagal mencari dengan filter (${res.status})`;
       try {
