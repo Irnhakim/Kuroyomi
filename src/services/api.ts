@@ -83,6 +83,19 @@ export interface Category {
   order: number;
 }
 
+export interface ChapterUpdate {
+  chapterId: number;
+  chapterName: string;
+  chapterNumber: number;
+  uploadDate: number;
+  fetchedAt: number;
+  isRead: boolean;
+  mangaId: number;
+  mangaTitle: string;
+  mangaThumbnailUrl: string;
+  sourceId: string;
+}
+
 // Helper for GraphQL queries on Suwayomi-Server
 async function graphqlRequest(query: string, variables?: any) {
   const res = await fetch(GRAPHQL_URL, {
@@ -498,6 +511,90 @@ export const api = {
       mangas: mapped,
       hasNextPage: fetchResult?.hasNextPage ?? false,
     };
+  },
+
+  getLibraryUpdates: async (limit = 500): Promise<ChapterUpdate[]> => {
+    const query = `
+      query GET_CHAPTERS_UPDATES($filter: ChapterFilterInput, $first: Int, $order: [ChapterOrderInput!]) {
+        chapters(filter: $filter, first: $first, order: $order) {
+          nodes {
+            id
+            name
+            mangaId
+            chapterNumber
+            isRead
+            fetchedAt
+            uploadDate
+            manga {
+              id
+              title
+              thumbnailUrl
+              sourceId
+            }
+          }
+        }
+      }
+    `;
+
+    const variables = {
+      filter: {
+        inLibrary: {
+          equalTo: true
+        }
+      },
+      first: limit,
+      order: [
+        {
+          by: 'FETCHED_AT',
+          byType: 'DESC'
+        },
+        {
+          by: 'SOURCE_ORDER',
+          byType: 'DESC'
+        }
+      ]
+    };
+
+    const data = await graphqlRequest(query, variables);
+    const nodes = data.chapters?.nodes || [];
+
+    // Get user-specific local library manga IDs
+    const prefix = getUserPrefix();
+    const listJson = localStorage.getItem(`${prefix}_library`);
+    const list: Manga[] = listJson ? JSON.parse(listJson) : [];
+    const userLibraryMangaIds = new Set(list.map(m => m.id));
+
+    // Filter nodes to only keep updates for manga in the current user's library
+    const filteredNodes = nodes.filter((node: any) => node.manga && userLibraryMangaIds.has(node.manga.id));
+
+    return filteredNodes.map((node: any) => ({
+      chapterId: node.id,
+      chapterName: node.name,
+      chapterNumber: node.chapterNumber,
+      uploadDate: node.uploadDate,
+      fetchedAt: node.fetchedAt,
+      isRead: !!node.isRead,
+      mangaId: node.mangaId,
+      mangaTitle: node.manga?.title || '',
+      mangaThumbnailUrl: node.manga ? api.getMangaThumbnailUrl(node.manga) : '',
+      sourceId: node.manga?.sourceId || ''
+    }));
+  },
+
+  triggerLibraryUpdate: async (): Promise<void> => {
+    const query = `
+      mutation UPDATE_LIBRARY($input: UpdateLibraryInput!) {
+        updateLibrary(input: $input) {
+          clientMutationId
+        }
+      }
+    `;
+    const variables = {
+      input: {
+        categories: []
+      }
+    };
+    await graphqlRequest(query, variables);
   },
 
   // Manga Details

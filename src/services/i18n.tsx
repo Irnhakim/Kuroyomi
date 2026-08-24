@@ -8,6 +8,7 @@ const translations: Record<Language, Record<string, string>> = {
     // Navigation / Layout
     'nav.library': 'Library',
     'nav.browse': 'Browse',
+    'nav.updates': 'Updates',
     'nav.history': 'History',
     'nav.settings': 'Settings',
     'theme.toggle.dark': 'Switch to Dark Mode',
@@ -109,6 +110,18 @@ const translations: Record<Language, Record<string, string>> = {
     'history.chapter_prefix': 'Chapter',
     'history.page_suffix': 'Page',
 
+    // Updates
+    'updates.title': 'Library Updates',
+    'updates.subtitle': 'Recent chapters from your library.',
+    'updates.state.loading': 'LOADING UPDATES...',
+    'updates.empty': 'No library updates yet. Try adding some comics to your library and check for updates.',
+    'updates.btn.refresh': 'Refresh Library',
+    'updates.refreshing': 'Refreshing...',
+    'updates.refresh_started': 'Library update started in the background!',
+    'updates.date.today': 'Today',
+    'updates.date.yesterday': 'Yesterday',
+    'updates.date.days_ago': '{count} days ago',
+
     // Manga Detail
     'detail.chapters': 'Chapters',
     'detail.status': 'Status',
@@ -196,6 +209,7 @@ const translations: Record<Language, Record<string, string>> = {
     // Navigation / Layout
     'nav.library': 'Perpustakaan',
     'nav.browse': 'Jelajahi',
+    'nav.updates': 'Pembaruan',
     'nav.history': 'Riwayat',
     'nav.settings': 'Pengaturan',
     'theme.toggle.dark': 'Ubah ke Mode Gelap',
@@ -296,6 +310,18 @@ const translations: Record<Language, Record<string, string>> = {
     'history.empty': 'Belum ada riwayat membaca. Mulai membaca beberapa komik!',
     'history.chapter_prefix': 'Bab',
     'history.page_suffix': 'Halaman',
+
+    // Updates
+    'updates.title': 'Pembaruan Library',
+    'updates.subtitle': 'Bab-bab terbaru dari perpustakaan Anda.',
+    'updates.state.loading': 'MEMUAT PEMBARUAN...',
+    'updates.empty': 'Belum ada pembaruan library. Coba tambahkan beberapa komik ke library Anda dan periksa pembaruan.',
+    'updates.btn.refresh': 'Perbarui Library',
+    'updates.refreshing': 'Memperbarui...',
+    'updates.refresh_started': 'Pembaruan library dimulai di latar belakang!',
+    'updates.date.today': 'Hari ini',
+    'updates.date.yesterday': 'Kemarin',
+    'updates.date.days_ago': '{count} hari yang lalu',
 
     // Manga Detail
     'detail.chapters': 'Bab',

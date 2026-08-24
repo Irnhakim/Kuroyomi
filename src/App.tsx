@@ -7,10 +7,11 @@ import { ReaderPage } from './pages/ReaderPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { HistoryPage } from './pages/HistoryPage';
 import { LoginPage } from './pages/LoginPage';
+import { UpdatesPage } from './pages/UpdatesPage';
 import { auth } from './services/auth';
 import { api } from './services/api';
 
-type ActivePage = 'library' | 'browse' | 'settings' | 'manga-detail' | 'reader' | 'history';
+type ActivePage = 'library' | 'browse' | 'settings' | 'manga-detail' | 'reader' | 'history' | 'updates';
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -154,6 +155,13 @@ export default function App() {
       case 'history':
         return (
           <HistoryPage
+            onMangaSelect={handleMangaSelect}
+            onChapterSelect={handleChapterSelect}
+          />
+        );
+      case 'updates':
+        return (
+          <UpdatesPage
             onMangaSelect={handleMangaSelect}
             onChapterSelect={handleChapterSelect}
           />

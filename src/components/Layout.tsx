@@ -1,5 +1,5 @@
 import React from 'react';
-import { BookOpen, Compass, Clock, Settings, Sun, Moon } from 'lucide-react';
+import { BookOpen, Compass, Clock, Settings, Sun, Moon, RefreshCw } from 'lucide-react';
 import { useTranslation } from '../services/i18n';
 
 interface LayoutProps {
@@ -46,6 +46,22 @@ export const Layout: React.FC<LayoutProps> = ({
             >
               <BookOpen size={20} />
               {t('nav.library')}
+            </button>
+
+            <button
+              className={`nav-tab ${activeTab === 'updates' ? 'active' : ''}`}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--text-color)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}
+              onClick={() => setActiveTab('updates')}
+            >
+              <RefreshCw size={20} />
+              {t('nav.updates')}
             </button>
 
             <button
@@ -121,6 +137,13 @@ export const Layout: React.FC<LayoutProps> = ({
         >
           <BookOpen size={20} />
           <span>{t('nav.library')}</span>
+        </button>
+        <button
+          className={`bottom-nav-btn ${activeTab === 'updates' ? 'active' : ''}`}
+          onClick={() => setActiveTab('updates')}
+        >
+          <RefreshCw size={20} />
+          <span>{t('nav.updates')}</span>
         </button>
         <button
           className={`bottom-nav-btn ${activeTab === 'history' ? 'active' : ''}`}
