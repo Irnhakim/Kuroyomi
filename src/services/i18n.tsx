@@ -103,6 +103,8 @@ const translations: Record<Language, Record<string, string>> = {
 
     // History
     'history.title': 'History',
+    'history.title_prefix': 'Reading',
+    'history.title_suffix': 'History',
     'history.subtitle': "Keep track of what you've read recently.",
     'history.btn.resume': 'Resume',
     'history.state.loading': 'LOADING HISTORY...',
@@ -112,6 +114,8 @@ const translations: Record<Language, Record<string, string>> = {
 
     // Updates
     'updates.title': 'Library Updates',
+    'updates.title_prefix': 'Library',
+    'updates.title_suffix': 'Updates',
     'updates.subtitle': 'Recent chapters from your library.',
     'updates.state.loading': 'LOADING UPDATES...',
     'updates.empty': 'No library updates yet. Try adding some comics to your library and check for updates.',
@@ -306,6 +310,8 @@ const translations: Record<Language, Record<string, string>> = {
 
     // History
     'history.title': 'Riwayat',
+    'history.title_prefix': 'Riwayat',
+    'history.title_suffix': 'Membaca',
     'history.subtitle': 'Lacak apa yang baru saja Anda baca.',
     'history.btn.resume': 'Lanjutkan',
     'history.state.loading': 'MEMUAT RIWAYAT...',
@@ -315,6 +321,8 @@ const translations: Record<Language, Record<string, string>> = {
 
     // Updates
     'updates.title': 'Pembaruan Library',
+    'updates.title_prefix': 'Pembaruan',
+    'updates.title_suffix': 'Library',
     'updates.subtitle': 'Bab-bab terbaru dari perpustakaan Anda.',
     'updates.state.loading': 'MEMUAT PEMBARUAN...',
     'updates.empty': 'Belum ada pembaruan library. Coba tambahkan beberapa komik ke library Anda dan periksa pembaruan.',

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import type { ChapterUpdate } from '../services/api';
-import { RefreshCw, BookOpen, Clock } from 'lucide-react';
+import { RefreshCw, BookOpen } from 'lucide-react';
 import { useTranslation } from '../services/i18n';
 
 interface UpdatesPageProps {
@@ -52,13 +52,38 @@ export const UpdatesPage: React.FC<UpdatesPageProps> = ({
   };
 
   // Group updates by date
-  const getGroupTitle = (timestamp: number) => {
+  const getGroupTitle = (fetchedAtVal: any) => {
+    let itemDate = new Date();
+    
+    if (typeof fetchedAtVal === 'number') {
+      if (fetchedAtVal < 99999999999) {
+        itemDate = new Date(fetchedAtVal * 1000);
+      } else {
+        itemDate = new Date(fetchedAtVal);
+      }
+    } else if (fetchedAtVal) {
+      const parsed = new Date(fetchedAtVal);
+      if (!isNaN(parsed.getTime())) {
+        itemDate = parsed;
+      } else {
+        const num = Number(fetchedAtVal);
+        if (!isNaN(num)) {
+          if (num < 99999999999) {
+            itemDate = new Date(num * 1000);
+          } else {
+            itemDate = new Date(num);
+          }
+        }
+      }
+    }
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const itemDate = new Date(timestamp);
-    itemDate.setHours(0, 0, 0, 0);
+    
+    const compareDate = new Date(itemDate);
+    compareDate.setHours(0, 0, 0, 0);
 
-    const diffTime = today.getTime() - itemDate.getTime();
+    const diffTime = today.getTime() - compareDate.getTime();
     const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
 
     if (diffDays === 0) {
@@ -68,7 +93,7 @@ export const UpdatesPage: React.FC<UpdatesPageProps> = ({
     } else if (diffDays > 1 && diffDays < 7) {
       return t('updates.date.days_ago').replace('{count}', String(diffDays));
     } else {
-      return new Date(timestamp).toLocaleDateString(language === 'id' ? 'id-ID' : 'en-US', {
+      return itemDate.toLocaleDateString(language === 'id' ? 'id-ID' : 'en-US', {
         year: 'numeric',
         month: 'long',
         day: 'numeric'
@@ -88,13 +113,15 @@ export const UpdatesPage: React.FC<UpdatesPageProps> = ({
 
   return (
     <div className="history-page">
-      <div className="category-header" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h1 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0, fontWeight: 900, textTransform: 'uppercase', fontSize: '1.8rem' }}>
-            <Clock size={32} style={{ color: 'var(--retro-teal)' }} />
-            {t('updates.title')}
+          <h1 style={{ fontSize: '3rem', margin: 0, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-1px' }}>
+            {t('updates.title_prefix')}{' '}
+            <span style={{ background: 'var(--retro-teal)', color: '#1a1a1a', padding: '0 0.5rem', display: 'inline-block', transform: 'rotate(1.5deg)' }}>
+              {t('updates.title_suffix')}
+            </span>
           </h1>
-          <p style={{ margin: '0.25rem 0 0 0', fontWeight: 600, color: 'var(--muted-text)', fontSize: '0.95rem' }}>
+          <p style={{ margin: '0.5rem 0 0 0', fontWeight: 500, color: 'var(--muted-text)' }}>
             {t('updates.subtitle')}
           </p>
         </div>

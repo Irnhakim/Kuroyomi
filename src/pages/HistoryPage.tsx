@@ -79,12 +79,15 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
       {/* Header Info */}
-      <div className="catalog-control-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div style={{ minWidth: 0, flex: 1 }}>
-          <h1 className="manga-detail-title" style={{ fontSize: '2rem', margin: 0 }}>
-            {t('history.title')}
+          <h1 style={{ fontSize: '3rem', margin: 0, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-1px' }}>
+            {t('history.title_prefix')}{' '}
+            <span style={{ background: 'var(--retro-yellow)', color: '#1a1a1a', padding: '0 0.5rem', display: 'inline-block', transform: 'rotate(-1.5deg)' }}>
+              {t('history.title_suffix')}
+            </span>
           </h1>
-          <p style={{ margin: '0.25rem 0 0 0', fontWeight: 600, color: 'var(--muted-text)' }}>
+          <p style={{ margin: '0.5rem 0 0 0', fontWeight: 500, color: 'var(--muted-text)' }}>
             {t('history.subtitle')}
           </p>
         </div>
