@@ -49,22 +49,6 @@ export const Layout: React.FC<LayoutProps> = ({
             </button>
 
             <button
-              className={`nav-tab ${activeTab === 'browse' ? 'active' : ''}`}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: 'var(--text-color)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem'
-              }}
-              onClick={() => setActiveTab('browse')}
-            >
-              <Compass size={20} />
-              {t('nav.browse')}
-            </button>
-
-            <button
               className={`nav-tab ${activeTab === 'history' ? 'active' : ''}`}
               style={{
                 background: 'none',
@@ -78,6 +62,22 @@ export const Layout: React.FC<LayoutProps> = ({
             >
               <Clock size={20} />
               {t('nav.history')}
+            </button>
+
+            <button
+              className={`nav-tab ${activeTab === 'browse' ? 'active' : ''}`}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--text-color)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}
+              onClick={() => setActiveTab('browse')}
+            >
+              <Compass size={20} />
+              {t('nav.browse')}
             </button>
 
             <button
@@ -123,18 +123,18 @@ export const Layout: React.FC<LayoutProps> = ({
           <span>{t('nav.library')}</span>
         </button>
         <button
-          className={`bottom-nav-btn ${activeTab === 'browse' ? 'active' : ''}`}
-          onClick={() => setActiveTab('browse')}
-        >
-          <Compass size={20} />
-          <span>{t('nav.browse')}</span>
-        </button>
-        <button
           className={`bottom-nav-btn ${activeTab === 'history' ? 'active' : ''}`}
           onClick={() => setActiveTab('history')}
         >
           <Clock size={20} />
           <span>{t('nav.history')}</span>
+        </button>
+        <button
+          className={`bottom-nav-btn ${activeTab === 'browse' ? 'active' : ''}`}
+          onClick={() => setActiveTab('browse')}
+        >
+          <Compass size={20} />
+          <span>{t('nav.browse')}</span>
         </button>
         <button
           className={`bottom-nav-btn ${activeTab === 'settings' ? 'active' : ''}`}

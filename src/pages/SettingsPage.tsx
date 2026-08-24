@@ -560,184 +560,188 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
           </div>
 
           {/* Extension repositories settings box */}
-          <div className="comic-box">
-            <h2 style={{ margin: '0 0 1rem 0', fontWeight: 900, textTransform: 'uppercase', fontSize: '1.4rem' }}>
-              Extension Repositories ({repoUrls.length})
-            </h2>
-            <p style={{ margin: '0 0 1.5rem 0', fontSize: '0.9rem', color: 'var(--muted-text)', fontWeight: 600 }}>
-              Add one or more extension stores to download more sources (e.g. Keiyoushi).
-            </p>
+          {currentUser?.toLowerCase() === 'admin' && (
+            <div className="comic-box">
+              <h2 style={{ margin: '0 0 1rem 0', fontWeight: 900, textTransform: 'uppercase', fontSize: '1.4rem' }}>
+                Extension Repositories ({repoUrls.length})
+              </h2>
+              <p style={{ margin: '0 0 1.5rem 0', fontSize: '0.9rem', color: 'var(--muted-text)', fontWeight: 600 }}>
+                Add one or more extension stores to download more sources (e.g. Keiyoushi).
+              </p>
 
-            {/* Repos list */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '2rem' }}>
-              {repoUrls.length === 0 ? (
-                <p style={{ fontStyle: 'italic', fontWeight: 600, color: 'var(--muted-text)', margin: 0 }}>
-                  No custom repositories added. Standard/bundled sources only.
-                </p>
-              ) : (
-                repoUrls.map((url, idx) => (
-                  <div
-                    key={idx}
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      padding: '0.75rem 1rem',
-                      border: '2px solid var(--border-color)',
-                      borderRadius: '8px',
-                      backgroundColor: 'var(--bg-color)',
-                      boxShadow: '2px 2px 0px var(--border-color)'
-                    }}
-                  >
-                    <span style={{ fontWeight: 700, fontSize: '0.9rem', wordBreak: 'break-all', paddingRight: '1rem' }}>
-                      {url}
-                    </span>
-                    <button
-                      className="comic-btn"
-                      onClick={() => handleRemoveRepo(url)}
-                      disabled={actionLoading}
+              {/* Repos list */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '2rem' }}>
+                {repoUrls.length === 0 ? (
+                  <p style={{ fontStyle: 'italic', fontWeight: 600, color: 'var(--muted-text)', margin: 0 }}>
+                    No custom repositories added. Standard/bundled sources only.
+                  </p>
+                ) : (
+                  repoUrls.map((url, idx) => (
+                    <div
+                      key={idx}
                       style={{
-                        padding: '0.4rem 0.6rem',
-                        backgroundColor: 'var(--retro-pink)',
-                        color: '#fff',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '0.75rem 1rem',
                         border: '2px solid var(--border-color)',
-                        transform: 'none',
-                        boxShadow: 'none'
+                        borderRadius: '8px',
+                        backgroundColor: 'var(--bg-color)',
+                        boxShadow: '2px 2px 0px var(--border-color)'
                       }}
-                      title="Remove Repository"
                     >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                ))
-              )}
-            </div>
+                      <span style={{ fontWeight: 700, fontSize: '0.9rem', wordBreak: 'break-all', paddingRight: '1rem' }}>
+                        {url}
+                      </span>
+                      <button
+                        className="comic-btn"
+                        onClick={() => handleRemoveRepo(url)}
+                        disabled={actionLoading}
+                        style={{
+                          padding: '0.4rem 0.6rem',
+                          backgroundColor: 'var(--retro-pink)',
+                          color: '#fff',
+                          border: '2px solid var(--border-color)',
+                          transform: 'none',
+                          boxShadow: 'none'
+                        }}
+                        title="Remove Repository"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
 
-            {/* Add new repo form */}
-            <form onSubmit={handleAddRepo} style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-              <input
-                type="text"
-                value={newRepoUrl}
-                onChange={(e) => setNewRepoUrl(e.target.value)}
-                placeholder="Enter repository index URL (e.g., https://...)"
-                disabled={actionLoading}
-                style={{
-                  flex: 1,
-                  minWidth: '240px',
-                  padding: '0.75rem',
-                  border: '3px solid var(--border-color)',
-                  borderRadius: '8px',
-                  backgroundColor: 'var(--bg-card)',
-                  color: 'var(--text-color)',
-                  fontFamily: 'inherit',
-                  fontWeight: 700,
-                  outline: 'none',
-                  boxShadow: '3px 3px 0px var(--border-color)',
-                  boxSizing: 'border-box'
-                }}
-              />
-              <button
-                type="submit"
-                className="comic-btn comic-btn-yellow"
-                disabled={actionLoading || !newRepoUrl.trim()}
-                style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}
-              >
-                <Plus size={18} />
-                Add Repository
-              </button>
-            </form>
-            <p style={{ margin: '0.75rem 0 0 0', fontSize: '0.75rem', color: 'var(--muted-text)', fontWeight: 700, wordBreak: 'break-all' }}>
-              Keiyoushi Repo: https://raw.githubusercontent.com/keiyoushi/extensions/repo/index.min.json
-            </p>
-          </div>
+              {/* Add new repo form */}
+              <form onSubmit={handleAddRepo} style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <input
+                  type="text"
+                  value={newRepoUrl}
+                  onChange={(e) => setNewRepoUrl(e.target.value)}
+                  placeholder="Enter repository index URL (e.g., https://...)"
+                  disabled={actionLoading}
+                  style={{
+                    flex: 1,
+                    minWidth: '240px',
+                    padding: '0.75rem',
+                    border: '3px solid var(--border-color)',
+                    borderRadius: '8px',
+                    backgroundColor: 'var(--bg-card)',
+                    color: 'var(--text-color)',
+                    fontFamily: 'inherit',
+                    fontWeight: 700,
+                    outline: 'none',
+                    boxShadow: '3px 3px 0px var(--border-color)',
+                    boxSizing: 'border-box'
+                  }}
+                />
+                <button
+                  type="submit"
+                  className="comic-btn comic-btn-yellow"
+                  disabled={actionLoading || !newRepoUrl.trim()}
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                >
+                  <Plus size={18} />
+                  Add Repository
+                </button>
+              </form>
+              <p style={{ margin: '0.75rem 0 0 0', fontSize: '0.75rem', color: 'var(--muted-text)', fontWeight: 700, wordBreak: 'break-all' }}>
+                Keiyoushi Repo: https://raw.githubusercontent.com/keiyoushi/extensions/repo/index.min.json
+              </p>
+            </div>
+          )}
 
         </div>
 
         {/* Server Status and Info */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
           {/* Connection status box */}
-          <div className="comic-box">
-            <h2 style={{ margin: '0 0 1rem 0', fontWeight: 900, textTransform: 'uppercase', fontSize: '1.4rem' }}>
-              {t('settings.server.title')}
-            </h2>
+          {currentUser?.toLowerCase() === 'admin' && (
+            <div className="comic-box">
+              <h2 style={{ margin: '0 0 1rem 0', fontWeight: 900, textTransform: 'uppercase', fontSize: '1.4rem' }}>
+                {t('settings.server.title')}
+              </h2>
 
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '1rem',
-              padding: '1rem',
-              border: '2px dashed var(--border-color)',
-              borderRadius: '8px',
-              backgroundColor: 'var(--bg-color)',
-              marginBottom: '1.5rem'
-            }}>
               <div style={{
-                width: '16px',
-                height: '16px',
-                borderRadius: '50%',
-                backgroundColor: status === 'online' ? 'var(--retro-teal)' : 'var(--retro-pink)',
-                border: '2px solid var(--border-color)',
-                boxShadow: '1px 1px 0px var(--border-color)'
-              }} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ margin: '0 0 0.4rem 0', fontWeight: 800, textTransform: 'uppercase' }}>
-                  {t('settings.server.status')}: {status === 'online' ? 'ONLINE' : 'OFFLINE'}
-                </p>
-                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                  <input
-                    type="text"
-                    id="status_server_url_input"
-                    defaultValue={localStorage.getItem('suwayomi_server_url') || SERVER_ORIGIN}
-                    placeholder="http://localhost:4567"
-                    style={{
-                      flex: 1,
-                      minWidth: '150px',
-                      padding: '0.35rem 0.5rem',
-                      border: '2px solid var(--border-color)',
-                      borderRadius: '6px',
-                      backgroundColor: 'var(--bg-card)',
-                      color: 'var(--text-color)',
-                      fontWeight: 700,
-                      fontSize: '0.8rem',
-                      boxSizing: 'border-box'
-                    }}
-                  />
-                  <button
-                    onClick={() => {
-                      const input = document.getElementById('status_server_url_input') as HTMLInputElement;
-                      if (input) {
-                        const url = input.value.trim();
-                        if (url && url !== SERVER_ORIGIN) {
-                          localStorage.setItem('suwayomi_server_url', url);
-                        } else {
-                          localStorage.removeItem('suwayomi_server_url');
+                display: 'flex',
+                alignItems: 'center',
+                gap: '1rem',
+                padding: '1rem',
+                border: '2px dashed var(--border-color)',
+                borderRadius: '8px',
+                backgroundColor: 'var(--bg-color)',
+                marginBottom: '1.5rem'
+              }}>
+                <div style={{
+                  width: '16px',
+                  height: '16px',
+                  borderRadius: '50%',
+                  backgroundColor: status === 'online' ? 'var(--retro-teal)' : 'var(--retro-pink)',
+                  border: '2px solid var(--border-color)',
+                  boxShadow: '1px 1px 0px var(--border-color)'
+                }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ margin: '0 0 0.4rem 0', fontWeight: 800, textTransform: 'uppercase' }}>
+                    {t('settings.server.status')}: {status === 'online' ? 'ONLINE' : 'OFFLINE'}
+                  </p>
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <input
+                      type="text"
+                      id="status_server_url_input"
+                      defaultValue={localStorage.getItem('suwayomi_server_url') || SERVER_ORIGIN}
+                      placeholder="http://localhost:4567"
+                      style={{
+                        flex: 1,
+                        minWidth: '150px',
+                        padding: '0.35rem 0.5rem',
+                        border: '2px solid var(--border-color)',
+                        borderRadius: '6px',
+                        backgroundColor: 'var(--bg-card)',
+                        color: 'var(--text-color)',
+                        fontWeight: 700,
+                        fontSize: '0.8rem',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                    <button
+                      onClick={() => {
+                        const input = document.getElementById('status_server_url_input') as HTMLInputElement;
+                        if (input) {
+                          const url = input.value.trim();
+                          if (url && url !== SERVER_ORIGIN) {
+                            localStorage.setItem('suwayomi_server_url', url);
+                          } else {
+                            localStorage.removeItem('suwayomi_server_url');
+                          }
+                          window.location.reload();
                         }
-                        window.location.reload();
-                      }
-                    }}
-                    className="comic-btn comic-btn-pink"
-                    style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem', boxShadow: 'none', transform: 'none' }}
-                  >
-                    Save
-                  </button>
+                      }}
+                      className="comic-btn comic-btn-pink"
+                      style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem', boxShadow: 'none', transform: 'none' }}
+                    >
+                      Save
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <p style={{ fontWeight: 600, fontSize: '0.95rem', margin: '0.5rem 0' }}>
-              <strong>Server Version:</strong> {serverVersion}
-            </p>
-            <p style={{ fontWeight: 600, fontSize: '0.95rem', margin: '0.5rem 0' }}>
-              <strong>Server Port:</strong> 4567 (Default)
-            </p>
+              <p style={{ fontWeight: 600, fontSize: '0.95rem', margin: '0.5rem 0' }}>
+                <strong>Server Version:</strong> {serverVersion}
+              </p>
+              <p style={{ fontWeight: 600, fontSize: '0.95rem', margin: '0.5rem 0' }}>
+                <strong>Server Port:</strong> 4567 (Default)
+              </p>
 
-            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '1rem' }}>
-              <button className="comic-btn comic-btn-yellow" onClick={loadSettingsAndStatus} disabled={loading}>
-                <RefreshCw size={16} />
-                {t('settings.server.refresh')}
-              </button>
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '1rem' }}>
+                <button className="comic-btn comic-btn-yellow" onClick={loadSettingsAndStatus} disabled={loading}>
+                  <RefreshCw size={16} />
+                  {t('settings.server.refresh')}
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* About box */}
           {currentUser?.toLowerCase() === 'admin' && (
