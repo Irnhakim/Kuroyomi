@@ -28,12 +28,14 @@ Kuroyomi serves as a complete replacement UI for Suwayomi-Server. It focuses on:
 ## Core Features
 
 - **Direct Suwayomi Integration:** Serves as a full replacement for the default web UI. Directly loaded and served by your Kotlin backend.
-- **Dynamic Multi-User Support:** User accounts with isolated library categories, reading history, and custom configurations.
-- **Multi-Repository Extension Manager:** List, add, and remove multiple extension sources (e.g. Keiyoushi) through the admin panel. Handles network timeouts gracefully via offline fallbacks.
+- **Dynamic Multi-User Support:** Isolated categories, libraries, reading history, and user settings. Key server preferences and extension repositories are restricted to `admin` accounts only.
+- **Flexible Display Layouts:** Dynamically toggle between **Compact Grid** (flat card layout with gradient title overlays), **Comfortable Grid** (flat card layout with titles below covers), and **List** view modes. Display settings are saved persistently per user.
+- **GraphQL-Powered Catalog Filters:** Search and filter sources using Suwayomi's GraphQL mutation system (`fetchSourceManga`), supporting dynamic sorts, statuses, categories, and nested filter checkboxes/tri-states.
+- **Mobile-First Compact UI:** Tightly packed layout optimizations for viewports under 768px, featuring compressed margins, compact cards, and side-by-side action buttons.
+- **Chapter Sorting:** Toggle chapters between *Latest* and *Older* releases on the manga details page.
 - **Two Reading Engines:**
   - *Webtoon Mode:* Vertical continuous scroll with page-change detection via intersection observers.
   - *Single Page Mode:* Left-to-right keyboard-controlled page swapper.
-- **Lightweight Design:** Responsive, low-contrast Tokyo Night themes (Day and Classic Night styles) that load fast and reduce eye strain.
 - **Preloading Engine:** Pre-fetches upcoming images in the background to prevent loading gaps during fast reading.
 
 ---
