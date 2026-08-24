@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { api } from '../services/api';
 import { ArrowLeft, ChevronLeft, ChevronRight, LayoutList, BookOpen } from 'lucide-react';
 import { useTranslation } from '../services/i18n';
+import { useModal } from '../services/modal';
 
 interface ReaderPageProps {
   mangaId: number;
@@ -23,6 +24,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
   onChapterChange
 }) => {
   const { t } = useTranslation();
+  const { alert } = useModal();
   const [chapters, setChapters] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
@@ -258,7 +260,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
   };
 
   // Navigate to adjacent chapters
-  const navigateToChapterOffset = (direction: 'next' | 'prev') => {
+  const navigateToChapterOffset = async (direction: 'next' | 'prev') => {
     if (chapters.length === 0) return;
 
     // Sort chapters by sourceOrder (lower sourceOrder means earlier in the book)
@@ -273,7 +275,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
       loadedChapterIdsRef.current = new Set();
       onChapterChange(sorted[targetIndex].id);
     } else {
-      alert(direction === 'next' ? "You've reached the last chapter!" : "You are on the first chapter!");
+      await alert(direction === 'next' ? t('reader.last_chapter') : t('reader.first_chapter'));
     }
   };
 

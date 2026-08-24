@@ -4,6 +4,7 @@ import { auth } from '../services/auth';
 import { RefreshCw, Save, CheckCircle, Trash2, Plus, LogOut, Key, ShieldAlert } from 'lucide-react';
 import { useTranslation } from '../services/i18n';
 import type { Language } from '../services/i18n';
+import { useModal } from '../services/modal';
 
 interface SettingsPageProps {
   onLogout: () => void;
@@ -11,6 +12,7 @@ interface SettingsPageProps {
 
 export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
   const { t, setLanguage } = useTranslation();
+  const { alert, confirm } = useModal();
   const [serverVersion, setServerVersion] = useState<string>('Unknown');
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<'online' | 'offline'>('offline');
@@ -49,10 +51,10 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
 
   const handleAdminDeleteUser = async (targetUsername: string) => {
     if (targetUsername.toLowerCase() === 'admin') {
-      alert('Cannot delete admin account!');
+      await alert(t('settings.admin.delete_admin_error'));
       return;
     }
-    if (!confirm(`Are you sure you want to delete user "${targetUsername}" and all of their data?`)) {
+    if (!await confirm(t('settings.admin.delete_user_confirm', { username: targetUsername }))) {
       return;
     }
     setUsersLoading(true);
@@ -61,7 +63,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
       const updatedList = await auth.getAllUsers();
       setAllUsers(updatedList);
     } catch (e: any) {
-      alert(e.message || 'Failed to delete user');
+      await alert(e.message || t('settings.admin.delete_user_error'));
     } finally {
       setUsersLoading(false);
     }
@@ -125,7 +127,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err) {
       console.error("Failed to save settings", err);
-      alert("Failed to save settings to browser.");
+      await alert(t('settings.general.save_error'));
     } finally {
       setSaving(false);
     }
@@ -142,14 +144,14 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
       setNewRepoUrl('');
     } catch (err: any) {
       console.error("Failed to add extension store", err);
-      alert(err.message || "Failed to add repository. Make sure the URL is a valid index.json or index.pb path.");
+      await alert(err.message || t('settings.repo.add_error'));
     } finally {
       setActionLoading(false);
     }
   };
 
   const handleRemoveRepo = async (url: string) => {
-    if (!confirm("Are you sure you want to remove this extension repository?")) return;
+    if (!await confirm(t('settings.repo.remove_confirm'))) return;
     setActionLoading(true);
     try {
       await api.removeExtensionStore(url);
@@ -157,14 +159,14 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
       setRepoUrls(repos);
     } catch (err: any) {
       console.error("Failed to remove extension store", err);
-      alert(err.message || "Failed to remove repository.");
+      await alert(err.message || t('settings.repo.remove_error'));
     } finally {
       setActionLoading(false);
     }
   };
 
-  const handleLogout = () => {
-    if (confirm(t('settings.account.logout_confirm'))) {
+  const handleLogout = async () => {
+    if (await confirm(t('settings.account.logout_confirm'))) {
       auth.logout();
       onLogout();
     }
@@ -195,13 +197,13 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
     e.preventDefault();
     setDeleteError(null);
 
-    if (!confirm(t('settings.danger.alert_confirm'))) {
+    if (!await confirm(t('settings.danger.alert_confirm'))) {
       return;
     }
 
     try {
       await api.deleteUserAccount(deleteConfirmPassword);
-      alert(t('settings.danger.success'));
+      await alert(t('settings.danger.success'));
       onLogout();
     } catch (err: any) {
       setDeleteError(err.message || 'Gagal menghapus akun.');
@@ -243,8 +245,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.5rem' }}>
                   <span style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--retro-purple)' }}>{currentEmail}</span>
                   <button 
-                    onClick={() => {
-                      if (window.confirm(t('settings.account.email_change_confirm'))) {
+                    onClick={async () => {
+                      if (await confirm(t('settings.account.email_change_confirm'))) {
                         setEmailInput(currentEmail);
                         setCurrentEmail(null);
                       }
@@ -262,9 +264,9 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
                   try {
                     await auth.updateEmail(emailInput);
                     setCurrentEmail(emailInput);
-                    alert(t('settings.account.email_success'));
+                    await alert(t('settings.account.email_success'));
                   } catch (err: any) {
-                    alert(err.message || "Gagal memperbarui email.");
+                    await alert(err.message || "Gagal memperbarui email.");
                   }
                 }} style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', maxWidth: '400px' }}>
                   <input

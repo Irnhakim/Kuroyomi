@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 import { LanguageProvider } from './services/i18n.tsx'
+import { ModalProvider } from './services/modal.tsx'
 
 // Disable and unregister active service workers to clear browser cache and avoid intercepting requests
 if ('serviceWorker' in navigator) {
@@ -20,7 +21,9 @@ if ('serviceWorker' in navigator) {
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <LanguageProvider>
-      <App />
+      <ModalProvider>
+        <App />
+      </ModalProvider>
     </LanguageProvider>
   </StrictMode>,
 )

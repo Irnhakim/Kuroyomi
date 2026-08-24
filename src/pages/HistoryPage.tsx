@@ -4,6 +4,8 @@ import type { HistoryItem } from '../services/api';
 import { Trash2, Clock, BookOpen } from 'lucide-react';
 import { useTranslation } from '../services/i18n';
 
+import { useModal } from '../services/modal';
+
 interface HistoryPageProps {
   onMangaSelect: (mangaId: number) => void;
   onChapterSelect?: (mangaId: number, chapterId: number) => void;
@@ -14,6 +16,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
   onChapterSelect
 }) => {
   const { t } = useTranslation();
+  const { confirm } = useModal();
   const [historyItems, setHistoryItems] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -35,7 +38,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
 
   const handleDeleteItem = async (e: React.MouseEvent, mangaId: number) => {
     e.stopPropagation();
-    if (window.confirm("Remove this manga from history?")) {
+    if (await confirm(t('history.remove_confirm'))) {
       const toDelete = historyItems.filter(h => h.mangaId === mangaId);
       for (const h of toDelete) {
         await api.deleteHistoryItem(h.mangaId, h.chapterId);
@@ -45,7 +48,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
   };
 
   const handleClearAll = async () => {
-    if (window.confirm("Clear all reading history? This cannot be undone.")) {
+    if (await confirm(t('history.clear_confirm'))) {
       await api.clearHistory();
       await loadHistory();
     }

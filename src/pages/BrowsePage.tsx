@@ -3,6 +3,7 @@ import { api } from '../services/api';
 import type { Extension, Source, Manga } from '../services/api';
 import { Compass, Cpu, Plus, Trash2, Search, ArrowLeft, ArrowRight, Sliders, Globe } from 'lucide-react';
 import { useTranslation } from '../services/i18n';
+import { useModal } from '../services/modal';
 
 // Global Search Result Row Component
 interface GlobalSearchResultRowProps {
@@ -201,6 +202,7 @@ interface BrowsePageProps {
 
 export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
   const { t } = useTranslation();
+  const { confirm } = useModal();
   const [activeSubTab, setActiveSubTab] = useState<'sources' | 'extensions'>('sources');
   const [rawExtensions, setRawExtensions] = useState<Extension[]>([]);
   const [rawSources, setRawSources] = useState<Source[]>([]);
@@ -458,7 +460,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
   };
 
   const handleUninstallExtension = async (pkgName: string) => {
-    if (confirm("Uninstall this extension?")) {
+    if (await confirm(t('browse.uninstall_confirm'))) {
       try {
         await api.uninstallExtension(pkgName);
         loadInitialData(); // reload
