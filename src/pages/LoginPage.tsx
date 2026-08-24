@@ -64,7 +64,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
 
     try {
       await auth.forgotPassword(recoveryIdentity);
-      setSuccess("Kode verifikasi 6-digit telah dikirim ke email Anda.");
+      setSuccess(t('login.recovery.code_sent'));
       setRecoveryMode('reset-password');
     } catch (err: any) {
       setError(err.message || "Gagal memproses lupa password.");
@@ -82,7 +82,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
 
     try {
       await auth.resetPassword(recoveryIdentity, resetToken, newPassword);
-      setSuccess("Password Anda berhasil direset. Silakan login.");
+      setSuccess(t('login.recovery.reset_success'));
       setRecoveryMode('none');
       setMode('login');
       setUsername('');
@@ -105,7 +105,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
 
     try {
       await auth.forgotUsername(email);
-      setSuccess("Username Anda telah dikirim ke email.");
+      setSuccess(t('login.recovery.username_sent'));
       setRecoveryMode('none');
       setMode('login');
       setEmail('');
@@ -141,9 +141,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
             textTransform: 'uppercase',
             letterSpacing: '-1px'
           }}>
-            {recoveryMode === 'forgot-password' ? "Lupa Password"
-              : recoveryMode === 'forgot-username' ? "Lupa Username"
-              : recoveryMode === 'reset-password' ? "Reset Password"
+            {recoveryMode === 'forgot-password' ? t('login.recovery.forgot_password_title')
+              : recoveryMode === 'forgot-username' ? t('login.recovery.forgot_username_title')
+              : recoveryMode === 'reset-password' ? t('login.recovery.reset_password_title')
               : mode === 'login' ? t('login.title.login')
               : t('login.title.register')}
           </h1>
@@ -153,9 +153,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
             margin: 0,
             fontWeight: 600
           }}>
-            {recoveryMode === 'forgot-password' ? "Masukkan username atau email Anda untuk menerima kode verifikasi."
-              : recoveryMode === 'forgot-username' ? "Masukkan email terdaftar Anda untuk melihat daftar username."
-              : recoveryMode === 'reset-password' ? "Masukkan kode verifikasi 6-digit dari email Anda dan tentukan password baru."
+            {recoveryMode === 'forgot-password' ? t('login.recovery.forgot_password_desc')
+              : recoveryMode === 'forgot-username' ? t('login.recovery.forgot_username_desc')
+              : recoveryMode === 'reset-password' ? t('login.recovery.reset_password_desc')
               : mode === 'login' ? t('login.desc.login')
               : t('login.desc.register')}
           </p>
@@ -201,7 +201,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
           <form onSubmit={handleForgotPassword} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             <div>
               <label style={{ display: 'block', fontWeight: 800, marginBottom: '0.5rem', textTransform: 'uppercase', fontSize: '0.85rem' }}>
-                Username / Email
+                {t('login.label.identity')}
               </label>
               <input
                 type="text"
@@ -226,14 +226,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
               />
             </div>
             <button type="submit" className="comic-btn comic-btn-yellow" disabled={loading} style={{ justifyContent: 'center', width: '100%' }}>
-              Kirim Kode Verifikasi
+              {t('login.btn.send_code')}
             </button>
           </form>
         ) : recoveryMode === 'forgot-username' ? (
           <form onSubmit={handleForgotUsername} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             <div>
               <label style={{ display: 'block', fontWeight: 800, marginBottom: '0.5rem', textTransform: 'uppercase', fontSize: '0.85rem' }}>
-                Email Terdaftar
+                {t('login.label.registered_email')}
               </label>
               <input
                 type="email"
@@ -258,14 +258,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
               />
             </div>
             <button type="submit" className="comic-btn comic-btn-yellow" disabled={loading} style={{ justifyContent: 'center', width: '100%' }}>
-              Pulihkan Username
+              {t('login.btn.recover_username')}
             </button>
           </form>
         ) : recoveryMode === 'reset-password' ? (
           <form onSubmit={handleResetPassword} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             <div>
               <label style={{ display: 'block', fontWeight: 800, marginBottom: '0.5rem', textTransform: 'uppercase', fontSize: '0.85rem' }}>
-                Kode Verifikasi (6-Digit)
+                {t('login.label.verification_code')}
               </label>
               <input
                 type="text"
@@ -295,7 +295,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
             </div>
             <div>
               <label style={{ display: 'block', fontWeight: 800, marginBottom: '0.5rem', textTransform: 'uppercase', fontSize: '0.85rem' }}>
-                Password Baru
+                {t('login.label.new_password')}
               </label>
               <input
                 type="password"
@@ -320,7 +320,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
               />
             </div>
             <button type="submit" className="comic-btn comic-btn-pink" disabled={loading} style={{ justifyContent: 'center', width: '100%' }}>
-              Reset Password
+              {t('login.recovery.reset_password_title')}
             </button>
           </form>
         ) : (
@@ -400,7 +400,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                   textTransform: 'uppercase',
                   fontSize: '0.85rem'
                 }}>
-                  Email (Opsional)
+                  {t('login.label.email_optional')}
                 </label>
                 <input
                   type="email"
@@ -445,7 +445,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                     padding: 0
                   }}
                 >
-                  Lupa Password?
+                  {t('login.recovery.forgot_password_title') + '?'}
                 </button>
                 <button
                   type="button"
@@ -465,7 +465,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                     padding: 0
                   }}
                 >
-                  Lupa Username?
+                  {t('login.recovery.forgot_username_title') + '?'}
                 </button>
               </div>
             )}
@@ -514,7 +514,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                 textDecoration: 'underline'
               }}
             >
-              Kembali ke Halaman Login
+              {t('login.link.back_login')}
             </button>
           ) : (
             <button

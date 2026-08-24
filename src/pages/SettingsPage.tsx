@@ -237,14 +237,14 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
             {/* Email configuration */}
             <div style={{ marginBottom: '1.5rem', borderBottom: '2px dashed var(--border-color)', paddingBottom: '1.5rem' }}>
               <h3 style={{ margin: '0 0 0.5rem 0', fontWeight: 800, fontSize: '1rem', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                Email Address
+                {t('settings.account.email_title')}
               </h3>
               {currentEmail ? (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.5rem' }}>
                   <span style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--retro-purple)' }}>{currentEmail}</span>
                   <button 
                     onClick={() => {
-                      if (window.confirm("Ingin mengubah alamat email terdaftar?")) {
+                      if (window.confirm(t('settings.account.email_change_confirm'))) {
                         setEmailInput(currentEmail);
                         setCurrentEmail(null);
                       }
@@ -252,7 +252,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
                     className="comic-btn" 
                     style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', boxShadow: 'none', transform: 'none' }}
                   >
-                    Change Email
+                    {t('settings.account.email_btn_change')}
                   </button>
                 </div>
               ) : (
@@ -262,7 +262,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
                   try {
                     await auth.updateEmail(emailInput);
                     setCurrentEmail(emailInput);
-                    alert("Email berhasil diperbarui.");
+                    alert(t('settings.account.email_success'));
                   } catch (err: any) {
                     alert(err.message || "Gagal memperbarui email.");
                   }
@@ -289,7 +289,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
                     className="comic-btn comic-btn-yellow"
                     style={{ padding: '0.35rem 0.8rem', fontSize: '0.8rem', boxShadow: '2px 2px 0 var(--border-color)', transform: 'none' }}
                   >
-                    Simpan Email
+                    {t('settings.account.email_btn_save')}
                   </button>
                 </form>
               )}

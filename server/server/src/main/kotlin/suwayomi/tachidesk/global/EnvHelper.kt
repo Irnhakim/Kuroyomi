@@ -19,6 +19,11 @@ object EnvHelper {
         }
         
         if (!envFile.exists()) {
+            envFile = File("../../.env")
+            logger.info { "Checking for .env in grandparent: ${envFile.absolutePath} (exists: ${envFile.exists()})" }
+        }
+        
+        if (!envFile.exists()) {
             envFile = File("server/.env")
             logger.info { "Checking for .env in server/: ${envFile.absolutePath} (exists: ${envFile.exists()})" }
         }
