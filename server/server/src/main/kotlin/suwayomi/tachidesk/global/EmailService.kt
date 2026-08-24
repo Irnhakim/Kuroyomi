@@ -21,6 +21,7 @@ object EmailService {
         val smtpPort = EnvHelper.get("SMTP_PORT", "587")
         val smtpUser = EnvHelper.get("SMTP_USER") ?: ""
         val smtpPass = EnvHelper.get("SMTP_PASS") ?: ""
+        val smtpFrom = EnvHelper.get("SMTP_FROM") ?: smtpUser
 
         if (smtpUser.isBlank() || smtpPass.isBlank()) {
             logger.error { "SMTP credentials (SMTP_USER/SMTP_PASS) are not configured in system environment or .env file!" }
@@ -43,7 +44,7 @@ object EmailService {
 
         return try {
             val message = MimeMessage(session).apply {
-                setFrom(InternetAddress(smtpUser))
+                setFrom(InternetAddress(smtpFrom))
                 setRecipients(Message.RecipientType.TO, InternetAddress.parse(recipient))
                 setSubject(subject, "UTF-8")
                 setContent(htmlBody, "text/html; charset=utf-8")
