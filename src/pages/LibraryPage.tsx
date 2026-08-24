@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { api } from '../services/api';
 import type { Manga, Category, Chapter, HistoryItem } from '../services/api';
-import { RefreshCw, AlertCircle, Search, ArrowUpDown, ArrowUp, ArrowDown, Circle } from 'lucide-react';
+import { RefreshCw, AlertCircle, Search, ArrowUpDown, ArrowUp, ArrowDown, Circle, LayoutGrid, Grid3X3, List } from 'lucide-react';
 import { useTranslation } from '../services/i18n';
 
 interface LibraryPageProps {
@@ -16,6 +16,9 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({ onMangaSelect }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [displayMode, setDisplayMode] = useState<'grid' | 'compact' | 'list'>(() => {
+    return (localStorage.getItem('kuroyomi_library_display_mode') as any) || 'grid';
+  });
 
   // Sort & Filter states
   const [sortBy, setSortBy] = useState<'unread' | 'total' | 'az' | 'added' | 'read' | 'fetched' | 'uploaded' | 'random'>(() => {
@@ -36,6 +39,10 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({ onMangaSelect }) => {
   useEffect(() => {
     localStorage.setItem('kuroyomi_library_sort_dir', sortDirection);
   }, [sortDirection]);
+
+  useEffect(() => {
+    localStorage.setItem('kuroyomi_library_display_mode', displayMode);
+  }, [displayMode]);
 
   // Generate stable random order values
   const randomOrderMap = useMemo(() => {
@@ -288,6 +295,67 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({ onMangaSelect }) => {
             }}
           />
         </div>
+
+        {/* Display Mode Toggle */}
+        <div style={{ display: 'flex', border: '2px solid var(--border-color)', borderRadius: '8px', overflow: 'hidden', height: '36px', boxSizing: 'border-box', boxShadow: '2px 2px 0 var(--border-color)', flexShrink: 0 }}>
+          <button
+            onClick={() => setDisplayMode('grid')}
+            style={{
+              padding: '0 0.6rem',
+              backgroundColor: displayMode === 'grid' ? 'var(--retro-purple)' : 'var(--bg-card)',
+              color: displayMode === 'grid' ? '#fff' : 'var(--text-color)',
+              border: 'none',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              outline: 'none',
+              transition: 'background-color 0.2s'
+            }}
+            title="Grid Mode"
+          >
+            <LayoutGrid size={18} />
+          </button>
+          <button
+            onClick={() => setDisplayMode('compact')}
+            style={{
+              padding: '0 0.6rem',
+              backgroundColor: displayMode === 'compact' ? 'var(--retro-purple)' : 'var(--bg-card)',
+              color: displayMode === 'compact' ? '#fff' : 'var(--text-color)',
+              borderLeft: '2px solid var(--border-color)',
+              borderRight: '2px solid var(--border-color)',
+              borderTop: 'none',
+              borderBottom: 'none',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              outline: 'none',
+              transition: 'background-color 0.2s'
+            }}
+            title="Compact Grid Mode"
+          >
+            <Grid3X3 size={18} />
+          </button>
+          <button
+            onClick={() => setDisplayMode('list')}
+            style={{
+              padding: '0 0.6rem',
+              backgroundColor: displayMode === 'list' ? 'var(--retro-purple)' : 'var(--bg-card)',
+              color: displayMode === 'list' ? '#fff' : 'var(--text-color)',
+              border: 'none',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              outline: 'none',
+              transition: 'background-color 0.2s'
+            }}
+            title="List Mode"
+          >
+            <List size={18} />
+          </button>
+        </div>
       </div>
 
       {/* Sort Options Panel */}
@@ -379,91 +447,196 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({ onMangaSelect }) => {
           </div>
         </div>
       ) : (
-        <div className="comic-grid">
-          {sortedMangas.map((manga, idx) => {
-            // Apply slight random rotation for playful cartoonist layout
-            const rotation = (idx % 3 === 0) ? '-1.5deg' : (idx % 3 === 1) ? '1deg' : '-0.5deg';
-            return (
+        displayMode === 'list' ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+            {sortedMangas.map((manga) => (
               <div
                 key={manga.id}
                 className="comic-box comic-box-interactive"
                 style={{
-                  padding: '0.75rem',
+                  padding: '0.5rem 0.75rem',
                   display: 'flex',
-                  flexDirection: 'column',
-                  transform: `rotate(${rotation})`,
-                  height: '100%',
-                  boxSizing: 'border-box'
+                  gap: '1rem',
+                  alignItems: 'center',
+                  cursor: 'pointer'
                 }}
                 onClick={() => onMangaSelect(manga.id)}
               >
-                {/* Comic Thumbnail Cover */}
-                <div style={{
-                  position: 'relative',
-                  width: '100%',
-                  paddingBottom: '140%', // Comic ratio
-                  overflow: 'hidden',
-                  borderRadius: '6px',
-                  border: '2px solid var(--border-color)',
-                  backgroundColor: '#eee'
-                }}>
-                  <img
-                    src={api.getMangaThumbnailUrl(manga)}
-                    alt={manga.title}
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover'
-                    }}
-                    onError={(e) => {
-                      // Fallback image if fetch fails
-                      (e.target as HTMLImageElement).src = '/logo.svg';
-                    }}
-                  />
-                  {/* Sticker Indicator for completed status */}
-                  {manga.status === 'COMPLETED' && (
-                    <div style={{ position: 'absolute', top: '8px', right: '8px', zIndex: 10 }}>
-                      <span className="comic-sticker sticker-teal" style={{ fontSize: '0.6rem', padding: '0.15rem 0.4rem' }}>
-                        {t('library.manga.done')}
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Title & Author */}
-                <div style={{ marginTop: '1rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                  <h3 style={{
-                    margin: 0,
-                    fontWeight: 900,
-                    fontSize: '1.1rem',
-                    lineHeight: 1.2,
-                    display: '-webkit-box',
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: 'vertical',
-                    overflow: 'hidden',
-                    height: '2.4rem'
-                  }} title={manga.title}>
+                <img
+                  src={api.getMangaThumbnailUrl(manga)}
+                  alt={manga.title}
+                  style={{
+                    width: '50px',
+                    height: '70px',
+                    objectFit: 'cover',
+                    borderRadius: '4px',
+                    border: '2px solid var(--border-color)',
+                    flexShrink: 0
+                  }}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = '/logo.svg';
+                  }}
+                />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <h3 style={{ margin: 0, fontWeight: 900, fontSize: '1rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {manga.title}
                   </h3>
-                  <p style={{
-                    margin: '0.4rem 0 0 0',
-                    fontSize: '0.8rem',
-                    color: 'var(--muted-text)',
-                    fontWeight: 700,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap'
-                  }}>
+                  <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.8rem', color: 'var(--muted-text)', fontWeight: 700 }}>
                     {manga.author || t('library.manga.unknown_author')}
                   </p>
                 </div>
               </div>
-            );
-          })}
-        </div>
+            ))}
+          </div>
+        ) : displayMode === 'compact' ? (
+          <div className="comic-grid-compact" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(95px, 1fr))', gap: '0.4rem', padding: '0px' }}>
+            {sortedMangas.map((manga) => {
+              return (
+                <div
+                  key={manga.id}
+                  className="comic-box comic-box-interactive"
+                  style={{
+                    padding: '0px',
+                    overflow: 'hidden',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    height: '100%',
+                    boxSizing: 'border-box',
+                    borderRadius: '6px',
+                    border: '2px solid var(--border-color)',
+                    position: 'relative'
+                  }}
+                  onClick={() => onMangaSelect(manga.id)}
+                >
+                  <div style={{
+                    position: 'relative',
+                    width: '100%',
+                    paddingBottom: '140%',
+                    overflow: 'hidden',
+                    backgroundColor: '#eee'
+                  }}>
+                    <img
+                      src={api.getMangaThumbnailUrl(manga)}
+                      alt={manga.title}
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover'
+                      }}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = '/logo.svg';
+                      }}
+                    />
+                    
+                    {/* Title Overlay with Gradient backdrop */}
+                    <div style={{
+                      position: 'absolute',
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0) 100%)',
+                      padding: '0.4rem',
+                      boxSizing: 'border-box',
+                      color: '#fff',
+                      zIndex: 5
+                    }}>
+                      <h4 style={{
+                        margin: 0,
+                        fontWeight: 700,
+                        fontSize: '0.75rem',
+                        lineHeight: 1.1,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
+                      }} title={manga.title}>
+                        {manga.title}
+                      </h4>
+                    </div>
+
+                    {/* Completed / Library Indicators */}
+                    {manga.status === 'COMPLETED' && (
+                      <div style={{ position: 'absolute', top: '4px', right: '4px', zIndex: 10 }}>
+                        <span className="comic-sticker sticker-teal" style={{ fontSize: '0.5rem', padding: '0.1rem 0.3rem' }}>
+                          {t('library.manga.done')}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="comic-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '0.8rem' }}>
+            {sortedMangas.map((manga) => {
+              return (
+                <div
+                  key={manga.id}
+                  className="comic-box comic-box-interactive"
+                  style={{
+                    padding: '0.5rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    height: '100%',
+                    boxSizing: 'border-box'
+                  }}
+                  onClick={() => onMangaSelect(manga.id)}
+                >
+                  <div style={{
+                    position: 'relative',
+                    width: '100%',
+                    paddingBottom: '140%', // Comic ratio
+                    overflow: 'hidden',
+                    borderRadius: '6px',
+                    border: '2px solid var(--border-color)',
+                    backgroundColor: '#eee'
+                  }}>
+                    <img
+                      src={api.getMangaThumbnailUrl(manga)}
+                      alt={manga.title}
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover'
+                      }}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = '/logo.svg';
+                      }}
+                    />
+                    {manga.status === 'COMPLETED' && (
+                      <div style={{ position: 'absolute', top: '6px', right: '6px', zIndex: 10 }}>
+                        <span className="comic-sticker sticker-teal" style={{ fontSize: '0.55rem', padding: '0.15rem 0.35rem' }}>
+                          {t('library.manga.done')}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{ marginTop: '0.5rem', flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                    <h3 style={{
+                      margin: 0,
+                      fontWeight: 800,
+                      fontSize: '0.85rem',
+                      lineHeight: 1.2,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      color: 'var(--text-color)'
+                    }} title={manga.title}>
+                      {manga.title}
+                    </h3>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )
       )}
 
       {/* CSS Animation helper */}

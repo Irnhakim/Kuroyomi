@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import type { Extension, Source, Manga } from '../services/api';
-import { Compass, Cpu, Plus, Trash2, Search, ArrowLeft, ArrowRight, Sliders, Globe } from 'lucide-react';
+import { Compass, Cpu, Plus, Trash2, Search, ArrowLeft, ArrowRight, Sliders, Globe, LayoutGrid, Grid3X3, List } from 'lucide-react';
 import { useTranslation } from '../services/i18n';
 import { useModal } from '../services/modal';
 
@@ -223,6 +223,13 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
   const [hasNextPage, setHasNextPage] = useState(false);
   const [catalogLoading, setCatalogLoading] = useState(false);
   const [catalogError, setCatalogError] = useState<string | null>(null);
+  const [displayMode, setDisplayMode] = useState<'grid' | 'compact' | 'list'>(() => {
+    return (localStorage.getItem('kuroyomi_browse_display_mode') as any) || 'grid';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('kuroyomi_browse_display_mode', displayMode);
+  }, [displayMode]);
 
   // Source filters states
   const [filters, setFilters] = useState<any[]>([]);
@@ -522,7 +529,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
           </div>
 
           {/* Catalog Search Input and Filter Button */}
-          <div style={{ display: 'flex', gap: '0.5rem', flex: 1, minWidth: '280px' }}>
+          <div style={{ display: 'flex', gap: '0.5rem', flex: 1, minWidth: '280px', alignItems: 'center' }}>
             <form onSubmit={handleSearchSubmit} className="catalog-search-form" style={{ flex: 1, margin: 0 }}>
               <input
                 type="text"
@@ -547,7 +554,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
             {filters.length > 0 && (
               <button
                 className={`comic-btn ${showFilterPanel ? 'comic-btn-yellow' : 'comic-btn-white'}`}
-                style={{ padding: '0.5rem 0.75rem' }}
+                style={{ padding: '0.5rem 0.75rem', height: '36px', boxSizing: 'border-box' }}
                 onClick={() => setShowFilterPanel(prev => !prev)}
                 title="Toggle Filters"
               >
@@ -555,6 +562,67 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
                 <span className="desktop-only-text" style={{ fontSize: '0.85rem', marginLeft: '0.25rem' }}>Filters</span>
               </button>
             )}
+
+            {/* Display Mode Toggle */}
+            <div style={{ display: 'flex', border: '2px solid var(--border-color)', borderRadius: '8px', overflow: 'hidden', height: '36px', boxSizing: 'border-box', boxShadow: '2px 2px 0 var(--border-color)', flexShrink: 0 }}>
+              <button
+                onClick={() => setDisplayMode('grid')}
+                style={{
+                  padding: '0 0.6rem',
+                  backgroundColor: displayMode === 'grid' ? 'var(--retro-purple)' : 'var(--bg-card)',
+                  color: displayMode === 'grid' ? '#fff' : 'var(--text-color)',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  outline: 'none',
+                  transition: 'background-color 0.2s'
+                }}
+                title="Grid Mode"
+              >
+                <LayoutGrid size={18} />
+              </button>
+              <button
+                onClick={() => setDisplayMode('compact')}
+                style={{
+                  padding: '0 0.6rem',
+                  backgroundColor: displayMode === 'compact' ? 'var(--retro-purple)' : 'var(--bg-card)',
+                  color: displayMode === 'compact' ? '#fff' : 'var(--text-color)',
+                  borderLeft: '2px solid var(--border-color)',
+                  borderRight: '2px solid var(--border-color)',
+                  borderTop: 'none',
+                  borderBottom: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  outline: 'none',
+                  transition: 'background-color 0.2s'
+                }}
+                title="Compact Grid Mode"
+              >
+                <Grid3X3 size={18} />
+              </button>
+              <button
+                onClick={() => setDisplayMode('list')}
+                style={{
+                  padding: '0 0.6rem',
+                  backgroundColor: displayMode === 'list' ? 'var(--retro-purple)' : 'var(--bg-card)',
+                  color: displayMode === 'list' ? '#fff' : 'var(--text-color)',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  outline: 'none',
+                  transition: 'background-color 0.2s'
+                }}
+                title="List Mode"
+              >
+                <List size={18} />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -804,76 +872,207 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
           </div>
         ) : (
           <div>
-            <div className="comic-grid">
-              {catalogManga.map((manga, idx) => {
-                const rotation = (idx % 3 === 0) ? '-1deg' : (idx % 3 === 1) ? '1deg' : '0deg';
-                return (
+            {displayMode === 'list' ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                {catalogManga.map((manga, idx) => (
                   <div
                     key={`${manga.id}-${idx}`}
                     className="comic-box comic-box-interactive"
                     style={{
-                      padding: '0.75rem',
+                      padding: '0.5rem 0.75rem',
                       display: 'flex',
-                      flexDirection: 'column',
-                      transform: `rotate(${rotation})`,
-                      height: '100%'
+                      gap: '1rem',
+                      alignItems: 'center',
+                      cursor: 'pointer'
                     }}
                     onClick={() => onMangaSelect(manga.id)}
                   >
-                    {/* Cover */}
-                    <div style={{
-                      position: 'relative',
-                      width: '100%',
-                      paddingBottom: '140%',
-                      overflow: 'hidden',
-                      borderRadius: '6px',
-                      border: '2px solid var(--border-color)',
-                      backgroundColor: '#eee'
-                    }}>
+                    <div style={{ position: 'relative', flexShrink: 0 }}>
                       <img
                         src={api.getMangaThumbnailUrl(manga)}
                         alt={manga.title}
                         style={{
-                          position: 'absolute',
-                          top: 0,
-                          left: 0,
-                          width: '100%',
-                          height: '100%',
-                          objectFit: 'cover'
+                          width: '50px',
+                          height: '70px',
+                          objectFit: 'cover',
+                          borderRadius: '4px',
+                          border: '2px solid var(--border-color)'
                         }}
                         onError={(e) => {
                           (e.target as HTMLImageElement).src = '/logo.svg';
                         }}
                       />
                       {manga.inLibrary && (
-                        <div style={{ position: 'absolute', top: '8px', left: '8px', zIndex: 10 }}>
-                          <span className="comic-sticker sticker-pink" style={{ fontSize: '0.6rem', padding: '0.15rem 0.4rem' }}>
-                            IN LIB
+                        <div style={{ position: 'absolute', top: '-4px', left: '-4px', zIndex: 10 }}>
+                          <span className="comic-sticker sticker-pink" style={{ fontSize: '0.45rem', padding: '0.05rem 0.2rem' }}>
+                            LIB
                           </span>
                         </div>
                       )}
                     </div>
-
-                    {/* Title */}
-                    <div style={{ marginTop: '1rem', flex: 1 }}>
-                      <h3 style={{
-                        margin: 0,
-                        fontWeight: 900,
-                        fontSize: '1rem',
-                        lineHeight: 1.2,
-                        display: '-webkit-box',
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: 'vertical',
-                        overflow: 'hidden',
-                        height: '2.4rem'
-                      }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <h3 style={{ margin: 0, fontWeight: 900, fontSize: '1rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {manga.title}
                       </h3>
+                      {manga.author && (
+                        <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.8rem', color: 'var(--muted-text)', fontWeight: 700 }}>
+                          {manga.author}
+                        </p>
+                      )}
                     </div>
                   </div>
-                );
-              })}
-            </div>
+                ))}
+              </div>
+            ) : displayMode === 'compact' ? (
+              <div className="comic-grid-compact" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(95px, 1fr))', gap: '0.4rem', padding: '0px' }}>
+                {catalogManga.map((manga, idx) => {
+                  return (
+                    <div
+                      key={`${manga.id}-${idx}`}
+                      className="comic-box comic-box-interactive"
+                      style={{
+                        padding: '0px',
+                        overflow: 'hidden',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        height: '100%',
+                        boxSizing: 'border-box',
+                        borderRadius: '6px',
+                        border: '2px solid var(--border-color)',
+                        position: 'relative'
+                      }}
+                      onClick={() => onMangaSelect(manga.id)}
+                    >
+                      <div style={{
+                        position: 'relative',
+                        width: '100%',
+                        paddingBottom: '140%',
+                        overflow: 'hidden',
+                        backgroundColor: '#eee'
+                      }}>
+                        <img
+                          src={api.getMangaThumbnailUrl(manga)}
+                          alt={manga.title}
+                          style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover'
+                          }}
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = '/logo.svg';
+                          }}
+                        />
+                        
+                        {/* Title Overlay with Gradient backdrop */}
+                        <div style={{
+                          position: 'absolute',
+                          bottom: 0,
+                          left: 0,
+                          right: 0,
+                          background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0) 100%)',
+                          padding: '0.4rem',
+                          boxSizing: 'border-box',
+                          color: '#fff',
+                          zIndex: 5
+                        }}>
+                          <h4 style={{
+                            margin: 0,
+                            fontWeight: 700,
+                            fontSize: '0.75rem',
+                            lineHeight: 1.1,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap'
+                          }} title={manga.title}>
+                            {manga.title}
+                          </h4>
+                        </div>
+
+                        {manga.inLibrary && (
+                          <div style={{ position: 'absolute', top: '4px', left: '4px', zIndex: 10 }}>
+                            <span className="comic-sticker sticker-pink" style={{ fontSize: '0.5rem', padding: '0.1rem 0.3rem' }}>
+                              LIB
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="comic-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '0.8rem' }}>
+                {catalogManga.map((manga, idx) => {
+                  return (
+                    <div
+                      key={`${manga.id}-${idx}`}
+                      className="comic-box comic-box-interactive"
+                      style={{
+                        padding: '0.5rem',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        height: '100%',
+                        boxSizing: 'border-box'
+                      }}
+                      onClick={() => onMangaSelect(manga.id)}
+                    >
+                      {/* Cover */}
+                      <div style={{
+                        position: 'relative',
+                        width: '100%',
+                        paddingBottom: '140%',
+                        overflow: 'hidden',
+                        borderRadius: '6px',
+                        border: '2px solid var(--border-color)',
+                        backgroundColor: '#eee'
+                      }}>
+                        <img
+                          src={api.getMangaThumbnailUrl(manga)}
+                          alt={manga.title}
+                          style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover'
+                          }}
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = '/logo.svg';
+                          }}
+                        />
+                        {manga.inLibrary && (
+                          <div style={{ position: 'absolute', top: '6px', left: '6px', zIndex: 10 }}>
+                            <span className="comic-sticker sticker-pink" style={{ fontSize: '0.55rem', padding: '0.15rem 0.35rem' }}>
+                              IN LIB
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Title */}
+                      <div style={{ marginTop: '0.5rem', flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                        <h3 style={{
+                          margin: 0,
+                          fontWeight: 800,
+                          fontSize: '0.85rem',
+                          lineHeight: 1.2,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          color: 'var(--text-color)'
+                        }} title={manga.title}>
+                          {manga.title}
+                        </h3>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
 
             {/* Pagination controls */}
             <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginTop: '3rem', alignItems: 'center' }}>
