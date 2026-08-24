@@ -52,6 +52,60 @@ export default function App() {
     }
   }, [isLoggedIn]);
 
+  // Auto-fullscreen on first user interaction if enabled (Always mode)
+  useEffect(() => {
+    const handleGesture = async () => {
+      const mode = localStorage.getItem('fullscreen_mode');
+      if (mode === 'always' && !document.fullscreenElement) {
+        try {
+          if (document.documentElement.requestFullscreen) {
+            await document.documentElement.requestFullscreen();
+          }
+        } catch (e) {
+          console.warn("Auto-fullscreen on gesture failed:", e);
+        }
+      }
+      window.removeEventListener('click', handleGesture);
+    };
+    window.addEventListener('click', handleGesture);
+    return () => {
+      window.removeEventListener('click', handleGesture);
+    };
+  }, []);
+
+  // Monitor activePage changes to apply screen state dynamically
+  useEffect(() => {
+    const mode = localStorage.getItem('fullscreen_mode');
+    
+    if (mode === 'reading') {
+      if (activePage === 'reader') {
+        if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(err => {
+            console.warn("Enter reading fullscreen failed:", err);
+          });
+        }
+      } else {
+        if (document.exitFullscreen && document.fullscreenElement) {
+          document.exitFullscreen().catch(err => {
+            console.warn("Exit reading fullscreen failed:", err);
+          });
+        }
+      }
+    } else if (mode === 'always') {
+      if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => {
+          console.warn("Ensure always fullscreen failed:", err);
+        });
+      }
+    } else if (mode === 'off') {
+      if (document.exitFullscreen && document.fullscreenElement) {
+        document.exitFullscreen().catch(err => {
+          console.warn("Ensure off exit fullscreen failed:", err);
+        });
+      }
+    }
+  }, [activePage]);
+
   useEffect(() => {
     sessionStorage.setItem('kuroyomi_active_page', activePage);
   }, [activePage]);

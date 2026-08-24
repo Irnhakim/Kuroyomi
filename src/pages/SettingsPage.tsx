@@ -45,6 +45,11 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
   const [emailInput, setEmailInput] = useState('');
   const [currentEmail, setCurrentEmail] = useState<string | null>(null);
 
+  // Fullscreen Mode
+  const [fullscreenMode, setFullscreenMode] = useState<'off' | 'reading' | 'always'>(() => {
+    return (localStorage.getItem('fullscreen_mode') as any) || 'off';
+  });
+
   // User management (admin only)
   const [allUsers, setAllUsers] = useState<Array<{ username: string; createdAt: string; lastOnline?: string; email?: string }>>([]);
   const [usersLoading, setUsersLoading] = useState(false);
@@ -125,6 +130,26 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
 
       // Instantly update translation context language
       setLanguage(lang as Language);
+
+      // Save fullscreen mode and apply instantly
+      localStorage.setItem('fullscreen_mode', fullscreenMode);
+      if (fullscreenMode === 'always') {
+        if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
+          try {
+            await document.documentElement.requestFullscreen();
+          } catch (fsErr) {
+            console.warn("Save trigger fullscreen failed:", fsErr);
+          }
+        }
+      } else {
+        if (document.exitFullscreen && document.fullscreenElement) {
+          try {
+            await document.exitFullscreen();
+          } catch (fsErr) {
+            console.warn("Save trigger exit fullscreen failed:", fsErr);
+          }
+        }
+      }
 
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
@@ -540,6 +565,36 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
                 >
                   <option value="light">{t('settings.general.theme.light')}</option>
                   <option value="dark">{t('settings.general.theme.dark')}</option>
+                </select>
+              </div>
+
+              {/* Fullscreen Mode */}
+              <div>
+                <label style={{ display: 'block', fontWeight: 800, marginBottom: '0.5rem', textTransform: 'uppercase', fontSize: '0.9rem' }}>
+                  {t('settings.general.fullscreen')}
+                  <span style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--muted-text)', textTransform: 'none', marginTop: '0.1rem' }}>
+                    {t('settings.general.fullscreen.desc')}
+                  </span>
+                </label>
+                <select
+                  value={fullscreenMode}
+                  onChange={(e) => setFullscreenMode(e.target.value as any)}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '3px solid var(--border-color)',
+                    borderRadius: '8px',
+                    backgroundColor: 'var(--bg-card)',
+                    color: 'var(--text-color)',
+                    fontFamily: 'inherit',
+                    fontWeight: 700,
+                    outline: 'none',
+                    boxShadow: '3px 3px 0px var(--border-color)'
+                  }}
+                >
+                  <option value="off">{t('settings.general.fullscreen.off')}</option>
+                  <option value="reading">{t('settings.general.fullscreen.reading')}</option>
+                  <option value="always">{t('settings.general.fullscreen.always')}</option>
                 </select>
               </div>
 
