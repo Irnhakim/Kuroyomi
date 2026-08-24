@@ -10,8 +10,13 @@ interface LoginPageProps {
 export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   const { t } = useTranslation();
   const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [recoveryMode, setRecoveryMode] = useState<'none' | 'forgot-password' | 'forgot-username' | 'reset-password'>('none');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('');
+  const [resetToken, setResetToken] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [recoveryIdentity, setRecoveryIdentity] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -37,13 +42,75 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
           onLoginSuccess(user.username);
         }, 1000);
       } else {
-        await auth.register(trimmedUser, password);
+        await auth.register(trimmedUser, password, email || undefined);
         setSuccess(t('login.success.register'));
         setMode('login');
         setPassword('');
+        setEmail('');
       }
     } catch (err: any) {
       setError(err.message || 'Error occurred.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!recoveryIdentity.trim()) return;
+    setError(null);
+    setSuccess(null);
+    setLoading(true);
+
+    try {
+      await auth.forgotPassword(recoveryIdentity);
+      setSuccess("Kode verifikasi 6-digit telah dikirim ke email Anda.");
+      setRecoveryMode('reset-password');
+    } catch (err: any) {
+      setError(err.message || "Gagal memproses lupa password.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!recoveryIdentity.trim() || !resetToken.trim() || !newPassword) return;
+    setError(null);
+    setSuccess(null);
+    setLoading(true);
+
+    try {
+      await auth.resetPassword(recoveryIdentity, resetToken, newPassword);
+      setSuccess("Password Anda berhasil direset. Silakan login.");
+      setRecoveryMode('none');
+      setMode('login');
+      setUsername('');
+      setPassword('');
+      setResetToken('');
+      setNewPassword('');
+    } catch (err: any) {
+      setError(err.message || "Gagal mereset password.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgotUsername = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) return;
+    setError(null);
+    setSuccess(null);
+    setLoading(true);
+
+    try {
+      await auth.forgotUsername(email);
+      setSuccess("Username Anda telah dikirim ke email.");
+      setRecoveryMode('none');
+      setMode('login');
+      setEmail('');
+    } catch (err: any) {
+      setError(err.message || "Gagal memproses pemulihan username.");
     } finally {
       setLoading(false);
     }
@@ -58,35 +125,38 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
       padding: '1rem'
     }}>
       <div className="comic-box" style={{
-        maxWidth: '420px',
         width: '100%',
+        maxWidth: '420px',
+        padding: '2rem',
+        backgroundColor: 'var(--bg-card)',
         transform: 'rotate(-0.5deg)',
-        backgroundColor: 'var(--bg-card)'
+        boxSizing: 'border-box'
       }}>
-        {/* Logo and Brand */}
+        {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <img src="/logo.png" alt="Kuroyomi Logo" style={{ height: '70px', marginBottom: '1rem' }} />
-          <h2 style={{
+          <h1 style={{
             fontSize: '2rem',
-            margin: 0,
             fontWeight: 900,
+            margin: '0 0 0.5rem 0',
             textTransform: 'uppercase',
             letterSpacing: '-1px'
           }}>
-            {mode === 'login' ? t('login.welcome') + ' ' : t('login.join') + ' '}
-            <span style={{
-              background: 'var(--retro-purple)',
-              color: '#fff',
-              padding: '0 0.5rem',
-              display: 'inline-block',
-              transform: 'rotate(-2deg)'
-            }}>
-              {mode === 'login' ? t('login.title.login') : t('login.title.register')}
-            </span>
-          </h2>
-          <p style={{ margin: '0.5rem 0 0 0', fontWeight: 600, color: 'var(--muted-text)' }}>
-            {mode === 'login'
-              ? t('login.desc.login')
+            {recoveryMode === 'forgot-password' ? "Lupa Password"
+              : recoveryMode === 'forgot-username' ? "Lupa Username"
+              : recoveryMode === 'reset-password' ? "Reset Password"
+              : mode === 'login' ? t('login.title.login')
+              : t('login.title.register')}
+          </h1>
+          <p style={{
+            color: 'var(--muted-text)',
+            fontSize: '0.9rem',
+            margin: 0,
+            fontWeight: 600
+          }}>
+            {recoveryMode === 'forgot-password' ? "Masukkan username atau email Anda untuk menerima kode verifikasi."
+              : recoveryMode === 'forgot-username' ? "Masukkan email terdaftar Anda untuk melihat daftar username."
+              : recoveryMode === 'reset-password' ? "Masukkan kode verifikasi 6-digit dari email Anda dan tentukan password baru."
+              : mode === 'login' ? t('login.desc.login')
               : t('login.desc.register')}
           </p>
         </div>
@@ -126,92 +196,299 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
           </div>
         )}
 
-        {/* Auth Form */}
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          <div>
-            <label style={{
-              display: 'block',
-              fontWeight: 800,
-              marginBottom: '0.5rem',
-              textTransform: 'uppercase',
-              fontSize: '0.85rem'
-            }}>
-              Username
-            </label>
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="Username..."
-              required
+        {/* Dynamic Forms based on Mode */}
+        {recoveryMode === 'forgot-password' ? (
+          <form onSubmit={handleForgotPassword} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            <div>
+              <label style={{ display: 'block', fontWeight: 800, marginBottom: '0.5rem', textTransform: 'uppercase', fontSize: '0.85rem' }}>
+                Username / Email
+              </label>
+              <input
+                type="text"
+                value={recoveryIdentity}
+                onChange={(e) => setRecoveryIdentity(e.target.value)}
+                placeholder="Username atau alamat email..."
+                required
+                disabled={loading}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  border: '3px solid var(--border-color)',
+                  borderRadius: '8px',
+                  backgroundColor: 'var(--bg-color)',
+                  color: 'var(--text-color)',
+                  fontFamily: 'inherit',
+                  fontWeight: 700,
+                  outline: 'none',
+                  boxShadow: '3px 3px 0px var(--border-color)',
+                  boxSizing: 'border-box'
+                }}
+              />
+            </div>
+            <button type="submit" className="comic-btn comic-btn-yellow" disabled={loading} style={{ justifyContent: 'center', width: '100%' }}>
+              Kirim Kode Verifikasi
+            </button>
+          </form>
+        ) : recoveryMode === 'forgot-username' ? (
+          <form onSubmit={handleForgotUsername} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            <div>
+              <label style={{ display: 'block', fontWeight: 800, marginBottom: '0.5rem', textTransform: 'uppercase', fontSize: '0.85rem' }}>
+                Email Terdaftar
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="email@contoh.com"
+                required
+                disabled={loading}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  border: '3px solid var(--border-color)',
+                  borderRadius: '8px',
+                  backgroundColor: 'var(--bg-color)',
+                  color: 'var(--text-color)',
+                  fontFamily: 'inherit',
+                  fontWeight: 700,
+                  outline: 'none',
+                  boxShadow: '3px 3px 0px var(--border-color)',
+                  boxSizing: 'border-box'
+                }}
+              />
+            </div>
+            <button type="submit" className="comic-btn comic-btn-yellow" disabled={loading} style={{ justifyContent: 'center', width: '100%' }}>
+              Pulihkan Username
+            </button>
+          </form>
+        ) : recoveryMode === 'reset-password' ? (
+          <form onSubmit={handleResetPassword} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            <div>
+              <label style={{ display: 'block', fontWeight: 800, marginBottom: '0.5rem', textTransform: 'uppercase', fontSize: '0.85rem' }}>
+                Kode Verifikasi (6-Digit)
+              </label>
+              <input
+                type="text"
+                maxLength={6}
+                value={resetToken}
+                onChange={(e) => setResetToken(e.target.value)}
+                placeholder="123456"
+                required
+                disabled={loading}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  border: '3px solid var(--border-color)',
+                  borderRadius: '8px',
+                  backgroundColor: 'var(--bg-color)',
+                  color: 'var(--text-color)',
+                  fontFamily: 'inherit',
+                  fontWeight: 700,
+                  outline: 'none',
+                  boxShadow: '3px 3px 0px var(--border-color)',
+                  boxSizing: 'border-box',
+                  textAlign: 'center',
+                  fontSize: '1.2rem',
+                  letterSpacing: '4px'
+                }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontWeight: 800, marginBottom: '0.5rem', textTransform: 'uppercase', fontSize: '0.85rem' }}>
+                Password Baru
+              </label>
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+                disabled={loading}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  border: '3px solid var(--border-color)',
+                  borderRadius: '8px',
+                  backgroundColor: 'var(--bg-color)',
+                  color: 'var(--text-color)',
+                  fontFamily: 'inherit',
+                  fontWeight: 700,
+                  outline: 'none',
+                  boxShadow: '3px 3px 0px var(--border-color)',
+                  boxSizing: 'border-box'
+                }}
+              />
+            </div>
+            <button type="submit" className="comic-btn comic-btn-pink" disabled={loading} style={{ justifyContent: 'center', width: '100%' }}>
+              Reset Password
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            <div>
+              <label style={{
+                display: 'block',
+                fontWeight: 800,
+                marginBottom: '0.5rem',
+                textTransform: 'uppercase',
+                fontSize: '0.85rem'
+              }}>
+                Username
+              </label>
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Username..."
+                required
+                disabled={loading}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  border: '3px solid var(--border-color)',
+                  borderRadius: '8px',
+                  backgroundColor: 'var(--bg-color)',
+                  color: 'var(--text-color)',
+                  fontFamily: 'inherit',
+                  fontWeight: 700,
+                  outline: 'none',
+                  boxShadow: '3px 3px 0px var(--border-color)',
+                  boxSizing: 'border-box'
+                }}
+              />
+            </div>
+
+            <div>
+              <label style={{
+                display: 'block',
+                fontWeight: 800,
+                marginBottom: '0.5rem',
+                textTransform: 'uppercase',
+                fontSize: '0.85rem'
+              }}>
+                Password
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+                disabled={loading}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  border: '3px solid var(--border-color)',
+                  borderRadius: '8px',
+                  backgroundColor: 'var(--bg-color)',
+                  color: 'var(--text-color)',
+                  fontFamily: 'inherit',
+                  fontWeight: 700,
+                  outline: 'none',
+                  boxShadow: '3px 3px 0px var(--border-color)',
+                  boxSizing: 'border-box'
+                }}
+              />
+            </div>
+
+            {mode === 'register' && (
+              <div>
+                <label style={{
+                  display: 'block',
+                  fontWeight: 800,
+                  marginBottom: '0.5rem',
+                  textTransform: 'uppercase',
+                  fontSize: '0.85rem'
+                }}>
+                  Email (Opsional)
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="nama@email.com"
+                  disabled={loading}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '3px solid var(--border-color)',
+                    borderRadius: '8px',
+                    backgroundColor: 'var(--bg-color)',
+                    color: 'var(--text-color)',
+                    fontFamily: 'inherit',
+                    fontWeight: 700,
+                    outline: 'none',
+                    boxShadow: '3px 3px 0px var(--border-color)',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+            )}
+
+            {mode === 'login' && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '-0.25rem' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRecoveryMode('forgot-password');
+                    setError(null);
+                    setSuccess(null);
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--retro-purple)',
+                    fontWeight: 800,
+                    fontSize: '0.8rem',
+                    cursor: 'pointer',
+                    textDecoration: 'underline',
+                    padding: 0
+                  }}
+                >
+                  Lupa Password?
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRecoveryMode('forgot-username');
+                    setError(null);
+                    setSuccess(null);
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--retro-purple)',
+                    fontWeight: 800,
+                    fontSize: '0.8rem',
+                    cursor: 'pointer',
+                    textDecoration: 'underline',
+                    padding: 0
+                  }}
+                >
+                  Lupa Username?
+                </button>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              className={`comic-btn ${mode === 'login' ? 'comic-btn-yellow' : 'comic-btn-pink'}`}
               disabled={loading}
               style={{
+                justifyContent: 'center',
                 width: '100%',
-                padding: '0.75rem',
-                border: '3px solid var(--border-color)',
-                borderRadius: '8px',
-                backgroundColor: 'var(--bg-color)',
-                color: 'var(--text-color)',
-                fontFamily: 'inherit',
-                fontWeight: 700,
-                outline: 'none',
-                boxShadow: '3px 3px 0px var(--border-color)',
-                boxSizing: 'border-box'
+                marginTop: '0.5rem'
               }}
-            />
-          </div>
-
-          <div>
-            <label style={{
-              display: 'block',
-              fontWeight: 800,
-              marginBottom: '0.5rem',
-              textTransform: 'uppercase',
-              fontSize: '0.85rem'
-            }}>
-              Password
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              required
-              disabled={loading}
-              style={{
-                width: '100%',
-                padding: '0.75rem',
-                border: '3px solid var(--border-color)',
-                borderRadius: '8px',
-                backgroundColor: 'var(--bg-color)',
-                color: 'var(--text-color)',
-                fontFamily: 'inherit',
-                fontWeight: 700,
-                outline: 'none',
-                boxShadow: '3px 3px 0px var(--border-color)',
-                boxSizing: 'border-box'
-              }}
-            />
-          </div>
-
-          <button
-            type="submit"
-            className={`comic-btn ${mode === 'login' ? 'comic-btn-yellow' : 'comic-btn-pink'}`}
-            disabled={loading}
-            style={{
-              justifyContent: 'center',
-              width: '100%',
-              marginTop: '0.5rem'
-            }}
-          >
-            {mode === 'login' ? <LogIn size={18} /> : <UserPlus size={18} />}
-            {loading
-              ? t('login.btn.processing')
-              : mode === 'login'
-              ? t('login.btn.login')
-              : t('login.btn.register')}
-          </button>
-        </form>
+            >
+              {mode === 'login' ? <LogIn size={18} /> : <UserPlus size={18} />}
+              {loading
+                ? t('login.btn.processing')
+                : mode === 'login'
+                ? t('login.btn.login')
+                : t('login.btn.register')}
+            </button>
+          </form>
+        )}
 
         {/* Footer Link */}
         <div style={{
@@ -220,26 +497,47 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
           borderTop: '2px dashed var(--border-color)',
           paddingTop: '1rem'
         }}>
-          <button
-            onClick={() => {
-              setMode(mode === 'login' ? 'register' : 'login');
-              setError(null);
-              setSuccess(null);
-            }}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: 'var(--retro-purple)',
-              fontWeight: 800,
-              fontSize: '0.9rem',
-              cursor: 'pointer',
-              textDecoration: 'underline'
-            }}
-          >
-            {mode === 'login'
-              ? t('login.link.register')
-              : t('login.link.login')}
-          </button>
+          {recoveryMode !== 'none' ? (
+            <button
+              onClick={() => {
+                setRecoveryMode('none');
+                setError(null);
+                setSuccess(null);
+              }}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--retro-purple)',
+                fontWeight: 800,
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+                textDecoration: 'underline'
+              }}
+            >
+              Kembali ke Halaman Login
+            </button>
+          ) : (
+            <button
+              onClick={() => {
+                setMode(mode === 'login' ? 'register' : 'login');
+                setError(null);
+                setSuccess(null);
+              }}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--retro-purple)',
+                fontWeight: 800,
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+                textDecoration: 'underline'
+              }}
+            >
+              {mode === 'login'
+                ? t('login.link.register')
+                : t('login.link.login')}
+            </button>
+          )}
         </div>
       </div>
     </div>

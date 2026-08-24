@@ -102,7 +102,7 @@ export const auth = {
   },
 
   // Register new user
-  register: async (username: string, password: string): Promise<void> => {
+  register: async (username: string, password: string, email?: string): Promise<void> => {
     const trimmedUser = username.trim();
     if (!trimmedUser || password.length < 4) {
       throw new Error('Username valid dan password minimal 4 karakter!');
@@ -130,7 +130,8 @@ export const auth = {
     users[key] = {
       username: trimmedUser,
       passwordHash,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      email: email?.trim() || undefined
     };
 
     // 2. Save users back to backend and localStorage
@@ -374,5 +375,93 @@ export const auth = {
     } catch (e) {
       console.warn('Failed to sync user deletion to server', e);
     }
+  },
+
+  // Get email of the currently logged-in user
+  getUserEmail: (): string | null => {
+    const user = auth.getCurrentUser();
+    if (!user) return null;
+    const key = user.toLowerCase();
+    const usersJson = localStorage.getItem('kuroyomi_users');
+    const users = usersJson ? JSON.parse(usersJson) : {};
+    return users[key]?.email || null;
+  },
+
+  // Update email of the currently logged-in user
+  updateEmail: async (email: string): Promise<void> => {
+    const user = auth.getCurrentUser();
+    if (!user) throw new Error("Not logged in");
+    const key = user.toLowerCase();
+
+    let users: Record<string, any> = {};
+    try {
+      const res = await fetch(`${BASE_URL}/kuroyomi/users`);
+      if (res.ok) {
+        users = await res.json();
+      }
+    } catch (e) {
+      const localUsers = localStorage.getItem('kuroyomi_users');
+      if (localUsers) users = JSON.parse(localUsers);
+    }
+
+    if (!users[key]) {
+      throw new Error("User not found");
+    }
+
+    users[key].email = email.trim() || undefined;
+
+    localStorage.setItem('kuroyomi_users', JSON.stringify(users));
+    try {
+      await fetch(`${BASE_URL}/kuroyomi/users`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(users)
+      });
+    } catch (e) {
+      console.warn("Failed to sync updated email to server", e);
+    }
+  },
+
+  // Forgot password verification code request
+  forgotPassword: async (identity: string): Promise<string> => {
+    const res = await fetch(`${BASE_URL}/kuroyomi/forgot-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ identity })
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(text || 'Gagal mengirim token lupa password.');
+    }
+    return await res.text();
+  },
+
+  // Reset password using the code
+  resetPassword: async (identity: string, token: string, newPassword: string): Promise<string> => {
+    const newPasswordHash = await sha256(newPassword);
+    const res = await fetch(`${BASE_URL}/kuroyomi/reset-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ identity, token, newPasswordHash })
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(text || 'Gagal mereset password.');
+    }
+    return await res.text();
+  },
+
+  // Forgot username recovery request
+  forgotUsername: async (email: string): Promise<string> => {
+    const res = await fetch(`${BASE_URL}/kuroyomi/forgot-username`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(text || 'Gagal mengirim username recovery.');
+    }
+    return await res.text();
   }
 };

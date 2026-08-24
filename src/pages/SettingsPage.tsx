@@ -39,6 +39,10 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
+  // Email states
+  const [emailInput, setEmailInput] = useState('');
+  const [currentEmail, setCurrentEmail] = useState<string | null>(null);
+
   // User management (admin only)
   const [allUsers, setAllUsers] = useState<Array<{ username: string; createdAt: string; lastOnline?: string }>>([]);
   const [usersLoading, setUsersLoading] = useState(false);
@@ -93,6 +97,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
 
   useEffect(() => {
     loadSettingsAndStatus();
+    setCurrentEmail(auth.getUserEmail());
     if (currentUser?.toLowerCase() === 'admin') {
       auth.getAllUsers().then(setAllUsers).catch(console.error);
     }
@@ -227,6 +232,67 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
               <button className="comic-btn comic-btn-pink" style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }} onClick={handleLogout}>
                 <LogOut size={16} /> {t('settings.account.logout')}
               </button>
+            </div>
+
+            {/* Email configuration */}
+            <div style={{ marginBottom: '1.5rem', borderBottom: '2px dashed var(--border-color)', paddingBottom: '1.5rem' }}>
+              <h3 style={{ margin: '0 0 0.5rem 0', fontWeight: 800, fontSize: '1rem', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                Email Address
+              </h3>
+              {currentEmail ? (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.5rem' }}>
+                  <span style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--retro-purple)' }}>{currentEmail}</span>
+                  <button 
+                    onClick={() => {
+                      if (window.confirm("Ingin mengubah alamat email terdaftar?")) {
+                        setEmailInput(currentEmail);
+                        setCurrentEmail(null);
+                      }
+                    }} 
+                    className="comic-btn" 
+                    style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', boxShadow: 'none', transform: 'none' }}
+                  >
+                    Change Email
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (!emailInput.trim()) return;
+                  try {
+                    await auth.updateEmail(emailInput);
+                    setCurrentEmail(emailInput);
+                    alert("Email berhasil diperbarui.");
+                  } catch (err: any) {
+                    alert(err.message || "Gagal memperbarui email.");
+                  }
+                }} style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', maxWidth: '400px' }}>
+                  <input
+                    type="email"
+                    placeholder="nama@email.com"
+                    value={emailInput}
+                    onChange={(e) => setEmailInput(e.target.value)}
+                    required
+                    style={{
+                      flex: 1,
+                      padding: '0.5rem',
+                      border: '2px solid var(--border-color)',
+                      borderRadius: '6px',
+                      backgroundColor: 'var(--bg-color)',
+                      color: 'var(--text-color)',
+                      fontWeight: 700,
+                      fontSize: '0.85rem'
+                    }}
+                  />
+                  <button
+                    type="submit"
+                    className="comic-btn comic-btn-yellow"
+                    style={{ padding: '0.35rem 0.8rem', fontSize: '0.8rem', boxShadow: '2px 2px 0 var(--border-color)', transform: 'none' }}
+                  >
+                    Simpan Email
+                  </button>
+                </form>
+              )}
             </div>
 
             {/* Change password form */}

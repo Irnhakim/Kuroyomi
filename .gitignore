@@ -45,3 +45,6 @@ server/*.log
 
 #jar server
 server.jar
+
+# environment variables
+.env
