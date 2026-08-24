@@ -189,6 +189,8 @@ const translations: Record<Language, Record<string, string>> = {
     'settings.admin.save_error': 'Failed to update user.',
     'detail.sort.latest': 'Latest',
     'detail.sort.older': 'Older',
+    'detail.search_placeholder': 'Search chapters...',
+    'detail.episodes_count': '{read} / {total} Chapters',
   },
   id: {
     // Navigation / Layout
@@ -375,6 +377,8 @@ const translations: Record<Language, Record<string, string>> = {
     'settings.admin.save_error': 'Gagal memperbarui pengguna.',
     'detail.sort.latest': 'Terbaru',
     'detail.sort.older': 'Terlama',
+    'detail.search_placeholder': 'Cari episode...',
+    'detail.episodes_count': '{read} / {total} Chapter',
   }
 };
 

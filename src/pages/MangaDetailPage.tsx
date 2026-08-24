@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import type { Manga, Chapter, HistoryItem } from '../services/api';
-import { ArrowLeft, Heart, HeartOff, Eye, EyeOff, Play } from 'lucide-react';
+import { ArrowLeft, Heart, HeartOff, Eye, EyeOff, Play, Search, ArrowDownAZ } from 'lucide-react';
 import { useTranslation } from '../services/i18n';
 
 interface MangaDetailPageProps {
@@ -24,6 +24,7 @@ export const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
   const [updatingLibrary, setUpdatingLibrary] = useState(false);
   const [recentHistory, setRecentHistory] = useState<HistoryItem | null>(null);
   const [sortOrder, setSortOrder] = useState<'latest' | 'older'>('latest');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const loadMangaDetails = async () => {
     setLoading(true);
@@ -114,8 +115,8 @@ export const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
   return (
     <div>
       {/* Back Button */}
-      <button className="comic-btn comic-btn-white" style={{ marginBottom: '2rem' }} onClick={onBack}>
-        <ArrowLeft size={18} />
+      <button className="comic-btn comic-btn-white" style={{ marginBottom: '1rem', padding: '0.4rem 0.8rem', fontSize: '0.85rem' }} onClick={onBack}>
+        <ArrowLeft size={16} />
         Back
       </button>
 
@@ -193,43 +194,50 @@ export const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
           </div>
 
           {/* Library and Reading Actions */}
-          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '0.5rem', width: '100%', flexWrap: 'nowrap' }}>
             {recentHistory ? (
               <button
                 className="comic-btn comic-btn-teal"
-                style={{ fontWeight: 900 }}
+                style={{ flex: 1, fontWeight: 900, padding: '0.5rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}
                 onClick={() => onChapterSelect(manga.id, recentHistory.chapterId)}
               >
-                <Play size={18} />
-                {t('detail.btn.resume')} ({recentHistory.chapterName})
+                <Play size={16} />
+                <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t('detail.btn.resume')}</span>
               </button>
             ) : chapters.length > 0 ? (
               <button
                 className="comic-btn comic-btn-yellow"
-                style={{ fontWeight: 900 }}
+                style={{ flex: 1, fontWeight: 900, padding: '0.5rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}
                 onClick={() => {
                   const sorted = [...chapters].sort((a, b) => a.chapterNumber - b.chapterNumber);
                   const startId = sorted[0]?.id;
                   if (startId) onChapterSelect(manga.id, startId);
                 }}
               >
-                <Play size={18} />
-                {t('detail.btn.start')}
+                <Play size={16} />
+                <span>{t('detail.btn.start')}</span>
               </button>
             ) : null}
 
             <button
-              className={`comic-btn ${inLibrary ? 'comic-btn-white' : 'comic-btn-pink'} manga-detail-lib-btn`}
+              className={`comic-btn ${inLibrary ? 'comic-btn-white' : 'comic-btn-pink'}`}
               style={{
+                flex: 1,
                 borderColor: inLibrary ? 'var(--retro-pink)' : 'var(--border-color)',
                 color: inLibrary ? 'var(--retro-pink)' : '#fff',
-                margin: 0
+                margin: 0,
+                padding: '0.5rem',
+                fontSize: '0.85rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.3rem'
               }}
               onClick={toggleLibraryStatus}
               disabled={updatingLibrary}
             >
-              {inLibrary ? <HeartOff size={18} /> : <Heart size={18} />}
-              {inLibrary ? t('detail.btn.in_library') : t('detail.btn.add_library')}
+              {inLibrary ? <HeartOff size={16} /> : <Heart size={16} />}
+              <span style={{ whiteSpace: 'nowrap' }}>{inLibrary ? t('detail.btn.in_library') : t('detail.btn.add_library')}</span>
             </button>
           </div>
         </div>
@@ -239,38 +247,65 @@ export const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
       <div className="comic-box" style={{ transform: 'rotate(0.5deg)', backgroundColor: 'var(--bg-card)' }}>
         <div style={{
           display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
+          flexDirection: 'column',
+          gap: '0.75rem',
           borderBottom: '3px solid var(--border-color)',
           paddingBottom: '1rem',
-          marginBottom: '1rem',
-          flexWrap: 'wrap',
-          gap: '1rem'
+          marginBottom: '1rem'
         }}>
-          <h2 style={{ margin: 0, fontWeight: 900, fontSize: '1.8rem', textTransform: 'uppercase' }}>
-            Chapters ({chapters.length})
-          </h2>
+          {/* Top row: Progress count and Sort button */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h2 style={{ margin: 0, fontWeight: 900, fontSize: '1.25rem', textTransform: 'uppercase', letterSpacing: '-0.5px' }}>
+              {t('detail.episodes_count')
+                .replace('{read}', chapters.filter(c => c.read).length.toString())
+                .replace('{total}', chapters.length.toString())}
+            </h2>
 
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-            <select
-              value={sortOrder}
-              onChange={(e) => setSortOrder(e.target.value as 'latest' | 'older')}
+            <button
+              onClick={() => setSortOrder(prev => prev === 'latest' ? 'older' : 'latest')}
               style={{
-                padding: '0.4rem 0.6rem',
-                border: '2px solid var(--border-color)',
-                borderRadius: '6px',
+                padding: '0.4rem 0.75rem',
+                borderRadius: '20px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.35rem',
                 backgroundColor: 'var(--bg-color)',
                 color: 'var(--text-color)',
+                border: '2px solid var(--border-color)',
+                fontSize: '0.8rem',
                 fontWeight: 800,
-                fontSize: '0.85rem',
                 cursor: 'pointer',
                 outline: 'none',
-                boxShadow: '2px 2px 0px var(--border-color)'
+                transition: 'all 0.1s ease',
+                boxShadow: 'none'
               }}
             >
-              <option value="latest">{t('detail.sort.latest')}</option>
-              <option value="older">{t('detail.sort.older')}</option>
-            </select>
+              <ArrowDownAZ size={14} />
+              <span>{sortOrder === 'latest' ? t('detail.sort.latest') : t('detail.sort.older')}</span>
+            </button>
+          </div>
+
+          {/* Bottom row: Full-width search bar */}
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', width: '100%' }}>
+            <Search size={16} style={{ position: 'absolute', left: '0.75rem', color: 'var(--muted-text)', pointerEvents: 'none' }} />
+            <input
+              type="text"
+              placeholder={t('detail.search_placeholder')}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '0.45rem 0.75rem 0.45rem 2.25rem',
+                border: '2px solid var(--border-color)',
+                borderRadius: '20px',
+                backgroundColor: 'var(--bg-color)',
+                color: 'var(--text-color)',
+                fontWeight: 700,
+                fontSize: '0.85rem',
+                outline: 'none',
+                boxSizing: 'border-box'
+              }}
+            />
           </div>
         </div>
 
@@ -288,6 +323,10 @@ export const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
             paddingRight: '0.5rem'
           }}>
             {[...chapters]
+              .filter(chapter => 
+                chapter.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                chapter.chapterNumber.toString().includes(searchQuery)
+              )
               .sort((a, b) => {
                 if (sortOrder === 'latest') {
                   return b.sourceOrder - a.sourceOrder;
