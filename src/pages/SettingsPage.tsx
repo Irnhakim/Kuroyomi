@@ -760,12 +760,16 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1.25rem', borderTop: '2px dashed var(--border-color)', paddingTop: '0.75rem' }}>
               <span style={{ fontWeight: 800, fontSize: '0.9rem', textTransform: 'uppercase' }}>Credits:</span>
               <a href="https://github.com/Irnhakim" target="_blank" rel="noreferrer" style={{ fontWeight: 700, color: 'var(--retro-purple)', textDecoration: 'underline' }}>GitHub @Irnhakim</a>
-              
+
               <span style={{ fontWeight: 800, fontSize: '0.9rem', textTransform: 'uppercase', marginTop: '0.5rem' }}>Support Development:</span>
               <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginTop: '0.25rem' }}>
                 <a href="https://saweria.co/irnhakim" target="_blank" rel="noreferrer" className="comic-btn comic-btn-yellow" style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem', boxShadow: '2px 2px 0 var(--border-color)', textDecoration: 'none', transform: 'none' }}>Saweria</a>
-                <a href="https://buymeacoffee.com/irnhakim" target="_blank" rel="noreferrer" className="comic-btn comic-btn-pink" style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem', boxShadow: '2px 2px 0 var(--border-color)', textDecoration: 'none', transform: 'none' }}>Buy Me a Coffee</a>
+                <a href="https://trakteer.id/ryuzure" target="_blank" rel="noreferrer" className="comic-btn comic-btn-pink" style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem', boxShadow: '2px 2px 0 var(--border-color)', textDecoration: 'none', transform: 'none' }}>Trakteer</a>
               </div>
+
+              <span style={{ fontWeight: 800, fontSize: '0.9rem', textTransform: 'uppercase', marginTop: '0.5rem' }}>Contact Support:</span>
+              <a href="mailto:support@irnhakim.my.id" style={{ fontWeight: 700, color: 'var(--retro-purple)', textDecoration: 'underline' }}>support@irnhakim.my.id</a>
+              <a href="https://t.me/Pepeji015" style={{ fontWeight: 700, color: 'var(--retro-purple)', textDecoration: 'underline' }}>Telegram: @Pepeji015</a>
             </div>
           </div>
         </div>

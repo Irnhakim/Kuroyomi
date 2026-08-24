@@ -110,6 +110,10 @@ dependencies {
     implementation(libs.jwt)
 
     compileOnly(libs.kte)
+
+    // Email Support
+    implementation("jakarta.mail:jakarta.mail-api:2.1.2")
+    implementation("org.eclipse.angus:jakarta.mail:2.0.2")
 }
 
 jte {

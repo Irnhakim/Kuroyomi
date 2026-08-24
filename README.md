@@ -137,6 +137,5 @@ Developed and maintained by [Irnhakim](https://github.com/Irnhakim).
 
 ## Support & Donations
 
-If you find Kuroyomi helpful, consider supporting the development:
 * **Saweria:** [https://saweria.co/irnhakim](https://saweria.co/irnhakim)
-* **Buy Me a Coffee:** [buymeacoffee.com/irnhakim](https://buymeacoffee.com/irnhakim)
+* **Trakteer:** [https://trakteer.id/ryuzure](https://trakteer.id/ryuzure)
