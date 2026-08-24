@@ -335,36 +335,6 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
     setSelectedSource(source);
   };
 
-  // Compile filters state to Suwayomi API format
-  const compileFiltersPayload = () => {
-    const payload: any[] = [];
-    filters.forEach((f, idx) => {
-      if (f.type === 'CheckBox') {
-        payload.push({ position: idx, state: String(f.filter.state) });
-      } else if (f.type === 'Select' || f.type === 'TriState') {
-        payload.push({ position: idx, state: String(f.filter.state) });
-      } else if (f.type === 'Text') {
-        payload.push({ position: idx, state: f.filter.state || '' });
-      } else if (f.type === 'Sort') {
-        payload.push({ position: idx, state: JSON.stringify(f.filter.state) });
-      } else if (f.type === 'Group') {
-        if (Array.isArray(f.filter.state)) {
-          f.filter.state.forEach((child: any, childIdx: number) => {
-            const childStateStr = String(child.filter.state);
-            payload.push({
-              position: idx,
-              state: JSON.stringify({
-                position: childIdx,
-                state: childStateStr
-              })
-            });
-          });
-        }
-      }
-    });
-    return payload;
-  };
-
   const updateFilterValue = (index: number, newValue: any) => {
     setFilters(prev => prev.map((f, i) => {
       if (i !== index) return f;
@@ -414,8 +384,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
       } else if (activeMode === 'latest') {
         result = await api.getSourceLatest(selectedSource.id, page);
       } else {
-        const activeFilters = compileFiltersPayload();
-        result = await api.searchSourceWithFilters(selectedSource.id, searchQuery, page, activeFilters);
+        result = await api.searchSourceWithFilters(selectedSource.id, searchQuery, page, filters);
       }
 
       if (append) {

@@ -365,32 +365,138 @@ export const api = {
   },
 
   searchSourceWithFilters: async (sourceId: string, query: string, pageNum: number, filters: any[]): Promise<{ mangas: Manga[]; hasNextPage: boolean }> => {
-    const filterString = encodeURIComponent(JSON.stringify(filters));
-    const res = await fetch(`${BASE_URL}/source/${sourceId}/search?searchTerm=${encodeURIComponent(query)}&pageNum=${pageNum}&filter=${filterString}`);
-    if (!res.ok) {
-      let msg = `Gagal mencari dengan filter (${res.status})`;
-      try {
-        const text = await res.text();
-        if (text) msg = text;
-      } catch (_) {}
-      throw new Error(msg);
-    }
-    const data = await res.json();
-    const mangas: Manga[] = data.mangaList || data.mangas || (Array.isArray(data) ? data : []);
+    // Map raw filters payload to GraphQL variables structure (FilterChangeInput)
+    const gqlFilters: any[] = [];
+    filters.forEach((f, idx) => {
+      if (f.type === 'CheckBox') {
+        if (f.filter.state === true) {
+          gqlFilters.push({
+            position: idx,
+            checkBoxState: true
+          });
+        }
+      } else if (f.type === 'Select') {
+        gqlFilters.push({
+          position: idx,
+          selectState: f.filter.state
+        });
+      } else if (f.type === 'TriState') {
+        if (f.filter.state === 1) {
+          gqlFilters.push({
+            position: idx,
+            triState: 'INCLUDE'
+          });
+        } else if (f.filter.state === 2) {
+          gqlFilters.push({
+            position: idx,
+            triState: 'EXCLUDE'
+          });
+        }
+      } else if (f.type === 'Text') {
+        if (f.filter.state) {
+          gqlFilters.push({
+            position: idx,
+            textState: f.filter.state
+          });
+        }
+      } else if (f.type === 'Sort') {
+        const selectionIdx = typeof f.filter.state.selection === 'number' ? f.filter.state.selection : (f.filter.state.index || 0);
+        gqlFilters.push({
+          position: idx,
+          sortState: {
+            index: selectionIdx,
+            ascending: !!f.filter.state.ascending
+          }
+        });
+      } else if (f.type === 'Group') {
+        if (Array.isArray(f.filter.state)) {
+          f.filter.state.forEach((child: any, childIdx: number) => {
+            if (child.type === 'TriState') {
+              if (child.filter.state === 1) {
+                gqlFilters.push({
+                  position: idx,
+                  groupChange: {
+                    position: childIdx,
+                    triState: 'INCLUDE'
+                  }
+                });
+              } else if (child.filter.state === 2) {
+                gqlFilters.push({
+                  position: idx,
+                  groupChange: {
+                    position: childIdx,
+                    triState: 'EXCLUDE'
+                  }
+                });
+              }
+            } else {
+              if (child.filter.state === true) {
+                gqlFilters.push({
+                  position: idx,
+                  groupChange: {
+                    position: childIdx,
+                    checkBoxState: true
+                  }
+                });
+              }
+            }
+          });
+        }
+      }
+    });
 
+    const gqlQuery = `
+      mutation GET_SOURCE_MANGAS_FETCH($input: FetchSourceMangaInput!) {
+        fetchSourceManga(input: $input) {
+          hasNextPage
+          mangas {
+            id
+            title
+            thumbnailUrl
+            inLibrary
+            initialized
+            sourceId
+            url
+            status
+          }
+        }
+      }
+    `;
+
+    const variables = {
+      input: {
+        type: 'SEARCH',
+        source: sourceId,
+        query: query || '',
+        filters: gqlFilters,
+        page: pageNum
+      }
+    };
+
+    const data = await graphqlRequest(gqlQuery, variables);
+    const fetchResult = data.fetchSourceManga;
+    const rawMangas: any[] = fetchResult?.mangas || [];
+
+    // Overlay user library status
     const prefix = getUserPrefix();
     const listJson = localStorage.getItem(`${prefix}_library`);
     const list: Manga[] = listJson ? JSON.parse(listJson) : [];
     const libraryIds = new Set(list.map(m => m.id));
 
-    const mapped = mangas.map(m => ({
-      ...m,
+    const mapped: Manga[] = rawMangas.map((m: any) => ({
+      id: m.id,
+      title: m.title,
+      thumbnailUrl: m.thumbnailUrl,
+      sourceId: m.sourceId,
+      url: m.url || '',
+      status: m.status || 'UNKNOWN',
+      initialized: typeof m.initialized === 'boolean' ? m.initialized : false,
       inLibrary: libraryIds.has(m.id)
     }));
 
     return {
       mangas: mapped,
-      hasNextPage: data.hasNextPage ?? false,
+      hasNextPage: fetchResult?.hasNextPage ?? false,
     };
   },
 
