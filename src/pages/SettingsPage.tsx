@@ -46,8 +46,11 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
   const [currentEmail, setCurrentEmail] = useState<string | null>(null);
 
   // User management (admin only)
-  const [allUsers, setAllUsers] = useState<Array<{ username: string; createdAt: string; lastOnline?: string }>>([]);
+  const [allUsers, setAllUsers] = useState<Array<{ username: string; createdAt: string; lastOnline?: string; email?: string }>>([]);
   const [usersLoading, setUsersLoading] = useState(false);
+  const [editingUsername, setEditingUsername] = useState<string | null>(null);
+  const [editingEmail, setEditingEmail] = useState('');
+  const [editingPassword, setEditingPassword] = useState('');
 
   const handleAdminDeleteUser = async (targetUsername: string) => {
     if (targetUsername.toLowerCase() === 'admin') {
@@ -757,8 +760,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
                       key={idx}
                       style={{
                         display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
+                        flexDirection: 'column',
                         padding: '0.75rem 1rem',
                         border: '2px solid var(--border-color)',
                         borderRadius: '8px',
@@ -766,43 +768,126 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
                         boxShadow: '2px 2px 0px var(--border-color)'
                       }}
                     >
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
-                        <span style={{ fontWeight: 850, fontSize: '1rem' }}>
-                          {u.username}
-                        </span>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.05rem' }}>
-                          {u.createdAt && (
-                            <span style={{ fontSize: '0.75rem', fontWeight: 650, color: 'var(--muted-text)' }}>
-                              Created: {new Date(u.createdAt).toLocaleDateString()}
-                            </span>
-                          )}
-                          {u.lastOnline ? (
-                            <span style={{ fontSize: '0.75rem', fontWeight: 650, color: 'var(--retro-teal)' }}>
-                              Last Online: {new Date(u.lastOnline).toLocaleString()}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+                          <span style={{ fontWeight: 850, fontSize: '1rem' }}>
+                            {u.username}
+                          </span>
+                          {u.email ? (
+                            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--retro-purple)' }}>
+                              Email: {u.email}
                             </span>
                           ) : (
-                            <span style={{ fontSize: '0.75rem', fontWeight: 650, color: 'var(--muted-text)', fontStyle: 'italic' }}>
-                              Last Online: Never
+                            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--muted-text)', fontStyle: 'italic' }}>
+                              {t('settings.admin.no_email')}
                             </span>
+                          )}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.05rem', marginTop: '0.15rem' }}>
+                            {u.createdAt && (
+                              <span style={{ fontSize: '0.75rem', fontWeight: 650, color: 'var(--muted-text)' }}>
+                                Created: {new Date(u.createdAt).toLocaleDateString()}
+                              </span>
+                            )}
+                            {u.lastOnline ? (
+                              <span style={{ fontSize: '0.75rem', fontWeight: 650, color: 'var(--retro-teal)' }}>
+                                Last Online: {new Date(u.lastOnline).toLocaleString()}
+                              </span>
+                            ) : (
+                              <span style={{ fontSize: '0.75rem', fontWeight: 650, color: 'var(--muted-text)', fontStyle: 'italic' }}>
+                                Last Online: Never
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          <button
+                            className="comic-btn"
+                            onClick={() => {
+                              setEditingUsername(u.username);
+                              setEditingEmail(u.email || '');
+                              setEditingPassword('');
+                            }}
+                            style={{
+                              padding: '0.4rem 0.6rem',
+                              backgroundColor: 'var(--retro-yellow)',
+                              color: 'var(--text-color)',
+                              border: '2px solid var(--border-color)',
+                              transform: 'none',
+                              boxShadow: 'none'
+                            }}
+                            title="Edit User Profile"
+                          >
+                            <Key size={16} />
+                          </button>
+                          {u.username.toLowerCase() !== 'admin' && (
+                            <button
+                              className="comic-btn"
+                              onClick={() => handleAdminDeleteUser(u.username)}
+                              style={{
+                                padding: '0.4rem 0.6rem',
+                                backgroundColor: 'var(--retro-pink)',
+                                color: '#fff',
+                                border: '2px solid var(--border-color)',
+                                transform: 'none',
+                                boxShadow: 'none'
+                              }}
+                              title="Delete User"
+                            >
+                              <Trash2 size={16} />
+                            </button>
                           )}
                         </div>
                       </div>
-                      {u.username.toLowerCase() !== 'admin' && (
-                        <button
-                          className="comic-btn"
-                          onClick={() => handleAdminDeleteUser(u.username)}
-                          style={{
-                            padding: '0.4rem 0.6rem',
-                            backgroundColor: 'var(--retro-pink)',
-                            color: '#fff',
-                            border: '2px solid var(--border-color)',
-                            transform: 'none',
-                            boxShadow: 'none'
-                          }}
-                          title="Delete User"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                      
+                      {editingUsername === u.username && (
+                        <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '2px dashed var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                          <div>
+                            <label style={{ display: 'block', fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase', marginBottom: '0.25rem' }}>Email</label>
+                            <input
+                              type="email"
+                              value={editingEmail}
+                              onChange={(e) => setEditingEmail(e.target.value)}
+                              placeholder="user@example.com"
+                              style={{ width: '100%', padding: '0.4rem', border: '2px solid var(--border-color)', borderRadius: '6px', backgroundColor: 'var(--bg-color)', color: 'var(--text-color)', fontWeight: 700, fontSize: '0.85rem', boxSizing: 'border-box' }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: 'block', fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase', marginBottom: '0.25rem' }}>{t('settings.admin.new_password_placeholder')}</label>
+                            <input
+                              type="password"
+                              value={editingPassword}
+                              onChange={(e) => setEditingPassword(e.target.value)}
+                              placeholder="••••••••"
+                              style={{ width: '100%', padding: '0.4rem', border: '2px solid var(--border-color)', borderRadius: '6px', backgroundColor: 'var(--bg-color)', color: 'var(--text-color)', fontWeight: 700, fontSize: '0.85rem', boxSizing: 'border-box' }}
+                            />
+                          </div>
+                          <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '0.25rem' }}>
+                            <button
+                              onClick={() => setEditingUsername(null)}
+                              className="comic-btn"
+                              style={{ padding: '0.35rem 0.75rem', fontSize: '0.75rem', boxShadow: 'none', transform: 'none' }}
+                            >
+                              {t('modal.cancel')}
+                            </button>
+                            <button
+                              onClick={async () => {
+                                try {
+                                  await auth.adminUpdateUser(u.username, editingEmail, editingPassword);
+                                  await alert(t('settings.admin.save_success'));
+                                  setEditingUsername(null);
+                                  const list = await auth.getAllUsers();
+                                  setAllUsers(list);
+                                } catch (err: any) {
+                                  await alert(err.message || t('settings.admin.save_error'));
+                                }
+                              }}
+                              className="comic-btn comic-btn-yellow"
+                              style={{ padding: '0.35rem 0.75rem', fontSize: '0.75rem', boxShadow: '2px 2px 0 var(--border-color)', transform: 'none' }}
+                            >
+                              {t('modal.save')}
+                            </button>
+                          </div>
+                        </div>
                       )}
                     </div>
                   ))}

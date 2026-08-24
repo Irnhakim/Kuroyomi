@@ -126,6 +126,14 @@ export const auth = {
       throw new Error('Username sudah terdaftar!');
     }
 
+    const targetEmail = email?.trim()?.toLowerCase();
+    if (targetEmail) {
+      const emailExists = Object.values(users).some((u: any) => u.email?.trim()?.toLowerCase() === targetEmail);
+      if (emailExists) {
+        throw new Error('Email sudah terdaftar!');
+      }
+    }
+
     const passwordHash = await sha256(password);
     users[key] = {
       username: trimmedUser,
@@ -171,17 +179,33 @@ export const auth = {
       if (localUsers) users = JSON.parse(localUsers);
     }
 
-    if (!users[key]) {
+    let targetUserKey = key;
+    let targetUser = users[targetUserKey];
+
+    if (!targetUser) {
+      // Fallback: look up by registered email address
+      const foundEntry = Object.entries(users).find(([_, u]) => {
+        const uEmail = u.email?.trim()?.toLowerCase();
+        return uEmail === key;
+      });
+      if (foundEntry) {
+        targetUserKey = foundEntry[0];
+        targetUser = foundEntry[1];
+      }
+    }
+
+    if (!targetUser) {
       throw new Error('Username atau password salah!');
     }
 
     const passwordHash = await sha256(password);
-    if (users[key].passwordHash !== passwordHash) {
+    if (targetUser.passwordHash !== passwordHash) {
       throw new Error('Username atau password salah!');
     }
 
     // Update lastOnline timestamp
-    users[key].lastOnline = new Date().toISOString();
+    targetUser.lastOnline = new Date().toISOString();
+    users[targetUserKey] = targetUser;
     localStorage.setItem('kuroyomi_users', JSON.stringify(users));
     try {
       await fetch(`${BASE_URL}/kuroyomi/users`, {
@@ -195,25 +219,25 @@ export const auth = {
 
     // 2. Fetch user's data from server and save to localStorage
     try {
-      const resData = await fetch(`${BASE_URL}/kuroyomi/user/${key}/data`);
+      const resData = await fetch(`${BASE_URL}/kuroyomi/user/${targetUserKey}/data`);
       if (resData.ok) {
         const data = await resData.json();
-        if (data.library) localStorage.setItem(`kuroyomi_user_${key}_library`, data.library);
-        if (data.progress) localStorage.setItem(`kuroyomi_user_${key}_progress`, data.progress);
-        if (data.categories) localStorage.setItem(`kuroyomi_user_${key}_categories`, data.categories);
-        if (data.settings) localStorage.setItem(`kuroyomi_user_${key}_settings`, data.settings);
-        if (data.installed_extensions) localStorage.setItem(`kuroyomi_user_${key}_installed_extensions`, data.installed_extensions);
-        if (data.manga_categories) localStorage.setItem(`kuroyomi_user_${key}_manga_categories`, data.manga_categories);
-        if (data.history) localStorage.setItem(`kuroyomi_user_${key}_history`, data.history);
+        if (data.library) localStorage.setItem(`kuroyomi_user_${targetUserKey}_library`, data.library);
+        if (data.progress) localStorage.setItem(`kuroyomi_user_${targetUserKey}_progress`, data.progress);
+        if (data.categories) localStorage.setItem(`kuroyomi_user_${targetUserKey}_categories`, data.categories);
+        if (data.settings) localStorage.setItem(`kuroyomi_user_${targetUserKey}_settings`, data.settings);
+        if (data.installed_extensions) localStorage.setItem(`kuroyomi_user_${targetUserKey}_installed_extensions`, data.installed_extensions);
+        if (data.manga_categories) localStorage.setItem(`kuroyomi_user_${targetUserKey}_manga_categories`, data.manga_categories);
+        if (data.history) localStorage.setItem(`kuroyomi_user_${targetUserKey}_history`, data.history);
       }
     } catch (e) {
       console.warn("Failed to sync user data from server during login", e);
     }
 
-    localStorage.setItem('kuroyomi_session', users[key].username);
+    localStorage.setItem('kuroyomi_session', targetUser.username);
     return {
-      username: users[key].username,
-      createdAt: users[key].createdAt
+      username: targetUser.username,
+      createdAt: targetUser.createdAt
     };
   },
 
@@ -328,7 +352,7 @@ export const auth = {
   },
 
   // Get all users with metadata (admin only)
-  getAllUsers: async (): Promise<Array<{ username: string; createdAt: string; lastOnline?: string }>> => {
+  getAllUsers: async (): Promise<Array<{ username: string; createdAt: string; lastOnline?: string; email?: string }>> => {
     let users: Record<string, any> = {};
     try {
       const res = await fetch(`${BASE_URL}/kuroyomi/users`);
@@ -340,8 +364,41 @@ export const auth = {
     return Object.values(users).map((u: any) => ({
       username: u.username,
       createdAt: u.createdAt || '',
-      lastOnline: u.lastOnline || ''
+      lastOnline: u.lastOnline || '',
+      email: u.email || ''
     }));
+  },
+
+  // Update user profile/password (admin only)
+  adminUpdateUser: async (targetUsername: string, email: string, password?: string): Promise<void> => {
+    const key = targetUsername.toLowerCase();
+    let users: Record<string, any> = {};
+    try {
+      const res = await fetch(`${BASE_URL}/kuroyomi/users`);
+      if (res.ok) users = await res.json();
+    } catch (e) {
+      const local = localStorage.getItem('kuroyomi_users');
+      if (local) users = JSON.parse(local);
+    }
+    if (!users[key]) throw new Error(`User "${targetUsername}" tidak ditemukan.`);
+    
+    users[key].email = email.trim() || undefined;
+    if (password && password.trim().length >= 4) {
+      users[key].passwordHash = await sha256(password);
+    } else if (password && password.trim().length > 0) {
+      throw new Error('Password baru minimal 4 karakter!');
+    }
+    
+    localStorage.setItem('kuroyomi_users', JSON.stringify(users));
+    try {
+      await fetch(`${BASE_URL}/kuroyomi/users`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(users)
+      });
+    } catch (e) {
+      console.warn("Failed to sync admin user update to server", e);
+    }
   },
 
   // Delete any user account (admin only — caller must verify they are admin)
@@ -406,6 +463,16 @@ export const auth = {
 
     if (!users[key]) {
       throw new Error("User not found");
+    }
+
+    const targetEmail = email.trim().toLowerCase();
+    if (targetEmail) {
+      const emailExists = Object.entries(users).some(([uKey, u]) => {
+        return uKey !== key && u.email?.trim()?.toLowerCase() === targetEmail;
+      });
+      if (emailExists) {
+        throw new Error('Email sudah terdaftar!');
+      }
     }
 
     users[key].email = email.trim() || undefined;

@@ -182,6 +182,11 @@ const translations: Record<Language, Record<string, string>> = {
     'settings.repo.remove_error': 'Failed to remove repository.',
     'reader.last_chapter': "You've reached the last chapter!",
     'reader.first_chapter': 'You are on the first chapter!',
+    'modal.save': 'Save',
+    'settings.admin.no_email': 'No Email',
+    'settings.admin.new_password_placeholder': 'New Password (Leave empty if unchanged)',
+    'settings.admin.save_success': 'User updated successfully!',
+    'settings.admin.save_error': 'Failed to update user.',
   },
   id: {
     // Navigation / Layout
@@ -361,6 +366,11 @@ const translations: Record<Language, Record<string, string>> = {
     'settings.repo.remove_error': 'Gagal menghapus repositori.',
     'reader.last_chapter': 'Anda telah mencapai bab terakhir!',
     'reader.first_chapter': 'Anda berada di bab pertama!',
+    'modal.save': 'Simpan',
+    'settings.admin.no_email': 'Tanpa Email',
+    'settings.admin.new_password_placeholder': 'Password Baru (Kosongkan jika tidak diubah)',
+    'settings.admin.save_success': 'Pengguna berhasil diperbarui!',
+    'settings.admin.save_error': 'Gagal memperbarui pengguna.',
   }
 };
 
