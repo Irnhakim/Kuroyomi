@@ -1,15 +1,36 @@
 package suwayomi.tachidesk.global
 
 import java.io.File
+import io.github.oshai.kotlinlogging.KotlinLogging
 
 object EnvHelper {
+    private val logger = KotlinLogging.logger {}
+
     private val cachedEnv: Map<String, String> by lazy {
         val envMap = mutableMapOf<String, String>()
         
-        // Try reading local .env file in the current working directory
-        val envFile = File(".env")
+        // Try reading local .env file in various possible execution directories
+        var envFile = File(".env")
+        logger.info { "Checking for .env in: ${envFile.absolutePath} (exists: ${envFile.exists()})" }
+        
+        if (!envFile.exists()) {
+            envFile = File("../.env")
+            logger.info { "Checking for .env in parent: ${envFile.absolutePath} (exists: ${envFile.exists()})" }
+        }
+        
+        if (!envFile.exists()) {
+            envFile = File("server/.env")
+            logger.info { "Checking for .env in server/: ${envFile.absolutePath} (exists: ${envFile.exists()})" }
+        }
+
+        if (!envFile.exists()) {
+            envFile = File("server/server/.env")
+            logger.info { "Checking for .env in server/server/: ${envFile.absolutePath} (exists: ${envFile.exists()})" }
+        }
+
         if (envFile.exists()) {
             try {
+                logger.info { "Loading environment variables from: ${envFile.absolutePath}" }
                 envFile.readLines().forEach { line ->
                     val trimmed = line.trim()
                     if (trimmed.isNotEmpty() && !trimmed.startsWith("#")) {
@@ -24,8 +45,10 @@ object EnvHelper {
                     }
                 }
             } catch (e: Exception) {
-                // Ignore parsing errors silently
+                logger.error(e) { "Failed to read .env file" }
             }
+        } else {
+            logger.warn { "No .env file found in any expected location!" }
         }
         envMap
     }
