@@ -17,6 +17,7 @@ export const UpdatesPage: React.FC<UpdatesPageProps> = ({
   const [updates, setUpdates] = useState<ChapterUpdate[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
   const loadUpdates = async (showLoader = true) => {
     if (showLoader) setLoading(true);
@@ -126,130 +127,258 @@ export const UpdatesPage: React.FC<UpdatesPageProps> = ({
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          {Object.keys(groupedUpdates).map((dateKey) => (
-            <div key={dateKey}>
-              <h2 style={{
-                fontSize: '1rem',
-                fontWeight: 900,
-                textTransform: 'uppercase',
-                color: 'var(--retro-teal)',
-                borderBottom: '2px solid var(--border-color)',
-                paddingBottom: '0.25rem',
-                marginBottom: '0.75rem',
-                letterSpacing: '0.05em'
-              }}>
-                {dateKey}
-              </h2>
-              
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                {groupedUpdates[dateKey].map((item) => (
-                  <div
-                    key={item.chapterId}
-                    className="comic-box"
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      padding: '0.6rem 1rem',
-                      gap: '1rem',
-                      backgroundColor: 'var(--bg-card)',
-                      transition: 'transform 0.15s ease, box-shadow 0.15s ease',
-                      cursor: 'pointer',
-                    }}
-                    onClick={() => onChapterSelect(item.mangaId, item.chapterId)}
-                  >
-                    {/* Cover Thumbnail */}
-                    <div 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onMangaSelect(item.mangaId);
-                      }}
-                      style={{
-                        width: '48px',
-                        height: '64px',
-                        borderRadius: '4px',
-                        border: '2px solid var(--border-color)',
-                        overflow: 'hidden',
-                        flexShrink: 0,
-                        backgroundColor: 'var(--bg-body)',
-                        boxShadow: '2px 2px 0px var(--border-color)',
-                      }}
-                    >
-                      <img
-                        src={item.mangaThumbnailUrl}
-                        alt={item.mangaTitle}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = '/logo.png';
-                        }}
-                      />
-                    </div>
+          {Object.keys(groupedUpdates).map((dateKey) => {
+            const rawList = groupedUpdates[dateKey];
+            
+            // Group by mangaId
+            interface MangaGroup {
+              mangaId: number;
+              mangaTitle: string;
+              mangaThumbnailUrl: string;
+              sourceId: string;
+              chapters: ChapterUpdate[];
+            }
+            
+            const mangaGroups: MangaGroup[] = [];
+            const map: { [mangaId: number]: MangaGroup } = {};
 
-                    {/* Metadata details */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <h3 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onMangaSelect(item.mangaId);
-                        }}
-                        className="manga-title-hover"
-                        style={{
-                          margin: 0,
-                          fontSize: '0.95rem',
-                          fontWeight: 800,
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                        }}
-                      >
-                        {item.mangaTitle}
-                      </h3>
-                      
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.2rem' }}>
-                        <span 
+            rawList.forEach(item => {
+              if (!map[item.mangaId]) {
+                map[item.mangaId] = {
+                  mangaId: item.mangaId,
+                  mangaTitle: item.mangaTitle,
+                  mangaThumbnailUrl: item.mangaThumbnailUrl,
+                  sourceId: item.sourceId,
+                  chapters: []
+                };
+                mangaGroups.push(map[item.mangaId]);
+              }
+              map[item.mangaId].chapters.push(item);
+            });
+
+            // Sort chapters in each group by chapterNumber descending so latest is first
+            mangaGroups.forEach(g => {
+              g.chapters.sort((a, b) => b.chapterNumber - a.chapterNumber);
+            });
+
+            return (
+              <div key={dateKey}>
+                <h2 style={{
+                  fontSize: '1rem',
+                  fontWeight: 900,
+                  textTransform: 'uppercase',
+                  color: 'var(--retro-teal)',
+                  borderBottom: '2px solid var(--border-color)',
+                  paddingBottom: '0.25rem',
+                  marginBottom: '0.75rem',
+                  letterSpacing: '0.05em'
+                }}>
+                  {dateKey}
+                </h2>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  {mangaGroups.map((group) => {
+                    const latestChapter = group.chapters[0];
+                    const groupKey = `${dateKey}_${group.mangaId}`;
+                    const isExpanded = !!expandedGroups[groupKey];
+
+                    return (
+                      <div key={group.mangaId} style={{ display: 'flex', flexDirection: 'column' }}>
+                        {/* Main Manga Card */}
+                        <div
+                          className="comic-box"
                           style={{
-                            fontSize: '0.85rem',
-                            fontWeight: 700,
-                            color: item.isRead ? 'var(--muted-text)' : 'var(--text-color)',
-                            display: 'inline-flex',
+                            display: 'flex',
                             alignItems: 'center',
-                            gap: '0.35rem'
+                            padding: '0.6rem 1rem',
+                            gap: '1rem',
+                            backgroundColor: 'var(--bg-card)',
+                            transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+                            cursor: 'pointer',
                           }}
+                          onClick={() => onChapterSelect(group.mangaId, latestChapter.chapterId)}
                         >
-                          {!item.isRead && (
-                            <span 
-                              style={{
-                                display: 'inline-block',
-                                width: '8px',
-                                height: '8px',
-                                borderRadius: '50%',
-                                backgroundColor: 'var(--retro-teal)'
+                          {/* Cover Thumbnail */}
+                          <div 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onMangaSelect(group.mangaId);
+                            }}
+                            style={{
+                              width: '48px',
+                              height: '64px',
+                              borderRadius: '4px',
+                              border: '2px solid var(--border-color)',
+                              overflow: 'hidden',
+                              flexShrink: 0,
+                              backgroundColor: 'var(--bg-body)',
+                              boxShadow: '2px 2px 0px var(--border-color)',
+                            }}
+                          >
+                            <img
+                              src={group.mangaThumbnailUrl}
+                              alt={group.mangaTitle}
+                              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = '/logo.png';
                               }}
                             />
-                          )}
-                          {item.chapterName}
-                        </span>
-                      </div>
-                    </div>
+                          </div>
 
-                    {/* Quick reading icon */}
-                    <div 
-                      style={{
-                        padding: '0.4rem',
-                        borderRadius: '4px',
-                        backgroundColor: 'var(--bg-body)',
-                        border: '2px solid var(--border-color)',
-                        boxShadow: '2px 2px 0px var(--border-color)',
-                        color: 'var(--text-color)',
-                        flexShrink: 0
-                      }}
-                    >
-                      <BookOpen size={16} />
-                    </div>
-                  </div>
-                ))}
+                          {/* Metadata details */}
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <h3 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onMangaSelect(group.mangaId);
+                              }}
+                              className="manga-title-hover"
+                              style={{
+                                margin: 0,
+                                fontSize: '0.95rem',
+                                fontWeight: 800,
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                              }}
+                            >
+                              {group.mangaTitle}
+                            </h3>
+                            
+                            <div style={{ display: 'flex', flexDirection: 'column', marginTop: '0.2rem' }}>
+                              <span 
+                                style={{
+                                  fontSize: '0.85rem',
+                                  fontWeight: 700,
+                                  color: latestChapter.isRead ? 'var(--muted-text)' : 'var(--text-color)',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.35rem'
+                                }}
+                              >
+                                {!latestChapter.isRead && (
+                                  <span 
+                                    style={{
+                                      display: 'inline-block',
+                                      width: '8px',
+                                      height: '8px',
+                                      borderRadius: '50%',
+                                      backgroundColor: 'var(--retro-teal)'
+                                    }}
+                                  />
+                                )}
+                                {latestChapter.chapterName}
+                              </span>
+
+                              {/* Show More/Less Button */}
+                              {group.chapters.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setExpandedGroups(prev => ({
+                                      ...prev,
+                                      [groupKey]: !isExpanded
+                                    }));
+                                  }}
+                                  style={{
+                                    alignSelf: 'flex-start',
+                                    background: 'none',
+                                    border: 'none',
+                                    color: 'var(--retro-teal)',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 900,
+                                    padding: '0.15rem 0',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.25rem',
+                                    marginTop: '0.25rem',
+                                    letterSpacing: '0.02em',
+                                    textAlign: 'left'
+                                  }}
+                                >
+                                  {isExpanded
+                                    ? `${t('updates.hide_chapters')} ∧`
+                                    : `${t('updates.show_more').replace('{count}', String(group.chapters.length - 1))} ∨`
+                                  }
+                                </button>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Quick reading icon */}
+                          <div 
+                            style={{
+                              padding: '0.4rem',
+                              borderRadius: '4px',
+                              backgroundColor: 'var(--bg-body)',
+                              border: '2px solid var(--border-color)',
+                              boxShadow: '2px 2px 0px var(--border-color)',
+                              color: 'var(--text-color)',
+                              flexShrink: 0
+                            }}
+                          >
+                            <BookOpen size={16} />
+                          </div>
+                        </div>
+
+                        {/* Expanded chapters list */}
+                        {isExpanded && group.chapters.length > 1 && (
+                          <div
+                            style={{
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '0.4rem',
+                              marginTop: '0.4rem',
+                              paddingLeft: '3.5rem',
+                              borderLeft: '3px dashed var(--retro-teal)',
+                              marginLeft: '1.5rem',
+                              paddingBottom: '0.4rem'
+                            }}
+                          >
+                            {group.chapters.slice(1).map((ch) => (
+                              <div
+                                key={ch.chapterId}
+                                onClick={() => onChapterSelect(group.mangaId, ch.chapterId)}
+                                className="comic-box"
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  padding: '0.5rem 0.8rem',
+                                  backgroundColor: 'var(--bg-card)',
+                                  fontSize: '0.85rem',
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                  opacity: 0.9
+                                }}
+                              >
+                                <span style={{ color: ch.isRead ? 'var(--muted-text)' : 'var(--text-color)' }}>
+                                  {!ch.isRead && (
+                                    <span style={{
+                                      display: 'inline-block',
+                                      width: '6px',
+                                      height: '6px',
+                                      borderRadius: '50%',
+                                      backgroundColor: 'var(--retro-teal)',
+                                      marginRight: '0.4rem'
+                                    }}/>
+                                  )}
+                                  {ch.chapterName}
+                                </span>
+                                <BookOpen size={14} style={{ opacity: 0.7 }} />
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

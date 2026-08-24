@@ -121,6 +121,8 @@ const translations: Record<Language, Record<string, string>> = {
     'updates.date.today': 'Today',
     'updates.date.yesterday': 'Yesterday',
     'updates.date.days_ago': '{count} days ago',
+    'updates.show_more': 'SHOW {count} MORE CHAPTERS',
+    'updates.hide_chapters': 'HIDE CHAPTERS',
 
     // Manga Detail
     'detail.chapters': 'Chapters',
@@ -322,6 +324,8 @@ const translations: Record<Language, Record<string, string>> = {
     'updates.date.today': 'Hari ini',
     'updates.date.yesterday': 'Kemarin',
     'updates.date.days_ago': '{count} hari yang lalu',
+    'updates.show_more': 'TAMPILKAN {count} BAB LAGI',
+    'updates.hide_chapters': 'SEMBUNYIKAN BAB',
 
     // Manga Detail
     'detail.chapters': 'Bab',

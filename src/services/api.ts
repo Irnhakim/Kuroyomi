@@ -66,6 +66,7 @@ export interface Manga {
 
 export interface Chapter {
   id: number; // Suwayomi chapter indexes can act as ID
+  databaseId?: number;
   url: string;
   name: string;
   chapterNumber: number;
@@ -642,6 +643,7 @@ export const api = {
 
       return {
         id: ch.index, // Use index as ID to match REST chapterIndex parameter
+        databaseId: ch.id,
         url: ch.url,
         name: ch.name,
         chapterNumber: ch.chapterNumber,

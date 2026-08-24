@@ -101,12 +101,29 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
     setFailedPages({});
     setReloadKeys({});
     try {
-      const [info, chaptersList, configs, manga] = await Promise.all([
-        api.getChapterDetails(mangaId, chapterId),
-        api.getMangaChapters(mangaId),
-        api.getSettings(),
-        api.getMangaDetails(mangaId)
-      ]);
+      let chaptersList;
+      let configs;
+      let manga;
+
+      try {
+        [chaptersList, configs, manga] = await Promise.all([
+          api.getMangaChapters(mangaId),
+          api.getSettings(),
+          api.getMangaDetails(mangaId)
+        ]);
+      } catch (firstErr: any) {
+        console.warn("First load attempt failed, forcing manga details sync...", firstErr);
+        // Force manga sync first to populate chapters database cache, then retry
+        await api.getMangaDetailsFull(mangaId);
+        
+        // Retry fetch
+        [chaptersList, configs, manga] = await Promise.all([
+          api.getMangaChapters(mangaId),
+          api.getSettings(),
+          api.getMangaDetails(mangaId)
+        ]);
+      }
+
       setChapters(chaptersList);
       setMangaDetail(manga);
 
@@ -116,10 +133,24 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
         setReadingMode('webtoon');
       }
 
+      // Resolve chapterId (database ID) to REST index
+      let resolvedIndex = chapterId;
+      const matchingChapter = chaptersList.find(ch => ch.databaseId === chapterId || ch.id === chapterId);
+      if (matchingChapter) {
+        resolvedIndex = matchingChapter.id; // which is the index
+      }
+
+      // Fetch chapter details using resolved index
+      const info = await api.getChapterDetails(mangaId, resolvedIndex);
+
+      if (resolvedIndex !== chapterId) {
+        onChapterChange(resolvedIndex);
+      }
+
       setLoadedChapters([
-        { id: chapterId, name: info.name, pageCount: info.pageCount }
+        { id: resolvedIndex, name: info.name, pageCount: info.pageCount }
       ]);
-      loadedChapterIdsRef.current = new Set([chapterId]);
+      loadedChapterIdsRef.current = new Set([resolvedIndex]);
 
       if (info.lastPageRead && info.lastPageRead > 0) {
         setCurrentPage(Math.min(info.lastPageRead, info.pageCount - 1));
