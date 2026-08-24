@@ -187,6 +187,8 @@ const translations: Record<Language, Record<string, string>> = {
     'settings.admin.new_password_placeholder': 'New Password (Leave empty if unchanged)',
     'settings.admin.save_success': 'User updated successfully!',
     'settings.admin.save_error': 'Failed to update user.',
+    'detail.sort.latest': 'Latest',
+    'detail.sort.older': 'Older',
   },
   id: {
     // Navigation / Layout
@@ -371,6 +373,8 @@ const translations: Record<Language, Record<string, string>> = {
     'settings.admin.new_password_placeholder': 'Password Baru (Kosongkan jika tidak diubah)',
     'settings.admin.save_success': 'Pengguna berhasil diperbarui!',
     'settings.admin.save_error': 'Gagal memperbarui pengguna.',
+    'detail.sort.latest': 'Terbaru',
+    'detail.sort.older': 'Terlama',
   }
 };
 

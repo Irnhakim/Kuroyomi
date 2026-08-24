@@ -23,6 +23,7 @@ export const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
   const [inLibrary, setInLibrary] = useState(false);
   const [updatingLibrary, setUpdatingLibrary] = useState(false);
   const [recentHistory, setRecentHistory] = useState<HistoryItem | null>(null);
+  const [sortOrder, setSortOrder] = useState<'latest' | 'older'>('latest');
 
   const loadMangaDetails = async () => {
     setLoading(true);
@@ -249,6 +250,28 @@ export const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
           <h2 style={{ margin: 0, fontWeight: 900, fontSize: '1.8rem', textTransform: 'uppercase' }}>
             Chapters ({chapters.length})
           </h2>
+
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <select
+              value={sortOrder}
+              onChange={(e) => setSortOrder(e.target.value as 'latest' | 'older')}
+              style={{
+                padding: '0.4rem 0.6rem',
+                border: '2px solid var(--border-color)',
+                borderRadius: '6px',
+                backgroundColor: 'var(--bg-color)',
+                color: 'var(--text-color)',
+                fontWeight: 800,
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                outline: 'none',
+                boxShadow: '2px 2px 0px var(--border-color)'
+              }}
+            >
+              <option value="latest">{t('detail.sort.latest')}</option>
+              <option value="older">{t('detail.sort.older')}</option>
+            </select>
+          </div>
         </div>
 
         {chapters.length === 0 ? (
@@ -264,51 +287,59 @@ export const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
             overflowY: 'auto',
             paddingRight: '0.5rem'
           }}>
-            {chapters.map((chapter) => (
-              <div
-                key={chapter.id}
-                onClick={() => onChapterSelect(manga.id, chapter.id)}
-                className="manga-chapter-row"
-                style={{
-                  backgroundColor: chapter.read ? 'var(--bg-color)' : 'var(--bg-card)',
-                  opacity: chapter.read ? 0.75 : 1
-                }}
-              >
-                {/* Chapter Name & Number */}
-                <div className="manga-chapter-title-wrap">
-                  <span className="comic-sticker sticker-purple manga-chapter-badge">
-                    #{chapter.chapterNumber}
-                  </span>
-                  <span className="manga-chapter-name">
-                    {chapter.name}
-                  </span>
-                </div>
-
-                {/* Read Status Controls */}
-                <div className="manga-chapter-controls">
-                  {chapter.dateUpload > 0 && (
-                    <span className="manga-chapter-date">
-                      {new Date(chapter.dateUpload).toLocaleDateString()}
+            {[...chapters]
+              .sort((a, b) => {
+                if (sortOrder === 'latest') {
+                  return b.sourceOrder - a.sourceOrder;
+                } else {
+                  return a.sourceOrder - b.sourceOrder;
+                }
+              })
+              .map((chapter) => (
+                <div
+                  key={chapter.id}
+                  onClick={() => onChapterSelect(manga.id, chapter.id)}
+                  className="manga-chapter-row"
+                  style={{
+                    backgroundColor: chapter.read ? 'var(--bg-color)' : 'var(--bg-card)',
+                    opacity: chapter.read ? 0.75 : 1
+                  }}
+                >
+                  {/* Chapter Name & Number */}
+                  <div className="manga-chapter-title-wrap">
+                    <span className="comic-sticker sticker-purple manga-chapter-badge">
+                      #{chapter.chapterNumber}
                     </span>
-                  )}
-                  <button
-                    onClick={(e) => toggleChapterRead(e, chapter.id, chapter.read)}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      cursor: 'pointer',
-                      color: chapter.read ? 'var(--retro-teal)' : 'var(--muted-text)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      padding: '0.25rem'
-                    }}
-                    title={chapter.read ? 'Mark as Unread' : 'Mark as Read'}
-                  >
-                    {chapter.read ? <Eye size={20} /> : <EyeOff size={20} />}
-                  </button>
+                    <span className="manga-chapter-name">
+                      {chapter.name}
+                    </span>
+                  </div>
+
+                  {/* Read Status Controls */}
+                  <div className="manga-chapter-controls">
+                    {chapter.dateUpload > 0 && (
+                      <span className="manga-chapter-date">
+                        {new Date(chapter.dateUpload).toLocaleDateString()}
+                      </span>
+                    )}
+                    <button
+                      onClick={(e) => toggleChapterRead(e, chapter.id, chapter.read)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        color: chapter.read ? 'var(--retro-teal)' : 'var(--muted-text)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        padding: '0.25rem'
+                      }}
+                      title={chapter.read ? 'Mark as Unread' : 'Mark as Read'}
+                    >
+                      {chapter.read ? <Eye size={20} /> : <EyeOff size={20} />}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
           </div>
         )}
       </div>
