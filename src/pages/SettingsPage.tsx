@@ -779,14 +779,28 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
                       }}
                     />
                     <button
-                      onClick={() => {
+                      onClick={async () => {
                         const input = document.getElementById('status_server_url_input') as HTMLInputElement;
                         if (input) {
                           const url = input.value.trim();
                           if (url) {
                             localStorage.setItem('suwayomi_server_url', url);
+                            if (currentUser?.toLowerCase() === 'admin') {
+                              try {
+                                await api.updateServerConfig({ suwayomi_server_url: url });
+                              } catch (e) {
+                                console.warn("Failed to update global server URL config:", e);
+                              }
+                            }
                           } else {
                             localStorage.removeItem('suwayomi_server_url');
+                            if (currentUser?.toLowerCase() === 'admin') {
+                              try {
+                                await api.updateServerConfig({});
+                              } catch (e) {
+                                console.warn("Failed to clear global server URL config:", e);
+                              }
+                            }
                           }
                           window.location.reload();
                         }

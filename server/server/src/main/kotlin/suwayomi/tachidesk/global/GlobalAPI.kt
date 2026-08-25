@@ -77,6 +77,24 @@ object GlobalAPI {
                 }
                 ctx.status(200)
             }
+            get("config") { ctx ->
+                val file = java.io.File(applicationDirs.dataRoot, "kuroyomi_config.json")
+                if (file.exists()) {
+                    ctx.contentType("application/json")
+                    ctx.result(file.inputStream())
+                } else {
+                    ctx.result("{}")
+                }
+            }
+            post("config") { ctx ->
+                val file = java.io.File(applicationDirs.dataRoot, "kuroyomi_config.json")
+                ctx.bodyInputStream().use { input ->
+                    file.outputStream().use { output ->
+                        input.copyTo(output)
+                    }
+                }
+                ctx.status(200)
+            }
             post("forgot-password") { ctx ->
                 try {
                     val request = kotlinx.serialization.json.Json.parseToJsonElement(ctx.body()).jsonObject

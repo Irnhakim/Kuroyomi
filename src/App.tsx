@@ -64,6 +64,23 @@ export default function App() {
     checkConnection();
   }, []);
 
+  // Fetch global config on connection success
+  useEffect(() => {
+    if (backendOnline === true) {
+      api.getServerConfig().then(config => {
+        if (config && config.suwayomi_server_url) {
+          const currentUrl = localStorage.getItem('suwayomi_server_url') || SERVER_ORIGIN;
+          const cleanCurrent = currentUrl.replace(/\/+$/, '');
+          const cleanGlobal = config.suwayomi_server_url.replace(/\/+$/, '');
+          if (cleanCurrent !== cleanGlobal) {
+            localStorage.setItem('suwayomi_server_url', config.suwayomi_server_url);
+            window.location.reload();
+          }
+        }
+      }).catch(err => console.warn("Failed to check global server url config:", err));
+    }
+  }, [backendOnline]);
+
   const handleConnect = async (e: React.FormEvent) => {
     e.preventDefault();
     setTestingConnection(true);

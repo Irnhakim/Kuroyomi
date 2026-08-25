@@ -11,8 +11,14 @@ let DEFAULT_ORIGIN = isDev ? `${window.location.protocol}//${window.location.hos
 if (!isDev) {
   const host = window.location.hostname;
   const protocol = window.location.protocol;
-  if (host.startsWith('komik.') || host.startsWith('kuroyomi.')) {
-    DEFAULT_ORIGIN = `${protocol}//${host.replace(/^(komik|kuroyomi)\./, 'suwayomi.')}`;
+  if (host === 'kuroyomi.my.id') {
+    DEFAULT_ORIGIN = `${protocol}//suwayomi.kuroyomi.my.id`;
+  } else if (host === 'irnhakim.my.id' || host === 'komik.irnhakim.my.id') {
+    DEFAULT_ORIGIN = `${protocol}//suwayomi.irnhakim.my.id`;
+  } else if (host.startsWith('komik.')) {
+    DEFAULT_ORIGIN = `${protocol}//${host.replace(/^komik\./, 'suwayomi.')}`;
+  } else if (host.startsWith('kuroyomi.')) {
+    DEFAULT_ORIGIN = `${protocol}//${host.replace(/^kuroyomi\./, 'suwayomi.')}`;
   } else if (!host.startsWith('suwayomi.') && host !== 'localhost' && !host.match(/^\d+\.\d+\.\d+\.\d+$/)) {
     // Route to suwayomi subdomain on apex domains
     DEFAULT_ORIGIN = `${protocol}//suwayomi.${host}`;
@@ -998,5 +1004,25 @@ export const api = {
     const prefix = getUserPrefix();
     localStorage.setItem(`${prefix}_history`, JSON.stringify([]));
     await syncUserDataToServer();
+  },
+
+  getServerConfig: async (): Promise<any> => {
+    try {
+      const res = await fetch(`${BASE_URL}/kuroyomi/config`);
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (e) {
+      console.warn("Failed to get server config:", e);
+    }
+    return {};
+  },
+
+  updateServerConfig: async (config: any): Promise<void> => {
+    await fetch(`${BASE_URL}/kuroyomi/config`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(config)
+    });
   }
 };
