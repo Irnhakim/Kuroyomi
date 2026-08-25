@@ -137,7 +137,7 @@ const saveUserInstalledExtensions = (exts: Set<string>) => {
 
 export const syncUserDataToServer = async (): Promise<void> => {
   const user = auth.getCurrentUser();
-  if (!user) return;
+  if (!user || user.toLowerCase() === 'guest') return;
   const key = user.toLowerCase();
   const data = {
     library: localStorage.getItem(`kuroyomi_user_${key}_library`),

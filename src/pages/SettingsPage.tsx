@@ -264,11 +264,27 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
               </button>
             </div>
 
-            {/* Email configuration */}
-            <div style={{ marginBottom: '1.5rem', borderBottom: '2px dashed var(--border-color)', paddingBottom: '1.5rem' }}>
-              <h3 style={{ margin: '0 0 0.5rem 0', fontWeight: 800, fontSize: '1rem', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                {t('settings.account.email_title')}
-              </h3>
+            {currentUser?.toLowerCase() === 'guest' ? (
+              <div className="comic-box" style={{
+                backgroundColor: 'var(--retro-purple)',
+                color: '#fff',
+                padding: '1.25rem',
+                border: '3px solid var(--border-color)',
+                boxShadow: '3px 3px 0px var(--border-color)',
+                borderRadius: '8px',
+                marginBottom: '1rem'
+              }}>
+                <p style={{ margin: 0, fontWeight: 800, fontSize: '0.95rem', lineHeight: 1.5 }}>
+                  {t('settings.account.guest_notice')}
+                </p>
+              </div>
+            ) : (
+              <>
+                {/* Email configuration */}
+                <div style={{ marginBottom: '1.5rem', borderBottom: '2px dashed var(--border-color)', paddingBottom: '1.5rem' }}>
+                  <h3 style={{ margin: '0 0 0.5rem 0', fontWeight: 800, fontSize: '1rem', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    {t('settings.account.email_title')}
+                  </h3>
               {currentEmail ? (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.5rem' }}>
                   <span style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--retro-purple)' }}>{currentEmail}</span>
@@ -481,6 +497,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
                 </form>
               )}
             </div>
+            </>
+            )}
           </div>
 
           {/* General settings box */}

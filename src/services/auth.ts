@@ -241,6 +241,19 @@ export const auth = {
     };
   },
 
+  // Guest login
+  guestLogin: (): User => {
+    localStorage.setItem('kuroyomi_session', 'Guest');
+    const guestKey = 'guest';
+    if (!localStorage.getItem(`kuroyomi_user_${guestKey}_library`)) {
+      localStorage.setItem(`kuroyomi_user_${guestKey}_library`, JSON.stringify([]));
+    }
+    return {
+      username: 'Guest',
+      createdAt: new Date().toISOString()
+    };
+  },
+
   // Logout
   logout: () => {
     localStorage.removeItem('kuroyomi_session');

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { auth } from '../services/auth';
-import { LogIn, UserPlus, AlertCircle, CheckCircle } from 'lucide-react';
+import { LogIn, UserPlus, AlertCircle, CheckCircle, UserCheck } from 'lucide-react';
 import { useTranslation } from '../services/i18n';
 
 interface LoginPageProps {
@@ -20,6 +20,17 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const handleGuestLogin = () => {
+    setError(null);
+    setSuccess(null);
+    try {
+      const user = auth.guestLogin();
+      onLoginSuccess(user.username);
+    } catch (e: any) {
+      setError(e.message);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -487,6 +498,31 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                 ? t('login.btn.login')
                 : t('login.btn.register')}
             </button>
+
+            {mode === 'login' && (
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0.75rem 0' }}>
+                  <div style={{ flex: 1, height: '2px', backgroundColor: 'var(--border-color)', opacity: 0.3 }}></div>
+                  <span style={{ padding: '0 0.75rem', fontWeight: 800, fontSize: '0.8rem', textTransform: 'uppercase', color: 'var(--muted-text)' }}>
+                    {t('login.divider.or')}
+                  </span>
+                  <div style={{ flex: 1, height: '2px', backgroundColor: 'var(--border-color)', opacity: 0.3 }}></div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleGuestLogin}
+                  className="comic-btn comic-btn-teal"
+                  style={{
+                    justifyContent: 'center',
+                    width: '100%',
+                  }}
+                >
+                  <UserCheck size={18} />
+                  {t('login.btn.guest')}
+                </button>
+              </>
+            )}
           </form>
         )}
 
