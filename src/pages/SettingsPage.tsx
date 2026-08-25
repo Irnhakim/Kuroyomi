@@ -765,7 +765,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
                         const input = document.getElementById('status_server_url_input') as HTMLInputElement;
                         if (input) {
                           const url = input.value.trim();
-                          if (url && url !== SERVER_ORIGIN) {
+                          if (url) {
                             localStorage.setItem('suwayomi_server_url', url);
                           } else {
                             localStorage.removeItem('suwayomi_server_url');

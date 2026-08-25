@@ -7,9 +7,16 @@ const getStoredServerUrl = () => {
 const isDev = window.location.port === '5173' || window.location.port === '5174';
 let DEFAULT_ORIGIN = isDev ? `${window.location.protocol}//${window.location.hostname}:4567` : window.location.origin;
 
-// Auto-detect production domain for irnhakim setup
-if (window.location.hostname === 'komik.irnhakim.my.id') {
-  DEFAULT_ORIGIN = 'https://suwayomi.irnhakim.my.id';
+// Auto-detect production backend subdomain dynamically (e.g. kuroyomi.my-domain.com -> suwayomi.my-domain.com)
+if (!isDev) {
+  const host = window.location.hostname;
+  const protocol = window.location.protocol;
+  if (host.startsWith('komik.') || host.startsWith('kuroyomi.')) {
+    DEFAULT_ORIGIN = `${protocol}//${host.replace(/^(komik|kuroyomi)\./, 'suwayomi.')}`;
+  } else if (!host.startsWith('suwayomi.') && host !== 'localhost' && !host.match(/^\d+\.\d+\.\d+\.\d+$/)) {
+    // Route to suwayomi subdomain on apex domains
+    DEFAULT_ORIGIN = `${protocol}//suwayomi.${host}`;
+  }
 }
 
 export const SERVER_ORIGIN = getStoredServerUrl() || DEFAULT_ORIGIN;
