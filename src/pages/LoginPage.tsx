@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { auth } from '../services/auth';
-import { LogIn, UserPlus, AlertCircle, CheckCircle, UserCheck } from 'lucide-react';
+import { LogIn, UserPlus, AlertCircle, CheckCircle, UserCheck, Loader2 } from 'lucide-react';
 import { useTranslation } from '../services/i18n';
 
 interface LoginPageProps {
@@ -237,7 +237,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
               />
             </div>
             <button type="submit" className="comic-btn comic-btn-yellow" disabled={loading} style={{ justifyContent: 'center', width: '100%' }}>
-              {t('login.btn.send_code')}
+              {loading ? (
+                <>
+                  <Loader2 size={18} className="animate-spin" style={{ marginRight: '0.5rem' }} />
+                  {t('login.btn.processing')}
+                </>
+              ) : (
+                t('login.btn.send_code')
+              )}
             </button>
           </form>
         ) : recoveryMode === 'forgot-username' ? (
@@ -269,7 +276,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
               />
             </div>
             <button type="submit" className="comic-btn comic-btn-yellow" disabled={loading} style={{ justifyContent: 'center', width: '100%' }}>
-              {t('login.btn.recover_username')}
+              {loading ? (
+                <>
+                  <Loader2 size={18} className="animate-spin" style={{ marginRight: '0.5rem' }} />
+                  {t('login.btn.processing')}
+                </>
+              ) : (
+                t('login.btn.recover_username')
+              )}
             </button>
           </form>
         ) : recoveryMode === 'reset-password' ? (
@@ -331,7 +345,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
               />
             </div>
             <button type="submit" className="comic-btn comic-btn-pink" disabled={loading} style={{ justifyContent: 'center', width: '100%' }}>
-              {t('login.recovery.reset_password_title')}
+              {loading ? (
+                <>
+                  <Loader2 size={18} className="animate-spin" style={{ marginRight: '0.5rem' }} />
+                  {t('login.btn.processing')}
+                </>
+              ) : (
+                t('login.recovery.reset_password_title')
+              )}
             </button>
           </form>
         ) : (

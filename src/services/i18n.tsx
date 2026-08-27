@@ -16,7 +16,7 @@ const translations: Record<Language, Record<string, string>> = {
     'footer.text': 'KUROYOMI © 2026 • Powered by Suwayomi Server',
 
     // Login
-    'login.welcome': 'Welcome',
+    'login.welcome': 'Welcome to Kuroyomi!',
     'login.join': 'Join',
     'login.title.login': 'Welcome',
     'login.title.register': 'Kuroyomi',
@@ -231,9 +231,9 @@ const translations: Record<Language, Record<string, string>> = {
     'footer.text': 'KUROYOMI © 2026 • Didukung oleh Server Suwayomi',
 
     // Login
-    'login.welcome': 'Selamat',
-    'login.join': 'Gabung',
-    'login.title.login': 'Datang',
+    'login.welcome': 'Selamat datang di Kuroyomi!',
+    'login.join': 'Bergabung',
+    'login.title.login': 'Masuk',
     'login.title.register': 'Kuroyomi',
     'login.desc.login': 'Masuk ke perpustakaan komik pribadimu.',
     'login.desc.register': 'Buat akun baru untuk mulai membaca.',

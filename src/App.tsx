@@ -149,7 +149,7 @@ export default function App() {
   // Monitor activePage changes to apply screen state dynamically
   useEffect(() => {
     const mode = localStorage.getItem('fullscreen_mode');
-    
+
     if (mode === 'reading') {
       if (activePage === 'reader') {
         if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
@@ -385,9 +385,9 @@ export default function App() {
             margin: '0 0 1.5rem 0',
             color: '#a9b1d6'
           }}>
-            {isIndo 
-              ? 'Kuroyomi tidak dapat terhubung ke backend Suwayomi-Server Anda saat ini. Silakan periksa URL server Anda.' 
-              : 'Kuroyomi cannot connect to your Suwayomi-Server backend at the moment. Please verify your server URL.'}
+            {isIndo
+              ? 'Kuroyomi tidak dapat terhubung ke backend Server Anda saat ini. Silakan periksa URL server Anda.'
+              : 'Kuroyomi cannot connect to your Server backend at the moment. Please verify your server URL.'}
           </p>
 
           <form onSubmit={handleConnect} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
@@ -400,7 +400,7 @@ export default function App() {
                 fontSize: '0.85rem',
                 color: '#fff'
               }}>
-                {isIndo ? 'URL BACKEND SUWAYOMI' : 'SUWAYOMI BACKEND URL'}
+                {isIndo ? 'URL BACKEND Server' : 'Server BACKEND URL'}
               </label>
               <input
                 type="text"
@@ -450,8 +450,8 @@ export default function App() {
                 marginTop: '0.5rem'
               }}
             >
-              {testingConnection 
-                ? (isIndo ? 'MENGHUBUNGKAN...' : 'CONNECTING...') 
+              {testingConnection
+                ? (isIndo ? 'MENGHUBUNGKAN...' : 'CONNECTING...')
                 : (isIndo ? 'HUBUNGKAN SERVER' : 'CONNECT SERVER')}
             </button>
           </form>
