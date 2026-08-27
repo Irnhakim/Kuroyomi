@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import type { Extension, Source, Manga } from '../services/api';
-import { Compass, Cpu, Plus, Trash2, Search, ArrowLeft, ArrowRight, Sliders, Globe, LayoutGrid, Grid3X3, List, Loader2 } from 'lucide-react';
+import { Compass, Cpu, Plus, Trash2, Search, ArrowLeft, Sliders, Globe, LayoutGrid, Grid3X3, List, Loader2 } from 'lucide-react';
 import { useTranslation } from '../services/i18n';
 import { useModal } from '../services/modal';
 
@@ -427,6 +427,21 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
       loadSourceCatalog(1, false);
     }
   }, [browseMode]);
+
+  // Infinite Scroll Listener
+  useEffect(() => {
+    if (!selectedSource) return;
+
+    const handleScroll = () => {
+      const isNearBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 250;
+      if (isNearBottom && hasNextPage && !catalogLoading) {
+        loadSourceCatalog(currentPage + 1, true);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [selectedSource, currentPage, hasNextPage, catalogLoading]);
 
   const handleInstallExtension = async (pkgName: string) => {
     setExtActionLoading(pkgName);
@@ -1046,30 +1061,17 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
               </div>
             )}
 
-            {/* Pagination controls */}
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginTop: '3rem', alignItems: 'center' }}>
-              <button
-                className="comic-btn comic-btn-white"
-                disabled={currentPage <= 1 || catalogLoading}
-                onClick={() => loadSourceCatalog(currentPage - 1)}
-              >
-                <ArrowLeft size={18} />
-                Previous
-              </button>
-              
-              <span className="comic-sticker sticker-yellow" style={{ fontSize: '1rem', padding: '0.5rem 1rem' }}>
-                PAGE {currentPage}
-              </span>
-
-              <button
-                className="comic-btn comic-btn-white"
-                disabled={!hasNextPage || catalogLoading}
-                onClick={() => loadSourceCatalog(currentPage + 1)}
-              >
-                Next
-                <ArrowRight size={18} />
-              </button>
-            </div>
+            {/* Infinite Scroll loading indicators */}
+            {catalogLoading && catalogManga.length > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'center', marginTop: '2rem', marginBottom: '2rem' }}>
+                <Loader2 className="animate-spin" size={32} style={{ color: 'var(--retro-teal)' }} />
+              </div>
+            )}
+            {!hasNextPage && catalogManga.length > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'center', marginTop: '2rem', marginBottom: '2rem', color: 'var(--muted-text)', fontWeight: 700 }}>
+                Sudah menampilkan semua komik
+              </div>
+            )}
           </div>
         )}
       </div>
