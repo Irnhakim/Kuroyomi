@@ -1001,6 +1001,6 @@ body {
   to { transform: rotate(360deg); }
 }
 
-.animate-spin {
+.animate-spin, .spin-anim {
   animation: spin 1s linear infinite;
 }

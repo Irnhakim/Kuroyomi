@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import type { Extension, Source, Manga } from '../services/api';
-import { Compass, Cpu, Plus, Trash2, Search, ArrowLeft, ArrowRight, Sliders, Globe, LayoutGrid, Grid3X3, List } from 'lucide-react';
+import { Compass, Cpu, Plus, Trash2, Search, ArrowLeft, ArrowRight, Sliders, Globe, LayoutGrid, Grid3X3, List, Loader2 } from 'lucide-react';
 import { useTranslation } from '../services/i18n';
 import { useModal } from '../services/modal';
 
@@ -209,6 +209,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
   const [allowedLanguages, setAllowedLanguages] = useState<string[]>([]);
   const [showLangModal, setShowLangModal] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [extActionLoading, setExtActionLoading] = useState<string | null>(null);
 
   // Global search states
   const [globalSearchInput, setGlobalSearchInput] = useState('');
@@ -428,21 +429,27 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
   }, [browseMode]);
 
   const handleInstallExtension = async (pkgName: string) => {
+    setExtActionLoading(pkgName);
     try {
       await api.installExtension(pkgName);
-      loadInitialData(); // reload
+      await loadInitialData(); // reload
     } catch (e) {
       console.error("Failed to install extension", e);
+    } finally {
+      setExtActionLoading(null);
     }
   };
 
   const handleUninstallExtension = async (pkgName: string) => {
     if (await confirm(t('browse.uninstall_confirm'))) {
+      setExtActionLoading(pkgName);
       try {
         await api.uninstallExtension(pkgName);
-        loadInitialData(); // reload
+        await loadInitialData(); // reload
       } catch (e) {
         console.error("Failed to uninstall extension", e);
+      } finally {
+        setExtActionLoading(null);
       }
     }
   };
@@ -1127,18 +1134,38 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
             <button
               className="comic-btn comic-btn-white ext-action-btn"
               style={{ borderColor: 'var(--retro-pink)', color: 'var(--retro-pink)' }}
+              disabled={extActionLoading !== null}
               onClick={() => handleUninstallExtension(ext.pkgName)}
             >
-              <Trash2 size={16} />
-              <span>{t('browse.btn.uninstall')}</span>
+              {extActionLoading === ext.pkgName ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  <span>{t('login.btn.processing') || 'Processing...'}</span>
+                </>
+              ) : (
+                <>
+                  <Trash2 size={16} />
+                  <span>{t('browse.btn.uninstall')}</span>
+                </>
+              )}
             </button>
           ) : (
             <button
               className="comic-btn comic-btn-yellow ext-action-btn"
+              disabled={extActionLoading !== null}
               onClick={() => handleInstallExtension(ext.pkgName)}
             >
-              <Plus size={16} />
-              <span>{t('browse.btn.install')}</span>
+              {extActionLoading === ext.pkgName ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  <span>{t('login.btn.processing') || 'Processing...'}</span>
+                </>
+              ) : (
+                <>
+                  <Plus size={16} />
+                  <span>{t('browse.btn.install')}</span>
+                </>
+              )}
             </button>
           )}
         </div>
