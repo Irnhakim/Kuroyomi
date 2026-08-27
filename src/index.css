@@ -792,34 +792,33 @@ body {
 
   /* Adjust detail view headers on mobile */
   .manga-detail-header {
-    flex-direction: column !important;
-    align-items: center !important;
-    text-align: center !important;
-    gap: 0.75rem !important;
-    margin-bottom: 1.5rem !important;
+    align-items: flex-start !important;
+    text-align: left !important;
+    gap: 0.5rem !important;
+    margin-bottom: 1rem !important;
   }
 
   .manga-detail-cover {
-    max-width: 140px !important;
+    width: 105px !important;
   }
 
   .manga-detail-info {
-    min-width: 100% !important;
+    min-width: 0 !important;
   }
 
   .manga-detail-title {
-    font-size: 1.4rem !important;
+    font-size: 1.2rem !important;
   }
 
   .manga-detail-creator {
-    font-size: 0.9rem !important;
-    margin: 0.35rem 0 !important;
+    font-size: 0.8rem !important;
+    margin: 0.2rem 0 !important;
   }
 
   .manga-detail-badges-wrap {
-    justify-content: center !important;
-    margin: 0.5rem 0 !important;
-    gap: 0.35rem !important;
+    justify-content: flex-start !important;
+    margin: 0.35rem 0 !important;
+    gap: 0.3rem !important;
   }
 
   .manga-detail-synopsis {

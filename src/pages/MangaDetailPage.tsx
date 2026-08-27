@@ -25,6 +25,7 @@ export const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
   const [recentHistory, setRecentHistory] = useState<HistoryItem | null>(null);
   const [sortOrder, setSortOrder] = useState<'latest' | 'older'>('latest');
   const [searchQuery, setSearchQuery] = useState('');
+  const [synopsisExpanded, setSynopsisExpanded] = useState(false);
 
   const loadMangaDetails = async () => {
     setLoading(true);
@@ -123,78 +124,95 @@ export const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
       {/* Comic Book Header Info */}
       <div className="manga-detail-header" style={{
         display: 'flex',
-        gap: '2.5rem',
-        flexWrap: 'wrap',
-        marginBottom: '3rem',
-        alignItems: 'flex-start'
+        flexDirection: 'column',
+        gap: '1rem',
+        marginBottom: '2rem'
       }}>
-        {/* Cover Art Box */}
-        <div className="comic-box manga-detail-cover" style={{
-          padding: '0.75rem',
-          transform: 'rotate(-1.5deg)',
-          maxWidth: '300px',
-          width: '100%',
-          flexShrink: 0
-        }}>
-          <div style={{
-            position: 'relative',
-            width: '100%',
-            paddingBottom: '140%',
-            overflow: 'hidden',
-            borderRadius: '6px',
-            border: '2px solid var(--border-color)',
-            backgroundColor: '#eee'
+        <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'flex-start', width: '100%' }}>
+          {/* Cover Art Box */}
+          <div className="comic-box manga-detail-cover" style={{
+            padding: '0.5rem',
+            width: '120px',
+            flexShrink: 0
           }}>
-            <img
-              src={api.getMangaThumbnailUrl(manga)}
-              alt={manga.title}
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover'
-              }}
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = '/logo.svg';
-              }}
-            />
+            <div style={{
+              position: 'relative',
+              width: '100%',
+              paddingBottom: '140%',
+              overflow: 'hidden',
+              borderRadius: '6px',
+              border: '2px solid var(--border-color)',
+              backgroundColor: '#eee'
+            }}>
+              <img
+                src={api.getMangaThumbnailUrl(manga)}
+                alt={manga.title}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover'
+                }}
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = '/logo.svg';
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Title, creator and Description */}
+          <div className="manga-detail-info" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+            <h1 className="manga-detail-title" style={{ margin: 0, fontWeight: 900, textTransform: 'uppercase', lineHeight: 1.1 }}>
+              {manga.title}
+            </h1>
+
+            <p className="manga-detail-creator" style={{ margin: 0, fontWeight: 800, color: 'var(--retro-pink)', fontSize: '0.85rem' }}>
+              by {manga.author || manga.artist || 'Unknown Creator'}
+            </p>
+
+            {/* Description speech bubble */}
+            <div className="comic-box manga-detail-synopsis" style={{ backgroundColor: 'var(--bg-card)', padding: '0.5rem 0.75rem', margin: '0.25rem 0 0 0' }}>
+              <p style={{ margin: 0, lineHeight: 1.4, fontWeight: 600, fontSize: '0.8rem', whiteSpace: 'pre-line' }}>
+                {(manga.description || 'No summary available for this title.').length > 180 && !synopsisExpanded
+                  ? (manga.description || '').slice(0, 180) + '...'
+                  : (manga.description || 'No summary available for this title.')}
+              </p>
+              {(manga.description || '').length > 180 && (
+                <button
+                  onClick={() => setSynopsisExpanded(!synopsisExpanded)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--retro-purple)',
+                    fontWeight: 800,
+                    fontSize: '0.75rem',
+                    cursor: 'pointer',
+                    padding: '0.3rem 0 0 0',
+                    textDecoration: 'underline',
+                    display: 'block'
+                  }}
+                >
+                  {synopsisExpanded ? 'SHOW LESS' : 'SHOW MORE'}
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Title, tags and Description */}
-        <div className="manga-detail-info">
-          <h1 className="manga-detail-title">
-            {manga.title}
-          </h1>
+        {/* Badges / Genres Row (Full Width below) */}
+        <div className="manga-detail-badges-wrap" style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', margin: '0.5rem 0', justifyContent: 'flex-start' }}>
+          <span className="comic-sticker sticker-yellow" style={{ fontSize: '0.7rem', padding: '0.15rem 0.4rem' }}>{manga.status}</span>
+          {manga.genre?.map((g, idx) => (
+            <span key={idx} className="comic-sticker sticker-teal" style={{ fontSize: '0.7rem', padding: '0.15rem 0.4rem', transform: `rotate(${(idx % 2 === 0 ? 1 : -1) * 1.5}deg)` }}>
+              {g}
+            </span>
+          ))}
+        </div>
+      </div>
 
-          <p className="manga-detail-creator">
-            by {manga.author || manga.artist || 'Unknown Creator'}
-          </p>
-
-          {/* Badges */}
-          <div className="manga-detail-badges-wrap">
-            <span className="comic-sticker sticker-yellow">{manga.status}</span>
-            {manga.genre?.slice(0, 5).map((g, idx) => (
-              <span key={idx} className="comic-sticker sticker-teal" style={{ transform: `rotate(${(idx % 2 === 0 ? 1 : -1) * 1.5}deg)` }}>
-                {g}
-              </span>
-            ))}
-          </div>
-
-          {/* Description speech bubble */}
-          <div className="comic-box manga-detail-synopsis" style={{ backgroundColor: 'var(--bg-card)' }}>
-            <h4 style={{ margin: '0 0 0.5rem 0', fontWeight: 900, fontSize: '1.1rem', textTransform: 'uppercase' }}>
-              Synopsis
-            </h4>
-            <p style={{ margin: 0, lineHeight: 1.5, fontWeight: 500, fontSize: '0.95rem' }}>
-              {manga.description || 'No summary available for this title.'}
-            </p>
-          </div>
-
-          {/* Library and Reading Actions */}
-          <div style={{ display: 'flex', gap: '0.5rem', width: '100%', flexWrap: 'nowrap' }}>
+      <div style={{ display: 'flex', gap: '0.5rem', width: '100%', flexWrap: 'nowrap', marginBottom: '2rem' }}>
             {recentHistory ? (
               <button
                 className="comic-btn comic-btn-teal"
@@ -240,8 +258,6 @@ export const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
               <span style={{ whiteSpace: 'nowrap' }}>{inLibrary ? t('detail.btn.in_library') : t('detail.btn.add_library')}</span>
             </button>
           </div>
-        </div>
-      </div>
 
       {/* Chapters list box */}
       <div className="comic-box" style={{ transform: 'rotate(0.5deg)', backgroundColor: 'var(--bg-card)' }}>
