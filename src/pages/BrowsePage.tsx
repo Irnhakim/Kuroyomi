@@ -856,9 +856,9 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
                     key={`${manga.id}-${idx}`}
                     className="comic-box comic-box-interactive"
                     style={{
-                      padding: '0.5rem 0.75rem',
+                      padding: '0.35rem 0.6rem',
                       display: 'flex',
-                      gap: '1rem',
+                      gap: '0.75rem',
                       alignItems: 'center',
                       cursor: 'pointer'
                     }}
@@ -869,8 +869,8 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
                         src={api.getMangaThumbnailUrl(manga)}
                         alt={manga.title}
                         style={{
-                          width: '50px',
-                          height: '70px',
+                          width: '40px',
+                          height: '56px',
                           objectFit: 'cover',
                           borderRadius: '4px',
                           border: '2px solid var(--border-color)'
@@ -891,11 +891,6 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
                       <h3 style={{ margin: 0, fontWeight: 900, fontSize: '1rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {manga.title}
                       </h3>
-                      {manga.author && (
-                        <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.8rem', color: 'var(--muted-text)', fontWeight: 700 }}>
-                          {manga.author}
-                        </p>
-                      )}
                     </div>
                   </div>
                 ))}
