@@ -39,7 +39,6 @@ export const UpdatesPage: React.FC<UpdatesPageProps> = ({
     setRefreshing(true);
     try {
       await api.triggerLibraryUpdate();
-      alert(t('updates.refresh_started'));
       // Poll/reload updates in 5 seconds to see new items
       setTimeout(() => {
         loadUpdates(false);

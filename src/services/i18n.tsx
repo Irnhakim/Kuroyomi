@@ -58,8 +58,8 @@ const translations: Record<Language, Record<string, string>> = {
     // Library
     'library.title': 'Library',
     'library.subtitle': 'Your personal comic vault, synchronized locally.',
-    'library.refresh': 'Refresh Library',
-    'library.refreshing': 'Refreshing...',
+    'library.refresh': 'Check for Updates',
+    'library.refreshing': 'Checking for Updates...',
     'library.all': 'All Manga',
     'library.search': 'Search library...',
     'library.loading': 'LOADING VAULT...',
@@ -273,8 +273,8 @@ const translations: Record<Language, Record<string, string>> = {
     // Library
     'library.title': 'Perpustakaan',
     'library.subtitle': 'Kubah komik pribadi Anda, disinkronkan secara lokal.',
-    'library.refresh': 'Perbarui Pustaka',
-    'library.refreshing': 'Memperbarui...',
+    'library.refresh': 'Cek Pembaruan',
+    'library.refreshing': 'Memeriksa Pembaruan...',
     'library.all': 'Semua Manga',
     'library.search': 'Cari pustaka...',
     'library.loading': 'MEMUAT KUBAH...',
