@@ -57,6 +57,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const touchStartXRef = useRef<number | null>(null);
   const lastTapRef = useRef<{ time: number; key: string }>({ time: 0, key: '' });
+  const saveProgressTimerRef = useRef<any>(null);
 
   const activeChapter = loadedChapters.find(c => c.id === chapterId) || loadedChapters[0];
 
@@ -188,6 +189,15 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
     }
   }, [chapterId]);
 
+  // Cleanup save progress timer on unmount
+  useEffect(() => {
+    return () => {
+      if (saveProgressTimerRef.current) {
+        clearTimeout(saveProgressTimerRef.current);
+      }
+    };
+  }, []);
+
   // Keep only active chapter if switching back to single page mode
   useEffect(() => {
     if (readingMode === 'single' && loadedChapters.length > 1) {
@@ -304,8 +314,8 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
     };
   }, [readingMode, loadedChapters, chapterId]);
 
-  // Save progress - deduplicated via ref to prevent redundant requests
-  const saveProgress = async (chId: number, pageIdx: number) => {
+  // Save progress - debounced to prevent server spam during fast scrolling or page flips
+  const saveProgress = (chId: number, pageIdx: number) => {
     const pageKey = `${chId}_${pageIdx}`;
     if (lastSavedPageRef.current === pageKey) return;
 
@@ -313,16 +323,23 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
     if (!ch) return;
 
     lastSavedPageRef.current = pageKey;
-    try {
-      await api.updateProgress(mangaId, chId, pageIdx);
-      const isLastPage = pageIdx === ch.pageCount - 1;
-      if (isLastPage) {
-        await api.markChapterRead(mangaId, chId, true);
-      }
-    } catch (e) {
-      console.error(e);
-      lastSavedPageRef.current = ''; // Reset on error to allow retries
+
+    if (saveProgressTimerRef.current) {
+      clearTimeout(saveProgressTimerRef.current);
     }
+
+    saveProgressTimerRef.current = setTimeout(async () => {
+      try {
+        await api.updateProgress(mangaId, chId, pageIdx);
+        const isLastPage = pageIdx === ch.pageCount - 1;
+        if (isLastPage) {
+          await api.markChapterRead(mangaId, chId, true);
+        }
+      } catch (e) {
+        console.error(e);
+        lastSavedPageRef.current = ''; // Reset on error to allow retries
+      }
+    }, 1500); // 1.5s debounce
   };
 
   // Navigate to adjacent chapters
