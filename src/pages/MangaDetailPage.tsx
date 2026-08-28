@@ -21,7 +21,6 @@ export const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [inLibrary, setInLibrary] = useState(false);
-  const [updatingLibrary, setUpdatingLibrary] = useState(false);
   const [recentHistory, setRecentHistory] = useState<HistoryItem | null>(null);
   const [sortOrder, setSortOrder] = useState<'latest' | 'older'>('latest');
   const [searchQuery, setSearchQuery] = useState('');
@@ -59,19 +58,17 @@ export const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
 
   const toggleLibraryStatus = async () => {
     if (!manga) return;
-    setUpdatingLibrary(true);
+    const newValue = !inLibrary;
+    setInLibrary(newValue); // optimistic
     try {
-      if (inLibrary) {
-        await api.removeFromLibrary(mangaId);
-        setInLibrary(false);
-      } else {
+      if (newValue) {
         await api.addToLibrary(mangaId);
-        setInLibrary(true);
+      } else {
+        await api.removeFromLibrary(mangaId);
       }
     } catch (e) {
-      console.error("Failed to update library status", e);
-    } finally {
-      setUpdatingLibrary(false);
+      console.error('Failed to update library status', e);
+      setInLibrary(!newValue); // revert on error
     }
   };
 
@@ -252,7 +249,6 @@ export const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                 gap: '0.3rem'
               }}
               onClick={toggleLibraryStatus}
-              disabled={updatingLibrary}
             >
               {inLibrary ? <HeartOff size={16} /> : <Heart size={16} />}
               <span style={{ whiteSpace: 'nowrap' }}>{inLibrary ? t('detail.btn.in_library') : t('detail.btn.add_library')}</span>

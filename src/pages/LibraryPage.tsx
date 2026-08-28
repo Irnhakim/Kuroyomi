@@ -427,10 +427,22 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({ onMangaSelect }) => {
 
       {/* Main Library View */}
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '5rem 0' }}>
-          <div className="comic-box" style={{ display: 'inline-block', backgroundColor: 'var(--retro-yellow)' }}>
-            <h3 style={{ margin: 0, fontWeight: 900 }}>{t('library.loading')}</h3>
-          </div>
+        <div className="comic-grid">
+          {Array.from({ length: 12 }).map((_, i) => (
+            <div key={i} className="comic-box" style={{ padding: '0.75rem', display: 'flex', flexDirection: 'column' }}>
+              <div style={{
+                width: '100%', paddingBottom: '140%', borderRadius: '6px',
+                background: 'linear-gradient(90deg, var(--bg-card) 25%, var(--bg-body) 50%, var(--bg-card) 75%)',
+                backgroundSize: '200% 100%',
+                animation: 'skeleton-shimmer 1.4s infinite',
+                border: '2px solid var(--border-color)'
+              }} />
+              <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <div style={{ height: '1rem', borderRadius: '4px', width: '85%', background: 'var(--bg-body)', animation: 'skeleton-shimmer 1.4s infinite', backgroundSize: '200% 100%', backgroundImage: 'linear-gradient(90deg, var(--bg-card) 25%, var(--bg-body) 50%, var(--bg-card) 75%)' }} />
+                <div style={{ height: '0.75rem', borderRadius: '4px', width: '55%', background: 'var(--bg-body)', animation: 'skeleton-shimmer 1.4s infinite', backgroundSize: '200% 100%', backgroundImage: 'linear-gradient(90deg, var(--bg-card) 25%, var(--bg-body) 50%, var(--bg-card) 75%)' }} />
+              </div>
+            </div>
+          ))}
         </div>
       ) : error ? (
         <div className="comic-box" style={{ backgroundColor: 'var(--retro-pink)', color: '#fff', display: 'flex', gap: '1rem', alignItems: 'center' }}>
@@ -653,6 +665,10 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({ onMangaSelect }) => {
         }
         .sort-option-item:hover {
           background-color: var(--bg-body) !important;
+        }
+        @keyframes skeleton-shimmer {
+          0% { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
         }
       `}</style>
     </div>
