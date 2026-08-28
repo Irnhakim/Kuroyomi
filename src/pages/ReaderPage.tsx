@@ -40,6 +40,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
   const loadedChapterIdsRef = useRef<Set<number>>(new Set());
   const lastSavedPageRef = useRef<string>('');
   const containerRef = useRef<HTMLDivElement>(null);
+  const touchStartXRef = useRef<number | null>(null);
 
   const activeChapter = loadedChapters.find(c => c.id === chapterId) || loadedChapters[0];
 
@@ -202,6 +203,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
   }, [currentPage, activeChapter, mangaDetail, mangaId, chapterId]);
 
   // Prefetch next pages in the background to offload server spike and improve client speed
+  // Also preload first 3 pages of next chapter when near end (paged mode)
   useEffect(() => {
     if (!activeChapter) return;
     const nextPagesToPrefetch = [currentPage + 1, currentPage + 2, currentPage + 3];
@@ -214,7 +216,23 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
         }
       }
     });
-  }, [currentPage, activeChapter, mangaId, chapterId, failedPages]);
+
+    // Preload next chapter first pages when near end of current chapter (paged mode only)
+    if (readingMode === 'single' && chapters.length > 0) {
+      const isNearEnd = currentPage >= activeChapter.pageCount - 3;
+      if (isNearEnd) {
+        const sorted = [...chapters].sort((a, b) => a.sourceOrder - b.sourceOrder);
+        const curIdx = sorted.findIndex(ch => ch.id === chapterId);
+        if (curIdx !== -1 && curIdx + 1 < sorted.length) {
+          const nextChId = sorted[curIdx + 1].id;
+          [0, 1, 2].forEach(idx => {
+            const img = new Image();
+            img.src = api.getPageImageUrl(mangaId, nextChId, idx);
+          });
+        }
+      }
+    }
+  }, [currentPage, activeChapter, mangaId, chapterId, failedPages, readingMode, chapters]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -478,7 +496,20 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
       >
         {readingMode === 'single' ? (
           /* SINGLE PAGE MODE */
-          <div className="reader-single-wrap" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="reader-single-wrap"
+            onClick={(e) => e.stopPropagation()}
+            onTouchStart={(e) => { touchStartXRef.current = e.touches[0].clientX; }}
+            onTouchEnd={(e) => {
+              if (touchStartXRef.current === null) return;
+              const diff = touchStartXRef.current - e.changedTouches[0].clientX;
+              if (Math.abs(diff) > 50) {
+                if (diff > 0) handleNextPage();
+                else handlePrevPage();
+              }
+              touchStartXRef.current = null;
+            }}
+          >
             <div
               className="reader-nav-zone-prev"
               onClick={handlePrevPage}
