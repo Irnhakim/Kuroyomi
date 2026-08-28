@@ -720,8 +720,9 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
                   Add Repository
                 </button>
               </form>
-              <p style={{ margin: '0.75rem 0 0 0', fontSize: '0.75rem', color: 'var(--muted-text)', fontWeight: 700, wordBreak: 'break-all' }}>
-                Keiyoushi Repo: https://raw.githubusercontent.com/keiyoushi/extensions/repo/index.min.json
+              <p style={{ margin: '0.75rem 0 0 0', fontSize: '0.75rem', color: 'var(--muted-text)', fontWeight: 700, wordBreak: 'break-all', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                <span>Keiyoushi Repo (Direct): https://github.com/keiyoushi/extensions/raw/repo/index.pb</span>
+                <span>Keiyoushi Repo (jsDelivr - Gunakan jika koneksi time out): https://cdn.jsdelivr.net/gh/keiyoushi/extensions@repo/index.pb</span>
               </p>
             </div>
           )}
