@@ -165,6 +165,11 @@ export const syncUserDataToServer = async (): Promise<void> => {
   }
 };
 
+// In-memory TTL cache for getMangaChapters — 30s TTL, prevents duplicate requests
+const _chaptersCache = new Map<number, { data: any[]; ts: number }>();
+const _CHAPTERS_TTL = 30_000;
+export const invalidateChaptersCache = (mangaId: number) => _chaptersCache.delete(mangaId);
+
 export const api = {
   // Asset URLs directly connecting to Suwayomi REST endpoints
   getMangaThumbnailUrl: (mangaIdOrManga: number | Manga) => {
@@ -641,6 +646,9 @@ export const api = {
   },
 
   getMangaChapters: async (mangaId: number): Promise<Chapter[]> => {
+    const cached = _chaptersCache.get(mangaId);
+    if (cached && Date.now() - cached.ts < _CHAPTERS_TTL) return cached.data;
+
     const res = await fetch(`${BASE_URL}/manga/${mangaId}/chapters`);
     if (!res.ok) throw new Error(`HTTP error ${res.status}`);
     const list: any[] = await res.json();
@@ -650,7 +658,7 @@ export const api = {
     const progressJson = localStorage.getItem(`${prefix}_progress`);
     const progress = progressJson ? JSON.parse(progressJson) : {};
 
-    return list.map((ch) => {
+    const result = list.map((ch) => {
       const key = `${mangaId}_${ch.index}`;
       const userProgress = progress[key] || {};
 
@@ -668,6 +676,9 @@ export const api = {
         downloaded: ch.downloadStatus === 'DOWNLOADED'
       };
     });
+
+    _chaptersCache.set(mangaId, { data: result, ts: Date.now() });
+    return result;
   },
 
   // Library Actions (Multi-user per user storage override)

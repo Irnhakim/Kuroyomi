@@ -33,6 +33,19 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
   const [hudVisible, setHudVisible] = useState(true);
   const [failedPages, setFailedPages] = useState<Record<string, boolean>>({});
   const [reloadKeys, setReloadKeys] = useState<Record<string, number>>({});
+  const retryCountRef = useRef<Record<string, number>>({});
+
+  const handlePageError = (pageKey: string) => {
+    const count = retryCountRef.current[pageKey] || 0;
+    if (count < 1) {
+      retryCountRef.current[pageKey] = count + 1;
+      setTimeout(() => {
+        setReloadKeys(prev => ({ ...prev, [pageKey]: (prev[pageKey] || 0) + 1 }));
+      }, 2000);
+    } else {
+      setFailedPages(prev => ({ ...prev, [pageKey]: true }));
+    }
+  };
   const [loadedChapters, setLoadedChapters] = useState<LoadedChapter[]>([]);
   const [loadingNext, setLoadingNext] = useState(false);
   const [zoomState, setZoomState] = useState<{ key: string; originX: string; originY: string } | null>(null);
@@ -559,7 +572,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
                 className="reader-img"
                 style={{ userSelect: 'none' }}
                 onClick={toggleHud}
-                onError={() => setFailedPages(prev => ({ ...prev, [`${chapterId}_${currentPage}`]: true }))}
+                onError={() => handlePageError(`${chapterId}_${currentPage}`)}
               />
             )}
 
@@ -615,7 +628,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
                       }}
                       onClick={toggleHud}
                       onTouchEnd={(e) => handleWebtoonImageTap(e, pageKey)}
-                      onError={() => setFailedPages(prev => ({ ...prev, [pageKey]: true }))}
+                      onError={() => handlePageError(pageKey)}
                     />
                   );
                 })}
