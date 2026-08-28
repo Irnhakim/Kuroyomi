@@ -89,47 +89,50 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({ onMangaSelect }) => {
     loadLibrary();
   }, [selectedCategory]);
 
-  // Fetch chapters for all library mangas in background
+  // Fetch chapters for all library mangas in background — batched 10 per round
   useEffect(() => {
     if (mangas.length === 0) return;
 
     let active = true;
+    const BATCH_SIZE = 10;
+
     const fetchAllChapters = async () => {
       const missingIds = mangas.map(m => m.id).filter(id => !chaptersData[id]);
       if (missingIds.length === 0) return;
 
-      const results = await Promise.all(
-        missingIds.map(async (id) => {
-          try {
-            const chs = await api.getMangaChapters(id);
-            return { id, chs };
-          } catch (e) {
-            console.error(`Failed to fetch chapters for manga ${id}`, e);
-            return { id, chs: [] };
-          }
-        })
-      );
-
-      if (!active) return;
-      setChaptersData(prev => {
-        const next = { ...prev };
-        results.forEach(({ id, chs }) => {
-          next[id] = chs;
+      for (let i = 0; i < missingIds.length; i += BATCH_SIZE) {
+        if (!active) return;
+        const batch = missingIds.slice(i, i + BATCH_SIZE);
+        const results = await Promise.all(
+          batch.map(async (id) => {
+            try {
+              const chs = await api.getMangaChapters(id);
+              return { id, chs };
+            } catch (e) {
+              console.error(`Failed to fetch chapters for manga ${id}`, e);
+              return { id, chs: [] };
+            }
+          })
+        );
+        if (!active) return;
+        setChaptersData(prev => {
+          const next = { ...prev };
+          results.forEach(({ id, chs }) => { next[id] = chs; });
+          return next;
         });
-        return next;
-      });
+      }
     };
 
     fetchAllChapters();
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, [mangas]);
 
-  const filteredMangas = mangas.filter(m =>
-    m.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    m.author?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredMangas = useMemo(() =>
+    mangas.filter(m =>
+      m.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      m.author?.toLowerCase().includes(searchQuery.toLowerCase())
+    ),
+  [mangas, searchQuery]);
 
   const sortedMangas = useMemo(() => {
     const listCopy = [...filteredMangas];
