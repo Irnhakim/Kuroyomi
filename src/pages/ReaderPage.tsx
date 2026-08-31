@@ -48,7 +48,6 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
   };
   const [loadedChapters, setLoadedChapters] = useState<LoadedChapter[]>([]);
   const [loadingNext, setLoadingNext] = useState(false);
-  const [zoomState, setZoomState] = useState<{ key: string; originX: string; originY: string } | null>(null);
   const [scrollPercent, setScrollPercent] = useState(0);
 
   const loadingNextRef = useRef(false);
@@ -56,7 +55,6 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
   const lastSavedPageRef = useRef<string>('');
   const containerRef = useRef<HTMLDivElement>(null);
   const touchStartXRef = useRef<number | null>(null);
-  const lastTapRef = useRef<{ time: number; key: string }>({ time: 0, key: '' });
   const saveProgressTimerRef = useRef<any>(null);
 
   const activeChapter = loadedChapters.find(c => c.id === chapterId) || loadedChapters[0];
@@ -207,7 +205,6 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
         loadedChapterIdsRef.current = new Set([active.id]);
       }
     }
-    setZoomState(null);
   }, [readingMode]);
 
   // Save to reading history - debounced to prevent server spam on scroll
@@ -382,20 +379,6 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
       window.scrollTo(0, 0);
     } else {
       navigateToChapterOffset('prev');
-    }
-  };
-
-  const handleWebtoonImageTap = (e: React.TouchEvent<HTMLImageElement>, pageKey: string) => {
-    const now = Date.now();
-    const rect = e.currentTarget.getBoundingClientRect();
-    const touch = e.changedTouches[0];
-    const originX = ((touch.clientX - rect.left) / rect.width * 100).toFixed(1) + '%';
-    const originY = ((touch.clientY - rect.top) / rect.height * 100).toFixed(1) + '%';
-    if (now - lastTapRef.current.time < 300 && lastTapRef.current.key === pageKey) {
-      setZoomState(prev => prev?.key === pageKey ? null : { key: pageKey, originX, originY });
-      lastTapRef.current = { time: 0, key: '' };
-    } else {
-      lastTapRef.current = { time: now, key: pageKey };
     }
   };
 
@@ -637,14 +620,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
                       alt={`Page ${idx + 1}`}
                       className="reader-webtoon-img reader-page-image"
                       loading="lazy"
-                      style={{
-                        transform: zoomState?.key === pageKey ? 'scale(2)' : 'scale(1)',
-                        transformOrigin: zoomState?.key === pageKey ? `${zoomState.originX} ${zoomState.originY}` : '50% 50%',
-                        transition: 'transform 0.25s ease',
-                        cursor: zoomState?.key === pageKey ? 'zoom-out' : 'auto',
-                      }}
                       onClick={toggleHud}
-                      onTouchEnd={(e) => handleWebtoonImageTap(e, pageKey)}
                       onError={() => handlePageError(pageKey)}
                     />
                   );
