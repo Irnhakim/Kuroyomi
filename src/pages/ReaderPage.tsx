@@ -572,6 +572,8 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
                 className="reader-img"
                 style={{ userSelect: 'none' }}
                 onClick={toggleHud}
+                onContextMenu={(e) => e.preventDefault()}
+                draggable={false}
                 onError={() => handlePageError(`${chapterId}_${currentPage}`)}
               />
             )}
@@ -621,6 +623,8 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
                       className="reader-webtoon-img reader-page-image"
                       loading="lazy"
                       onClick={toggleHud}
+                      onContextMenu={(e) => e.preventDefault()}
+                      draggable={false}
                       onError={() => handlePageError(pageKey)}
                     />
                   );
