@@ -216,7 +216,14 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
   const [globalSearchQuery, setGlobalSearchQuery] = useState('');
 
   // Selection / Catalog browsing states
-  const [selectedSource, setSelectedSource] = useState<Source | null>(null);
+  const [selectedSource, setSelectedSource] = useState<Source | null>(() => {
+    try { const s = sessionStorage.getItem('kuroyomi_browse_source'); return s ? JSON.parse(s) : null; } catch { return null; }
+  });
+  const selectSource = (src: Source | null) => {
+    if (src) sessionStorage.setItem('kuroyomi_browse_source', JSON.stringify(src));
+    else sessionStorage.removeItem('kuroyomi_browse_source');
+    setSelectedSource(src);
+  };
   const [browseMode, setBrowseMode] = useState<'popular' | 'latest' | 'search'>('popular');
   const [catalogManga, setCatalogManga] = useState<Manga[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -333,7 +340,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
     setGlobalSearchInput('');
     setBrowseMode('search');
     setSearchQuery(query);
-    setSelectedSource(source);
+    selectSource(source);
   };
 
   const updateFilterValue = (index: number, newValue: any) => {
@@ -483,7 +490,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
       <div>
         {/* Breadcrumbs / Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
-          <button className="comic-btn comic-btn-white" onClick={() => setSelectedSource(null)}>
+          <button className="comic-btn comic-btn-white" onClick={() => selectSource(null)}>
             <ArrowLeft size={18} />
             Back to Sources
           </button>
@@ -1295,7 +1302,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
               <div
                 key={source.id}
                 className="comic-box comic-box-interactive source-card"
-                onClick={() => setSelectedSource(source)}
+                onClick={() => selectSource(source)}
               >
                 <div className="source-info">
                   <div style={{
