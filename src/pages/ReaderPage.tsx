@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { api } from '../services/api';
-import { ArrowLeft, ChevronLeft, ChevronRight, LayoutList, BookOpen } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, LayoutList, BookOpen, Settings } from 'lucide-react';
 import { useTranslation } from '../services/i18n';
 import { useModal } from '../services/modal';
 
@@ -49,6 +49,12 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
   const [loadedChapters, setLoadedChapters] = useState<LoadedChapter[]>([]);
   const [loadingNext, setLoadingNext] = useState(false);
   const [scrollPercent, setScrollPercent] = useState(0);
+
+  // Advanced Reader Settings
+  const [cropBorders, setCropBorders] = useState<boolean>(() => localStorage.getItem('kuroyomi_reader_crop_borders') === 'true');
+  const [pagedDirection, setPagedDirection] = useState<'ltr' | 'rtl' | 'vertical'>(() => (localStorage.getItem('kuroyomi_reader_paged_direction') as any) || 'ltr');
+  const [imageScaling, setImageScaling] = useState<'fit-width' | 'fit-height' | 'stretch' | 'original'>(() => (localStorage.getItem('kuroyomi_reader_image_scaling') as any) || 'fit-width');
+  const [showSettingsPanel, setShowSettingsPanel] = useState(false);
 
   const loadingNextRef = useRef(false);
   const loadedChapterIdsRef = useRef<Set<number>>(new Set());
@@ -207,6 +213,18 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
     }
   }, [readingMode]);
 
+  useEffect(() => {
+    localStorage.setItem('kuroyomi_reader_crop_borders', String(cropBorders));
+  }, [cropBorders]);
+
+  useEffect(() => {
+    localStorage.setItem('kuroyomi_reader_paged_direction', pagedDirection);
+  }, [pagedDirection]);
+
+  useEffect(() => {
+    localStorage.setItem('kuroyomi_reader_image_scaling', imageScaling);
+  }, [imageScaling]);
+
   // Save to reading history - debounced to prevent server spam on scroll
   useEffect(() => {
     if (!activeChapter || !mangaDetail) return;
@@ -359,6 +377,22 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
     }
   };
 
+  const handleNextPageDirection = () => {
+    if (pagedDirection === 'rtl') {
+      handlePrevPage();
+    } else {
+      handleNextPage();
+    }
+  };
+
+  const handlePrevPageDirection = () => {
+    if (pagedDirection === 'rtl') {
+      handleNextPage();
+    } else {
+      handlePrevPage();
+    }
+  };
+
   const handleNextPage = () => {
     if (!activeChapter) return;
     if (currentPage < activeChapter.pageCount - 1) {
@@ -380,6 +414,56 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
     } else {
       navigateToChapterOffset('prev');
     }
+  };
+
+  const getImageStyle = (mode: 'single' | 'webtoon') => {
+    const styles: React.CSSProperties = {
+      userSelect: 'none',
+      transition: 'all 0.2s ease',
+    };
+
+    if (cropBorders) {
+      styles.transform = 'scale(1.08)';
+      styles.transformOrigin = 'center';
+    }
+
+    if (mode === 'single') {
+      if (imageScaling === 'fit-width') {
+        styles.width = '100%';
+        styles.maxWidth = '100%';
+        styles.height = 'auto';
+      } else if (imageScaling === 'fit-height') {
+        styles.maxHeight = '90vh';
+        styles.width = 'auto';
+        styles.maxWidth = '100%';
+        styles.objectFit = 'contain';
+      } else if (imageScaling === 'stretch') {
+        styles.width = '100%';
+        styles.height = '90vh';
+        styles.objectFit = 'fill';
+      } else {
+        styles.maxWidth = 'none';
+        styles.width = 'auto';
+      }
+    } else {
+      if (imageScaling === 'fit-width') {
+        styles.width = '100%';
+        styles.height = 'auto';
+      } else if (imageScaling === 'fit-height') {
+        styles.maxHeight = '100vh';
+        styles.width = 'auto';
+        styles.margin = '0 auto';
+        styles.objectFit = 'contain';
+      } else if (imageScaling === 'stretch') {
+        styles.width = '100vw';
+        styles.height = '100vh';
+        styles.objectFit = 'fill';
+      } else {
+        styles.width = 'auto';
+        styles.maxWidth = 'none';
+      }
+    }
+    return styles;
   };
 
   const toggleHud = () => {
@@ -533,7 +617,141 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
               <LayoutList size={16} />
               <span>{t('reader.btn.webtoon')}</span>
             </button>
+            <button
+              className="comic-btn comic-btn-white reader-hud-btn"
+              onClick={() => setShowSettingsPanel(!showSettingsPanel)}
+              title="Settings"
+            >
+              <Settings size={16} />
+            </button>
           </div>
+        </div>
+      )}
+
+      {/* Floating Settings Panel */}
+      {showSettingsPanel && (
+        <div
+          className="comic-box"
+          style={{
+            position: 'fixed',
+            top: '70px',
+            right: '20px',
+            zIndex: 99999,
+            backgroundColor: 'var(--bg-card)',
+            padding: '1.25rem',
+            maxWidth: '340px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1rem',
+            boxShadow: '8px 8px 0px var(--shadow-color)',
+            color: 'var(--text-color)',
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <h3
+            style={{
+              margin: 0,
+              fontSize: '1.2rem',
+              fontWeight: 900,
+              textTransform: 'uppercase',
+              borderBottom: '3px solid var(--border-color)',
+              paddingBottom: '0.5rem',
+            }}
+          >
+            Reader Settings
+          </h3>
+
+          {/* Image Scaling Options */}
+          <div>
+            <h4
+              style={{
+                margin: '0 0 0.5rem 0',
+                fontSize: '0.9rem',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                opacity: 0.8,
+              }}
+            >
+              Scaling Mode
+            </h4>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem' }}>
+              {(['fit-width', 'fit-height', 'stretch', 'original'] as const).map(
+                (scale) => (
+                  <button
+                    key={scale}
+                    className={`comic-btn ${imageScaling === scale ? 'comic-btn-yellow' : 'comic-btn-white'}`}
+                    style={{
+                      padding: '0.4rem',
+                      fontSize: '0.8rem',
+                      justifyContent: 'center',
+                    }}
+                    onClick={() => setImageScaling(scale)}
+                  >
+                    {scale.replace('-', ' ').toUpperCase()}
+                  </button>
+                )
+              )}
+            </div>
+          </div>
+
+          {/* Reading Mode Specific Options */}
+          {readingMode === 'webtoon' ? (
+            <div>
+              <h4
+                style={{
+                  margin: '0 0 0.5rem 0',
+                  fontSize: '0.9rem',
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                  opacity: 0.8,
+                }}
+              >
+                Webtoon Options
+              </h4>
+              <button
+                className={`comic-btn ${cropBorders ? 'comic-btn-yellow' : 'comic-btn-white'}`}
+                style={{
+                  width: '100%',
+                  padding: '0.4rem',
+                  fontSize: '0.8rem',
+                  justifyContent: 'center',
+                }}
+                onClick={() => setCropBorders(!cropBorders)}
+              >
+                CROP BORDERS: {cropBorders ? 'ON' : 'OFF'}
+              </button>
+            </div>
+          ) : (
+            <div>
+              <h4
+                style={{
+                  margin: '0 0 0.5rem 0',
+                  fontSize: '0.9rem',
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                  opacity: 0.8,
+                }}
+              >
+                Page Direction
+              </h4>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
+                {(['ltr', 'rtl', 'vertical'] as const).map((dir) => (
+                  <button
+                    key={dir}
+                    className={`comic-btn ${pagedDirection === dir ? 'comic-btn-yellow' : 'comic-btn-white'}`}
+                    style={{
+                      padding: '0.4rem',
+                      fontSize: '0.8rem',
+                      justifyContent: 'center',
+                    }}
+                    onClick={() => setPagedDirection(dir)}
+                  >
+                    {dir.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -544,45 +762,77 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
       >
         {readingMode === 'single' ? (
           /* SINGLE PAGE MODE */
-          <div
-            className="reader-single-wrap"
-            onClick={(e) => e.stopPropagation()}
-            onTouchStart={(e) => { touchStartXRef.current = e.touches[0].clientX; }}
-            onTouchEnd={(e) => {
-              if (touchStartXRef.current === null) return;
-              const diff = touchStartXRef.current - e.changedTouches[0].clientX;
-              if (Math.abs(diff) > 50) {
-                if (diff > 0) handleNextPage();
-                else handlePrevPage();
-              }
-              touchStartXRef.current = null;
-            }}
-          >
+          pagedDirection === 'vertical' ? (
             <div
-              className="reader-nav-zone-prev"
-              onClick={handlePrevPage}
-            />
-
-            {failedPages[`${chapterId}_${currentPage}`] ? (
-              renderErrorCard(chapterId, currentPage)
-            ) : (
-              <img
-                src={getPageSrc(chapterId, currentPage)}
-                alt={`Page ${currentPage + 1}`}
-                className="reader-img"
-                style={{ userSelect: 'none' }}
-                onClick={toggleHud}
-                onContextMenu={(e) => e.preventDefault()}
-                draggable={false}
-                onError={() => handlePageError(`${chapterId}_${currentPage}`)}
+              className="reader-webtoon-container"
+              onClick={(e) => e.stopPropagation()}
+              style={{ display: 'flex', flexDirection: 'column', width: '100%', maxWidth: '800px' }}
+            >
+              <div className="reader-webtoon-chapter">
+                {Array.from({ length: activeChapter.pageCount }).map((_, idx) => {
+                  const pageKey = `${chapterId}_${idx}`;
+                  return failedPages[pageKey] ? (
+                    <div key={pageKey} style={{ minHeight: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {renderErrorCard(chapterId, idx)}
+                    </div>
+                  ) : (
+                    <img
+                      key={pageKey}
+                      src={getPageSrc(chapterId, idx)}
+                      alt={`Page ${idx + 1}`}
+                      className="reader-webtoon-img reader-page-image"
+                      loading="lazy"
+                      onClick={toggleHud}
+                      style={getImageStyle('webtoon')}
+                      onContextMenu={(e) => e.preventDefault()}
+                      draggable={false}
+                      onError={() => handlePageError(pageKey)}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <div
+              className="reader-single-wrap"
+              onClick={(e) => e.stopPropagation()}
+              onTouchStart={(e) => { touchStartXRef.current = e.touches[0].clientX; }}
+              onTouchEnd={(e) => {
+                if (touchStartXRef.current === null) return;
+                const diff = touchStartXRef.current - e.changedTouches[0].clientX;
+                if (Math.abs(diff) > 50) {
+                  if (diff > 0) handleNextPageDirection();
+                  else handlePrevPageDirection();
+                }
+                touchStartXRef.current = null;
+              }}
+            >
+              <div
+                className="reader-nav-zone-prev"
+                onClick={handlePrevPageDirection}
               />
-            )}
 
-            <div
-              className="reader-nav-zone-next"
-              onClick={handleNextPage}
-            />
-          </div>
+              {failedPages[`${chapterId}_${currentPage}`] ? (
+                renderErrorCard(chapterId, currentPage)
+              ) : (
+                <img
+                  src={getPageSrc(chapterId, currentPage)}
+                  alt={`Page ${currentPage + 1}`}
+                  className="reader-img"
+                  style={getImageStyle('single')}
+                  onClick={toggleHud}
+                  onContextMenu={(e) => e.preventDefault()}
+                  draggable={false}
+                  onError={() => handlePageError(`${chapterId}_${currentPage}`)}
+                />
+              )}
+
+              <div
+                className="reader-nav-zone-next"
+                onClick={handleNextPageDirection}
+              />
+            </div>
+          )
         ) : (
           /* WEBTOON MODE */
           <div className="reader-webtoon-container" onClick={(e) => e.stopPropagation()}>
@@ -623,6 +873,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
                       className="reader-webtoon-img reader-page-image"
                       loading="lazy"
                       onClick={toggleHud}
+                      style={getImageStyle('webtoon')}
                       onContextMenu={(e) => e.preventDefault()}
                       draggable={false}
                       onError={() => handlePageError(pageKey)}
