@@ -1,7 +1,13 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
+import { auth } from '../services/auth';
 import { api } from '../services/api';
 import type { Manga, Category, Chapter, HistoryItem } from '../services/api';
-import { RefreshCw, AlertCircle, Search, ArrowUpDown, ArrowUp, ArrowDown, Circle, LayoutGrid, Grid3X3, List } from 'lucide-react';
+import { RefreshCw, AlertCircle, Search, ArrowUpDown, ArrowUp, ArrowDown, Circle, LayoutGrid, Grid3X3, List, Plus, Tag, Edit3, Check, X } from 'lucide-react';
+
+const getUserPrefix = () => {
+  const user = auth.getCurrentUser();
+  return user ? `kuroyomi_user_${user.toLowerCase()}` : 'kuroyomi_guest';
+};
 import { useTranslation } from '../services/i18n';
 
 interface LibraryPageProps {
@@ -31,6 +37,66 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({ onMangaSelect }) => {
   const [chaptersData, setChaptersData] = useState<Record<number, Chapter[]>>({});
   const [history, setHistory] = useState<HistoryItem[]>([]);
 
+  // --- Smart Categories (Custom Tags) ---
+  const _initMangaCategories = (): Record<number, number> => {
+    const prefix = getUserPrefix();
+    const json = localStorage.getItem(`${prefix}_manga_categories`);
+    return json ? JSON.parse(json) : {};
+  };
+  const mangaCategoriesRef = useRef<Record<number, number>>(_initMangaCategories());
+  const [mangaCategories, setMangaCategories] = useState<Record<number, number>>(_initMangaCategories);
+  const [showAddCategoryModal, setShowAddCategoryModal] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [categoryDropdownOpenId, setCategoryDropdownOpenId] = useState<number | null>(null);
+  const [categoryDropdownPosition, setCategoryDropdownPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  const sortCategories = (cats: Category[]) => [...cats].sort((a, b) => a.order - b.order);
+
+  const getMangaCategory = (mangaId: number): number | null => mangaCategories[mangaId] ?? null;
+
+  const assignMangaToCategory = (mangaId: number, categoryId: number) => {
+    const next = { ...mangaCategoriesRef.current };
+    if (categoryId === -1) {
+      delete next[mangaId];
+    } else {
+      next[mangaId] = categoryId;
+    }
+    mangaCategoriesRef.current = next;
+    setMangaCategories(next);
+    const prefix = getUserPrefix();
+    localStorage.setItem(`${prefix}_manga_categories`, JSON.stringify(next));
+    api.setMangaCategory(mangaId, categoryId).catch(e => console.error('Failed to sync category assignment', e));
+  };
+
+  const addCategoryLocal = async () => {
+    if (!newCategoryName.trim()) return;
+    await api.addCategory(newCategoryName.trim());
+    const updated = await api.getCategories();
+    setCategories(sortCategories(updated));
+    setNewCategoryName('');
+    setShowAddCategoryModal(false);
+  };
+
+  const deleteCategoryLocal = async (id: number) => {
+    await api.deleteCategory(id);
+    const updatedMap = { ...mangaCategoriesRef.current };
+    let needSync = false;
+    for (const mangaId in updatedMap) {
+      if (updatedMap[Number(mangaId)] === id) {
+        updatedMap[Number(mangaId)] = 1;
+        needSync = true;
+      }
+    }
+    if (needSync) {
+      mangaCategoriesRef.current = updatedMap;
+      setMangaCategories(updatedMap);
+      const prefix = getUserPrefix();
+      localStorage.setItem(`${prefix}_manga_categories`, JSON.stringify(updatedMap));
+    }
+    const updatedCats = await api.getCategories();
+    setCategories(sortCategories(updatedCats));
+  };
+
   // Persist sort settings
   useEffect(() => {
     localStorage.setItem('kuroyomi_library_sort_by', sortBy);
@@ -53,13 +119,83 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({ onMangaSelect }) => {
     return map;
   }, [mangas.length]);
 
+  // --- Smart Categories helpers ---
+  const categoryName = (catId: number): string => {
+    if (catId === -1) return t('library.all');
+    const cat = categories.find(c => c.id === catId);
+    const lower = cat?.name?.toLowerCase();
+    if (!cat) return t('library.all');
+    if (lower === 'membaca' || lower === 'reading') return t('category.reading');
+    if (lower === 'selesai' || lower === 'completed') return t('category.completed');
+    return cat.name;
+  };
+
+  const openCategoryDropdown = (e: React.MouseEvent, mangaId: number) => {
+    e.stopPropagation();
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const x = Math.min(rect.right - 145, window.innerWidth - 160);
+    const y = Math.min(rect.bottom + 8, window.innerHeight - 200);
+    setCategoryDropdownPosition({ x, y });
+    setCategoryDropdownOpenId(mangaId);
+  };
+
+  const closeCategoryDropdown = () => {
+    setCategoryDropdownOpenId(null);
+  };
+
+  const renderCategoryTag = (manga: Manga) => {
+    const catId = getMangaCategory(manga.id);
+    if (catId === null) return null;
+    const cat = categories.find(c => c.id === catId);
+    const colorMap: Record<string, string> = {
+      reading: 'var(--retro-blue)',
+      completed: 'var(--retro-pink)',
+    };
+    const lower = cat?.name?.toLowerCase();
+    const bg = lower === 'membaca' || lower === 'reading'
+      ? colorMap.reading
+      : lower === 'selesai' || lower === 'completed'
+        ? colorMap.completed
+        : 'var(--retro-purple)';
+    return (
+      <span
+        className="comic-sticker"
+        style={{
+          fontSize: '0.6rem',
+          padding: '0.1rem 0.3rem',
+          backgroundColor: bg,
+          color: '#fff',
+          borderRadius: '4px',
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          maxWidth: '110px',
+          display: 'inline-block',
+          textAlign: 'center'
+        }}
+        title={`Category: ${categoryName(catId)}`}
+      >
+        {categoryName(catId)}
+      </span>
+    );
+  };
+
+  // Close category dropdown on outside click
+  useEffect(() => {
+    if (categoryDropdownOpenId !== null) {
+      const handler = () => closeCategoryDropdown();
+      document.addEventListener('click', handler);
+      return () => document.removeEventListener('click', handler);
+    }
+  }, [categoryDropdownOpenId]);
+
   const loadLibrary = async () => {
     setLoading(true);
     setError(null);
     try {
       // Fetch categories
       const cats = await api.getCategories();
-      setCategories(cats);
+      setCategories(sortCategories(cats));
 
       // Fetch history
       try {
@@ -69,13 +205,8 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({ onMangaSelect }) => {
         console.error('Failed to load history', e);
       }
 
-      // Fetch library manga
-      let list: Manga[] = [];
-      if (selectedCategory === -1) {
-        list = await api.getLibrary();
-      } else {
-        list = await api.getCategoryMangas(selectedCategory);
-      }
+      // Fetch ALL library manga — category filter is applied locally via mangaCategories
+      const list = await api.getLibrary();
       setMangas(list);
     } catch (err) {
       console.error(err);
@@ -87,7 +218,7 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({ onMangaSelect }) => {
 
   useEffect(() => {
     loadLibrary();
-  }, [selectedCategory]);
+  }, []);
 
   // Fetch chapters for all library mangas in background — batched 10 per round
   useEffect(() => {
@@ -128,11 +259,13 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({ onMangaSelect }) => {
   }, [mangas]);
 
   const filteredMangas = useMemo(() =>
-    mangas.filter(m =>
-      m.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      m.author?.toLowerCase().includes(searchQuery.toLowerCase())
-    ),
-  [mangas, searchQuery]);
+    mangas.filter(m => {
+      const matchSearch = m.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        m.author?.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchCategory = selectedCategory === -1 || mangaCategories[m.id] === selectedCategory;
+      return matchSearch && matchCategory;
+    }),
+  [mangas, searchQuery, selectedCategory, mangaCategories]);
 
   const sortedMangas = useMemo(() => {
     const listCopy = [...filteredMangas];
@@ -236,6 +369,13 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({ onMangaSelect }) => {
         >
           {t('library.all')}
         </button>
+        <button
+          className="comic-btn comic-btn-teal"
+          style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}
+          onClick={() => setShowAddCategoryModal(true)}
+        >
+          <Plus size={16} /> {t('library.add_category')}
+        </button>
         {categories.map((cat) => {
           const lowerName = cat.name.toLowerCase();
           const displayName =
@@ -243,21 +383,107 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({ onMangaSelect }) => {
             lowerName === 'selesai' || lowerName === 'completed' ? t('category.completed') :
             cat.name;
           return (
-            <button
-              key={cat.id}
-              className="comic-btn"
-              style={{
-                backgroundColor: selectedCategory === cat.id ? 'var(--retro-purple)' : 'var(--bg-card)',
-                color: selectedCategory === cat.id ? '#fff' : 'var(--text-color)',
-                padding: '0.5rem 1rem',
-                fontSize: '0.9rem'
-              }}
-              onClick={() => setSelectedCategory(cat.id)}
-            >
-              {displayName}
-            </button>
+            <span key={cat.id} style={{ display: 'inline-flex', alignItems: 'center' }}>
+              <button
+                className="comic-btn"
+                style={{
+                  backgroundColor: selectedCategory === cat.id ? 'var(--retro-purple)' : 'var(--bg-card)',
+                  color: selectedCategory === cat.id ? '#fff' : 'var(--text-color)',
+                  padding: '0.5rem 1rem',
+                  fontSize: '0.9rem'
+                }}
+                onClick={() => setSelectedCategory(cat.id)}
+              >
+                {displayName}
+              </button>
+              <button
+                className="comic-btn comic-btn-pink"
+                style={{
+                  padding: '0.2rem 0.5rem',
+                  fontSize: '0.7rem',
+                  lineHeight: 1,
+                  minWidth: 'auto'
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  deleteCategoryLocal(cat.id);
+                }}
+                title={t('library.delete_category')}
+              >
+                ✕
+              </button>
+            </span>
           );
         })}
+
+        {/* Add Category Modal */}
+        {showAddCategoryModal && (
+          <div
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 99998,
+              background: 'rgba(0,0,0,0.3)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+            onClick={() => { setShowAddCategoryModal(false); setNewCategoryName(''); }}
+          >
+            <div
+              className="comic-box"
+              style={{
+                backgroundColor: 'var(--bg-card)',
+                padding: '1.25rem',
+                maxWidth: '280px',
+                width: '90%',
+                boxShadow: '4px 4px 0 var(--shadow-color)'
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '0.95rem', fontWeight: 900 }}>
+                {t('library.add_category')}
+              </h4>
+              <input
+                type="text"
+                placeholder={t('library.add_category.placeholder')}
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') addCategoryLocal();
+                  else if (e.key === 'Escape') setShowAddCategoryModal(false);
+                }}
+                style={{
+                  width: '100%',
+                  padding: '0.4rem',
+                  fontSize: '0.85rem',
+                  border: '2px solid var(--border-color)',
+                  borderRadius: '6px',
+                  backgroundColor: 'var(--bg-color)',
+                  color: 'var(--text-color)',
+                  boxSizing: 'border-box'
+                }}
+              />
+              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
+                <button
+                  className="comic-btn comic-btn-teal"
+                  style={{ flex: 1, padding: '0.3rem', fontSize: '0.8rem' }}
+                  onClick={addCategoryLocal}
+                >
+                  <Check size={14} /> {t('common.save')}
+                </button>
+                <button
+                  className="comic-btn comic-btn-white"
+                  style={{ flex: 1, padding: '0.3rem', fontSize: '0.8rem' }}
+                  onClick={() => { setShowAddCategoryModal(false); setNewCategoryName(''); }}
+                >
+                  <X size={14} /> {t('common.cancel')}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Sort & Filter Button */}
         <button
@@ -499,7 +725,16 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({ onMangaSelect }) => {
                   <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.8rem', color: 'var(--muted-text)', fontWeight: 700 }}>
                     {manga.author || t('library.manga.unknown_author')}
                   </p>
+                  <div style={{ marginTop: '0.3rem' }}>{renderCategoryTag(manga)}</div>
                 </div>
+                <button
+                  className="comic-btn comic-btn-white"
+                  style={{ minWidth: 'auto', padding: '0.3rem 0.4rem', fontSize: '0.8rem', cursor: 'pointer' }}
+                  onClick={(e) => openCategoryDropdown(e, manga.id)}
+                  title={t('library.assign_category')}
+                >
+                  <Tag size={14} />
+                </button>
               </div>
             ))}
           </div>
@@ -569,16 +804,25 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({ onMangaSelect }) => {
                       }} title={manga.title}>
                         {manga.title}
                       </h4>
+                      <div style={{ marginTop: '0.1rem' }}>{renderCategoryTag(manga)}</div>
                     </div>
 
-                    {/* Completed / Library Indicators */}
-                    {manga.status === 'COMPLETED' && (
-                      <div style={{ position: 'absolute', top: '4px', right: '4px', zIndex: 10 }}>
+                    {/* Completed / Library Indicators + Category Tag */}
+                    <div style={{ position: 'absolute', top: '4px', right: '4px', display: 'flex', gap: '2px', alignItems: 'center', zIndex: 10 }}>
+                      {manga.status === 'COMPLETED' && (
                         <span className="comic-sticker sticker-teal" style={{ fontSize: '0.5rem', padding: '0.1rem 0.3rem' }}>
                           {t('library.manga.done')}
                         </span>
-                      </div>
-                    )}
+                      )}
+                      <button
+                        className="comic-btn comic-btn-white"
+                        style={{ minWidth: 'auto', padding: '0.1rem', fontSize: '0.7rem' }}
+                        onClick={(e) => openCategoryDropdown(e, manga.id)}
+                        title={t('library.assign_category')}
+                      >
+                        <Tag size={10} />
+                      </button>
+                    </div>
                   </div>
                 </div>
               );
@@ -625,12 +869,22 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({ onMangaSelect }) => {
                       }}
                     />
                     {manga.status === 'COMPLETED' && (
-                      <div style={{ position: 'absolute', top: '6px', right: '6px', zIndex: 10 }}>
+                      <div style={{ position: 'absolute', top: '6px', left: '6px', zIndex: 10 }}>
                         <span className="comic-sticker sticker-teal" style={{ fontSize: '0.55rem', padding: '0.15rem 0.35rem' }}>
                           {t('library.manga.done')}
                         </span>
                       </div>
                     )}
+                    <div style={{ position: 'absolute', top: '6px', right: '6px', zIndex: 10 }}>
+                      <button
+                        className="comic-btn comic-btn-white"
+                        style={{ minWidth: 'auto', padding: '0.1rem', fontSize: '0.7rem' }}
+                        onClick={(e) => openCategoryDropdown(e, manga.id)}
+                        title={t('library.assign_category')}
+                      >
+                        <Tag size={10} />
+                      </button>
+                    </div>
                   </div>
 
                   <div style={{ marginTop: '0.5rem', flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
@@ -646,6 +900,7 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({ onMangaSelect }) => {
                     }} title={manga.title}>
                       {manga.title}
                     </h3>
+                    <div style={{ marginTop: '0.2rem' }}>{renderCategoryTag(manga)}</div>
                   </div>
                 </div>
               );
@@ -653,6 +908,54 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({ onMangaSelect }) => {
           </div>
         )
       )}
+
+      {/* Floating Category Assignment Dropdown */}
+      {categoryDropdownOpenId !== null && (() => {
+        const manga = sortedMangas.find(m => m.id === categoryDropdownOpenId);
+        if (!manga) return null;
+        const pos = categoryDropdownPosition;
+        return (
+          <div
+            className="comic-box"
+            style={{
+              position: 'fixed',
+              top: `${pos.y}px`,
+              left: `${pos.x}px`,
+              zIndex: 99999,
+              backgroundColor: 'var(--bg-card)',
+              padding: '0.5rem',
+              minWidth: '145px',
+              boxShadow: '4px 4px 0 var(--shadow-color)',
+              boxSizing: 'border-box',
+              borderRadius: '8px'
+            }}
+            onClick={closeCategoryDropdown}
+          >
+            {([-1, ...categories.map(c => c.id)]).map((cid) => {
+              const isActive = getMangaCategory(manga.id) === cid || (getMangaCategory(manga.id) === null && cid === -1);
+              return (
+                <div
+                  key={cid}
+                  onClick={() => {
+                    assignMangaToCategory(manga.id, cid);
+                  }}
+                  style={{
+                    padding: '0.3rem 0.5rem',
+                    fontSize: '0.8rem',
+                    cursor: 'pointer',
+                    backgroundColor: isActive ? 'var(--retro-purple)' : 'transparent',
+                    color: isActive ? '#fff' : 'var(--text-color)',
+                    borderRadius: '4px',
+                    userSelect: 'none',
+                  }}
+                >
+                  {categoryName(cid)}
+                </div>
+              );
+            })}
+          </div>
+        );
+      })()}
 
       {/* CSS Animation helper */}
       <style>{`

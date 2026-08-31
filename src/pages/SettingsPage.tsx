@@ -285,184 +285,92 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
                   <h3 style={{ margin: '0 0 0.5rem 0', fontWeight: 800, fontSize: '1rem', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     {t('settings.account.email_title')}
                   </h3>
-              {currentEmail ? (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.5rem' }}>
-                  <span style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--retro-purple)' }}>{currentEmail}</span>
-                  <button 
-                    onClick={async () => {
-                      if (await confirm(t('settings.account.email_change_confirm'))) {
-                        setEmailInput(currentEmail);
-                        setCurrentEmail(null);
+                  {currentEmail ? (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.5rem' }}>
+                      <span style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--retro-purple)' }}>{currentEmail}</span>
+                      <button
+                        onClick={async () => {
+                          if (await confirm(t('settings.account.email_change_confirm'))) {
+                            setEmailInput(currentEmail);
+                            setCurrentEmail(null);
+                          }
+                        }}
+                        className="comic-btn"
+                        style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', boxShadow: 'none', transform: 'none' }}
+                      >
+                        {t('settings.account.email_btn_change')}
+                      </button>
+                    </div>
+                  ) : (
+                    <form onSubmit={async (e) => {
+                      e.preventDefault();
+                      if (!emailInput.trim()) return;
+                      try {
+                        await auth.updateEmail(emailInput);
+                        setCurrentEmail(emailInput);
+                        await alert(t('settings.account.email_success'));
+                      } catch (err: any) {
+                        await alert(err.message || "Gagal memperbarui email.");
                       }
-                    }} 
-                    className="comic-btn" 
-                    style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', boxShadow: 'none', transform: 'none' }}
-                  >
-                    {t('settings.account.email_btn_change')}
-                  </button>
+                    }} style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', maxWidth: '400px' }}>
+                      <input
+                        type="email"
+                        placeholder="nama@email.com"
+                        value={emailInput}
+                        onChange={(e) => setEmailInput(e.target.value)}
+                        required
+                        style={{
+                          flex: 1,
+                          padding: '0.5rem',
+                          border: '2px solid var(--border-color)',
+                          borderRadius: '6px',
+                          backgroundColor: 'var(--bg-color)',
+                          color: 'var(--text-color)',
+                          fontWeight: 700,
+                          fontSize: '0.85rem'
+                        }}
+                      />
+                      <button
+                        type="submit"
+                        className="comic-btn comic-btn-yellow"
+                        style={{ padding: '0.35rem 0.8rem', fontSize: '0.8rem', boxShadow: '2px 2px 0 var(--border-color)', transform: 'none' }}
+                      >
+                        {t('settings.account.email_btn_save')}
+                      </button>
+                    </form>
+                  )}
                 </div>
-              ) : (
-                <form onSubmit={async (e) => {
-                  e.preventDefault();
-                  if (!emailInput.trim()) return;
-                  try {
-                    await auth.updateEmail(emailInput);
-                    setCurrentEmail(emailInput);
-                    await alert(t('settings.account.email_success'));
-                  } catch (err: any) {
-                    await alert(err.message || "Gagal memperbarui email.");
-                  }
-                }} style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', maxWidth: '400px' }}>
-                  <input
-                    type="email"
-                    placeholder="nama@email.com"
-                    value={emailInput}
-                    onChange={(e) => setEmailInput(e.target.value)}
-                    required
-                    style={{
-                      flex: 1,
-                      padding: '0.5rem',
-                      border: '2px solid var(--border-color)',
-                      borderRadius: '6px',
-                      backgroundColor: 'var(--bg-color)',
-                      color: 'var(--text-color)',
-                      fontWeight: 700,
-                      fontSize: '0.85rem'
-                    }}
-                  />
-                  <button
-                    type="submit"
-                    className="comic-btn comic-btn-yellow"
-                    style={{ padding: '0.35rem 0.8rem', fontSize: '0.8rem', boxShadow: '2px 2px 0 var(--border-color)', transform: 'none' }}
-                  >
-                    {t('settings.account.email_btn_save')}
-                  </button>
-                </form>
-              )}
-            </div>
 
-            {/* Change password form */}
-            <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', borderBottom: '2px dashed var(--border-color)', paddingBottom: '1.5rem', marginBottom: '1.5rem' }}>
-              <h3 style={{ margin: '0 0 0.5rem 0', fontWeight: 800, fontSize: '1rem', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Key size={18} /> {t('settings.password.title')}
-              </h3>
+                {/* Change password form */}
+                <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', borderBottom: '2px dashed var(--border-color)', paddingBottom: '1.5rem', marginBottom: '1.5rem' }}>
+                  <h3 style={{ margin: '0 0 0.5rem 0', fontWeight: 800, fontSize: '1rem', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <Key size={18} /> {t('settings.password.title')}
+                  </h3>
 
-              {passError && (
-                <div className="comic-sticker sticker-pink" style={{ transform: 'none', margin: '0.5rem 0', display: 'block' }}>
-                  {passError}
-                </div>
-              )}
+                  {passError && (
+                    <div className="comic-sticker sticker-pink" style={{ transform: 'none', margin: '0.5rem 0', display: 'block' }}>
+                      {passError}
+                    </div>
+                  )}
 
-              {passSuccess && (
-                <div className="comic-sticker sticker-teal" style={{ transform: 'none', margin: '0.5rem 0', display: 'block' }}>
-                  {passSuccess}
-                </div>
-              )}
+                  {passSuccess && (
+                    <div className="comic-sticker sticker-teal" style={{ transform: 'none', margin: '0.5rem 0', display: 'block' }}>
+                      {passSuccess}
+                    </div>
+                  )}
 
-              <div className="settings-password-grid" style={{ display: 'grid', gap: '1rem' }}>
-                <div>
-                  <label style={{ display: 'block', fontWeight: 800, marginBottom: '0.25rem', fontSize: '0.8rem', textTransform: 'uppercase' }}>{t('settings.password.label.old')}</label>
-                  <input
-                    type="password"
-                    value={oldPassword}
-                    onChange={(e) => setOldPassword(e.target.value)}
-                    required
-                    style={{
-                      width: '100%',
-                      padding: '0.5rem',
-                      border: '2px solid var(--border-color)',
-                      borderRadius: '6px',
-                      backgroundColor: 'var(--bg-color)',
-                      color: 'var(--text-color)',
-                      fontWeight: 700,
-                      boxSizing: 'border-box'
-                    }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontWeight: 800, marginBottom: '0.25rem', fontSize: '0.8rem', textTransform: 'uppercase' }}>{t('settings.password.label.new')}</label>
-                  <input
-                    type="password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    required
-                    style={{
-                      width: '100%',
-                      padding: '0.5rem',
-                      border: '2px solid var(--border-color)',
-                      borderRadius: '6px',
-                      backgroundColor: 'var(--bg-color)',
-                      color: 'var(--text-color)',
-                      fontWeight: 700,
-                      boxSizing: 'border-box'
-                    }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontWeight: 800, marginBottom: '0.25rem', fontSize: '0.8rem', textTransform: 'uppercase' }}>{t('settings.password.label.confirm')}</label>
-                  <input
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                    style={{
-                      width: '100%',
-                      padding: '0.5rem',
-                      border: '2px solid var(--border-color)',
-                      borderRadius: '6px',
-                      backgroundColor: 'var(--bg-color)',
-                      color: 'var(--text-color)',
-                      fontWeight: 700,
-                      boxSizing: 'border-box'
-                    }}
-                  />
-                </div>
-              </div>
-
-              <button type="submit" className="comic-btn comic-btn-purple" style={{ alignSelf: 'flex-start', marginTop: '0.5rem', padding: '0.5rem 1rem', fontSize: '0.9rem' }}>
-                {t('settings.password.btn.save')}
-              </button>
-            </form>
-
-            {/* Danger Zone: Delete Account */}
-            <div>
-              <h3 style={{ margin: '0 0 0.5rem 0', fontWeight: 800, fontSize: '1rem', color: 'var(--retro-pink)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <ShieldAlert size={18} /> {t('settings.danger.title')}
-              </h3>
-
-              {!showDeleteConfirm ? (
-                <button
-                  type="button"
-                  className="comic-btn"
-                  onClick={() => setShowDeleteConfirm(true)}
-                  style={{
-                    backgroundColor: 'transparent',
-                    color: 'var(--retro-pink)',
-                    borderColor: 'var(--retro-pink)',
-                    padding: '0.5rem 1rem',
-                    fontSize: '0.85rem',
-                    boxShadow: 'none'
-                  }}
-                >
-                  {t('settings.danger.btn.delete')}
-                </button>
-              ) : (
-                <form onSubmit={handleDeleteAccount} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.5rem' }}>
-                  <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 700, color: 'var(--retro-pink)' }}>
-                    {t('settings.danger.warn')}
-                  </p>
-                  <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-                    <div style={{ flex: 1, minWidth: '200px' }}>
-                      <label style={{ display: 'block', fontWeight: 800, marginBottom: '0.25rem', fontSize: '0.8rem' }}>{t('settings.danger.confirm_placeholder')}</label>
+                  <div className="settings-password-grid" style={{ display: 'grid', gap: '1rem' }}>
+                    <div>
+                      <label style={{ display: 'block', fontWeight: 800, marginBottom: '0.25rem', fontSize: '0.8rem', textTransform: 'uppercase' }}>{t('settings.password.label.old')}</label>
                       <input
                         type="password"
-                        value={deleteConfirmPassword}
-                        onChange={(e) => setDeleteConfirmPassword(e.target.value)}
+                        value={oldPassword}
+                        onChange={(e) => setOldPassword(e.target.value)}
                         required
                         style={{
                           width: '100%',
                           padding: '0.5rem',
-                          border: '2px solid var(--retro-pink)',
+                          border: '2px solid var(--border-color)',
                           borderRadius: '6px',
                           backgroundColor: 'var(--bg-color)',
                           color: 'var(--text-color)',
@@ -471,33 +379,125 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
                         }}
                       />
                     </div>
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <button type="submit" className="comic-btn comic-btn-pink" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
-                        {t('settings.danger.btn.confirm_delete')}
-                      </button>
-                      <button
-                        type="button"
-                        className="comic-btn comic-btn-white"
-                        style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}
-                        onClick={() => {
-                          setShowDeleteConfirm(false);
-                          setDeleteConfirmPassword('');
-                          setDeleteError(null);
+                    <div>
+                      <label style={{ display: 'block', fontWeight: 800, marginBottom: '0.25rem', fontSize: '0.8rem', textTransform: 'uppercase' }}>{t('settings.password.label.new')}</label>
+                      <input
+                        type="password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        required
+                        style={{
+                          width: '100%',
+                          padding: '0.5rem',
+                          border: '2px solid var(--border-color)',
+                          borderRadius: '6px',
+                          backgroundColor: 'var(--bg-color)',
+                          color: 'var(--text-color)',
+                          fontWeight: 700,
+                          boxSizing: 'border-box'
                         }}
-                      >
-                        {t('settings.danger.btn.cancel')}
-                      </button>
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontWeight: 800, marginBottom: '0.25rem', fontSize: '0.8rem', textTransform: 'uppercase' }}>{t('settings.password.label.confirm')}</label>
+                      <input
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        required
+                        style={{
+                          width: '100%',
+                          padding: '0.5rem',
+                          border: '2px solid var(--border-color)',
+                          borderRadius: '6px',
+                          backgroundColor: 'var(--bg-color)',
+                          color: 'var(--text-color)',
+                          fontWeight: 700,
+                          boxSizing: 'border-box'
+                        }}
+                      />
                     </div>
                   </div>
-                  {deleteError && (
-                    <div className="comic-sticker sticker-pink" style={{ transform: 'none', display: 'inline-block', marginTop: '0.5rem' }}>
-                      {deleteError}
-                    </div>
-                  )}
+
+                  <button type="submit" className="comic-btn comic-btn-purple" style={{ alignSelf: 'flex-start', marginTop: '0.5rem', padding: '0.5rem 1rem', fontSize: '0.9rem' }}>
+                    {t('settings.password.btn.save')}
+                  </button>
                 </form>
-              )}
-            </div>
-            </>
+
+                {/* Danger Zone: Delete Account */}
+                <div>
+                  <h3 style={{ margin: '0 0 0.5rem 0', fontWeight: 800, fontSize: '1rem', color: 'var(--retro-pink)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <ShieldAlert size={18} /> {t('settings.danger.title')}
+                  </h3>
+
+                  {!showDeleteConfirm ? (
+                    <button
+                      type="button"
+                      className="comic-btn"
+                      onClick={() => setShowDeleteConfirm(true)}
+                      style={{
+                        backgroundColor: 'transparent',
+                        color: 'var(--retro-pink)',
+                        borderColor: 'var(--retro-pink)',
+                        padding: '0.5rem 1rem',
+                        fontSize: '0.85rem',
+                        boxShadow: 'none'
+                      }}
+                    >
+                      {t('settings.danger.btn.delete')}
+                    </button>
+                  ) : (
+                    <form onSubmit={handleDeleteAccount} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.5rem' }}>
+                      <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 700, color: 'var(--retro-pink)' }}>
+                        {t('settings.danger.warn')}
+                      </p>
+                      <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                        <div style={{ flex: 1, minWidth: '200px' }}>
+                          <label style={{ display: 'block', fontWeight: 800, marginBottom: '0.25rem', fontSize: '0.8rem' }}>{t('settings.danger.confirm_placeholder')}</label>
+                          <input
+                            type="password"
+                            value={deleteConfirmPassword}
+                            onChange={(e) => setDeleteConfirmPassword(e.target.value)}
+                            required
+                            style={{
+                              width: '100%',
+                              padding: '0.5rem',
+                              border: '2px solid var(--retro-pink)',
+                              borderRadius: '6px',
+                              backgroundColor: 'var(--bg-color)',
+                              color: 'var(--text-color)',
+                              fontWeight: 700,
+                              boxSizing: 'border-box'
+                            }}
+                          />
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          <button type="submit" className="comic-btn comic-btn-pink" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
+                            {t('settings.danger.btn.confirm_delete')}
+                          </button>
+                          <button
+                            type="button"
+                            className="comic-btn comic-btn-white"
+                            style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}
+                            onClick={() => {
+                              setShowDeleteConfirm(false);
+                              setDeleteConfirmPassword('');
+                              setDeleteError(null);
+                            }}
+                          >
+                            {t('settings.danger.btn.cancel')}
+                          </button>
+                        </div>
+                      </div>
+                      {deleteError && (
+                        <div className="comic-sticker sticker-pink" style={{ transform: 'none', display: 'inline-block', marginTop: '0.5rem' }}>
+                          {deleteError}
+                        </div>
+                      )}
+                    </form>
+                  )}
+                </div>
+              </>
             )}
           </div>
 
@@ -930,7 +930,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
                           )}
                         </div>
                       </div>
-                      
+
                       {editingUsername === u.username && (
                         <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '2px dashed var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                           <div>
@@ -1003,9 +1003,6 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1.25rem', borderTop: '2px dashed var(--border-color)', paddingTop: '0.75rem' }}>
-              <span style={{ fontWeight: 800, fontSize: '0.9rem', textTransform: 'uppercase' }}>Credits:</span>
-              <a href="https://github.com/Irnhakim" target="_blank" rel="noreferrer" style={{ fontWeight: 700, color: 'var(--retro-purple)', textDecoration: 'underline' }}>GitHub @Irnhakim</a>
-
               <span style={{ fontWeight: 800, fontSize: '0.9rem', textTransform: 'uppercase', marginTop: '0.5rem' }}>Support Development:</span>
               <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginTop: '0.25rem' }}>
                 <a href="https://saweria.co/irnhakim" target="_blank" rel="noreferrer" className="comic-btn comic-btn-yellow" style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem', boxShadow: '2px 2px 0 var(--border-color)', textDecoration: 'none', transform: 'none' }}>Saweria</a>

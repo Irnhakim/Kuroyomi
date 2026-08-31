@@ -629,7 +629,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
       )}
 
       {/* Floating Settings Panel */}
-      {showSettingsPanel && (
+      {hudVisible && showSettingsPanel && (
         <div
           className="comic-box"
           style={{
