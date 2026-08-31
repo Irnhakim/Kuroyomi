@@ -1214,10 +1214,10 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
       </div>
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '4rem 0' }}>
-          <div className="comic-box" style={{ display: 'inline-block', backgroundColor: 'var(--retro-yellow)' }}>
-            <h3 style={{ margin: 0, fontWeight: 900 }}>CONNECTING TO BACKEND...</h3>
-          </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '1rem' }}>
+          {Array.from({ length: 12 }).map((_, i) => (
+            <div key={i} className="loading-skeleton" style={{ height: '60px', borderRadius: '4px' }} />
+          ))}
         </div>
       ) : globalSearchQuery ? (
         /* GLOBAL SEARCH VIEW */

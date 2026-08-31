@@ -330,10 +330,38 @@ export default function App() {
         minHeight: '100vh',
         backgroundColor: '#1a1b26',
         color: '#c0caf5',
-        fontFamily: 'system-ui, sans-serif'
+        fontFamily: 'system-ui, sans-serif',
+        flexDirection: 'column',
+        gap: '1.5rem'
       }}>
+        <style>{`
+          @keyframes spin { to { transform: rotate(360deg); } }
+          @keyframes pulse-dot {
+            0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+            40% { transform: scale(1); opacity: 1; }
+          }
+          .connect-spinner {
+            width: 48px; height: 48px;
+            border: 4px solid rgba(192,202,245,0.15);
+            border-top-color: var(--retro-yellow, #f9c74f);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+          }
+          .connect-dots { display: flex; gap: 6px; }
+          .connect-dots span {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: var(--retro-yellow, #f9c74f);
+            animation: pulse-dot 1.2s ease-in-out infinite;
+          }
+          .connect-dots span:nth-child(2) { animation-delay: 0.2s; }
+          .connect-dots span:nth-child(3) { animation-delay: 0.4s; }
+        `}</style>
+        <div className="connect-spinner" />
         <div className="comic-box" style={{ backgroundColor: 'var(--retro-yellow)', padding: '1rem 2rem' }}>
           <h3 style={{ margin: 0, fontWeight: 900, color: '#1a1a1a' }}>CONNECTING TO BACKEND...</h3>
+        </div>
+        <div className="connect-dots">
+          <span /><span /><span />
         </div>
       </div>
     );
