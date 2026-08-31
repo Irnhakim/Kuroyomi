@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { api } from '../services/api';
 import type { Extension, Source, Manga } from '../services/api';
 import { Compass, Cpu, Plus, Trash2, Search, ArrowLeft, Sliders, Globe, LayoutGrid, Grid3X3, List, Loader2 } from 'lucide-react';
@@ -208,7 +208,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
   const [rawSources, setRawSources] = useState<Source[]>([]);
   const [allowedLanguages, setAllowedLanguages] = useState<string[]>([]);
   const [showLangModal, setShowLangModal] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !sessionStorage.getItem('kuroyomi_browse_catalog'));
   const [extActionLoading, setExtActionLoading] = useState<string | null>(null);
 
   // Global search states
@@ -216,21 +216,53 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
   const [globalSearchQuery, setGlobalSearchQuery] = useState('');
 
   // Selection / Catalog browsing states
+  const hasCache = !!sessionStorage.getItem('kuroyomi_browse_catalog');
+  const isSourceRestoredRef = useRef(hasCache);
+  const isModeRestoredRef = useRef(hasCache);
+  const isRestoringScrollRef = useRef(hasCache);
   const [selectedSource, setSelectedSource] = useState<Source | null>(() => {
     try { const s = sessionStorage.getItem('kuroyomi_browse_source'); return s ? JSON.parse(s) : null; } catch { return null; }
   });
   const selectSource = (src: Source | null) => {
-    if (src) sessionStorage.setItem('kuroyomi_browse_source', JSON.stringify(src));
-    else sessionStorage.removeItem('kuroyomi_browse_source');
+    if (src) {
+      // clear catalog cache if switching to different source
+      const prev = sessionStorage.getItem('kuroyomi_browse_source');
+      if (!prev || JSON.parse(prev).id !== src.id) {
+        sessionStorage.removeItem('kuroyomi_browse_catalog');
+        sessionStorage.removeItem('kuroyomi_browse_page');
+        sessionStorage.removeItem('kuroyomi_browse_hasnext');
+        sessionStorage.removeItem('kuroyomi_browse_mode');
+        sessionStorage.removeItem('kuroyomi_browse_search');
+        sessionStorage.removeItem('kuroyomi_browse_scroll');
+      }
+      sessionStorage.setItem('kuroyomi_browse_source', JSON.stringify(src));
+    } else {
+      sessionStorage.removeItem('kuroyomi_browse_source');
+      sessionStorage.removeItem('kuroyomi_browse_catalog');
+      sessionStorage.removeItem('kuroyomi_browse_page');
+      sessionStorage.removeItem('kuroyomi_browse_hasnext');
+      sessionStorage.removeItem('kuroyomi_browse_mode');
+      sessionStorage.removeItem('kuroyomi_browse_search');
+      sessionStorage.removeItem('kuroyomi_browse_scroll');
+    }
     setSelectedSource(src);
   };
-  const [browseMode, setBrowseMode] = useState<'popular' | 'latest' | 'search'>('popular');
-  const [catalogManga, setCatalogManga] = useState<Manga[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [hasNextPage, setHasNextPage] = useState(false);
+  const [browseMode, setBrowseMode] = useState<'popular' | 'latest' | 'search'>(() => {
+    return (sessionStorage.getItem('kuroyomi_browse_mode') as any) || 'popular';
+  });
+  const [catalogManga, setCatalogManga] = useState<Manga[]>(() => {
+    try { const s = sessionStorage.getItem('kuroyomi_browse_catalog'); return s ? JSON.parse(s) : []; } catch { return []; }
+  });
+  const [searchQuery, setSearchQuery] = useState(() => sessionStorage.getItem('kuroyomi_browse_search') || '');
+  const [currentPage, setCurrentPage] = useState(() => {
+    const s = sessionStorage.getItem('kuroyomi_browse_page'); return s ? parseInt(s, 10) : 1;
+  });
+  const [hasNextPage, setHasNextPage] = useState(() => sessionStorage.getItem('kuroyomi_browse_hasnext') === '1');
   const [catalogLoading, setCatalogLoading] = useState(false);
   const [catalogError, setCatalogError] = useState<string | null>(null);
+
+  useEffect(() => { sessionStorage.setItem('kuroyomi_browse_mode', browseMode); }, [browseMode]);
+  useEffect(() => { sessionStorage.setItem('kuroyomi_browse_search', searchQuery); }, [searchQuery]);
   const [displayMode, setDisplayMode] = useState<'grid' | 'compact' | 'list'>(() => {
     return (localStorage.getItem('kuroyomi_browse_display_mode') as any) || 'grid';
   });
@@ -268,7 +300,11 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
   const languages = ['all', ...Array.from(new Set(extensions.map(e => e.lang))).sort()];
 
   const loadInitialData = async () => {
-    setLoading(true);
+    // Only show global spinner/skeleton if we don't have restored catalog data
+    const hasRestoredCatalog = !!sessionStorage.getItem('kuroyomi_browse_catalog');
+    if (!hasRestoredCatalog) {
+      setLoading(true);
+    }
     try {
       const [exts, srcs, settings] = await Promise.all([
         api.getExtensions(),
@@ -396,12 +432,19 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
       }
 
       if (append) {
-        setCatalogManga(prev => [...prev, ...result.mangas]);
+        setCatalogManga(prev => {
+          const next = [...prev, ...result.mangas];
+          sessionStorage.setItem('kuroyomi_browse_catalog', JSON.stringify(next));
+          return next;
+        });
       } else {
         setCatalogManga(result.mangas);
+        sessionStorage.setItem('kuroyomi_browse_catalog', JSON.stringify(result.mangas));
       }
       setHasNextPage(result.hasNextPage);
+      sessionStorage.setItem('kuroyomi_browse_hasnext', result.hasNextPage ? '1' : '0');
       setCurrentPage(page);
+      sessionStorage.setItem('kuroyomi_browse_page', String(page));
     } catch (err: any) {
       console.error(err);
       setCatalogError(err.message || String(err));
@@ -425,23 +468,36 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
     if (selectedSource) {
       loadFilters(selectedSource.id, false);
       setShowFilterPanel(false);
-      loadSourceCatalog(1, false);
+      if (isSourceRestoredRef.current) {
+        isSourceRestoredRef.current = false;
+      } else {
+        loadSourceCatalog(1, false);
+      }
     }
   }, [selectedSource]);
 
   useEffect(() => {
+    if (isModeRestoredRef.current) {
+      isModeRestoredRef.current = false;
+      return;
+    }
     if (selectedSource && (browseMode === 'popular' || browseMode === 'latest')) {
       loadSourceCatalog(1, false);
     }
   }, [browseMode]);
 
-  // Infinite Scroll Listener
+  // Infinite Scroll & Scroll Position Saver Listener
   useEffect(() => {
     if (!selectedSource) return;
 
     const handleScroll = () => {
+      // save scroll position
+      if (!isRestoringScrollRef.current) {
+        sessionStorage.setItem('kuroyomi_browse_scroll', String(window.scrollY));
+      }
+
       const isNearBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 250;
-      if (isNearBottom && hasNextPage && !catalogLoading) {
+      if (isNearBottom && hasNextPage && !catalogLoading && !isRestoringScrollRef.current) {
         loadSourceCatalog(currentPage + 1, true);
       }
     };
@@ -449,6 +505,26 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({ onMangaSelect }) => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, [selectedSource, currentPage, hasNextPage, catalogLoading]);
+
+  // Restore Scroll Position after catalog renders
+  useEffect(() => {
+    if (selectedSource && catalogManga.length > 0 && isRestoringScrollRef.current) {
+      const savedScroll = sessionStorage.getItem('kuroyomi_browse_scroll');
+      if (savedScroll) {
+        // delay short duration to ensure DOM is fully painted
+        const timer = setTimeout(() => {
+          window.scrollTo(0, parseInt(savedScroll, 10));
+          // Turn off restoring flag after scrolling is completed
+          setTimeout(() => {
+            isRestoringScrollRef.current = false;
+          }, 150);
+        }, 100);
+        return () => clearTimeout(timer);
+      } else {
+        isRestoringScrollRef.current = false;
+      }
+    }
+  }, [selectedSource, catalogManga]);
 
   const handleInstallExtension = async (pkgName: string) => {
     setExtActionLoading(pkgName);
